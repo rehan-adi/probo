@@ -1,0 +1,21 @@
+{
+	"name": "@probo/logger",
+	"description": "Logger package for probo, powered by Pino.",
+	"module": "src/index.ts",
+	"version": "1.0.0",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"pino-pretty": "^13.0.0"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"pino": "^9.7.0"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	}
+}
