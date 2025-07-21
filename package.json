@@ -1,0 +1,35 @@
+{
+	"name": "probo",
+	"version": "1.0.0",
+	"description": "An opinion trading platform where users can trade on the outcome of future events.",
+	"private": "true",
+	"type": "module",
+	"author": {
+		"name": "Rehan",
+		"email": "official.rehan.me@gmail.com"
+	},
+	"license": "Apache-2.0",
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"dev:api": "bun --filter @probo/api-service dev",
+		"start:api": "bun --filter @probo/api-service start"
+	},
+	"workspaces": [
+		"apps/*",
+		"packages/*",
+		"services/*"
+	],
+	"devDependencies": {
+		"@types/bun": "latest",
+		"prettier": "^3.6.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/rehan-adi/probo"
+	},
+	"packageManager": "bun@1.2.17"
+}

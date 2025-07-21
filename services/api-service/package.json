@@ -1,0 +1,21 @@
+{
+	"name": "@probo/api-service",
+	"description": "Api service for probo",
+	"module": "src/server.ts",
+	"type": "module",
+	"private": true,
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "bun --hot src/server.ts",
+		"start": "bun run src/server.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"hono": "^4.8.5"
+	}
+}
