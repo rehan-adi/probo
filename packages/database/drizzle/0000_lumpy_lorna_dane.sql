@@ -124,7 +124,7 @@ CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"phone" varchar(10) NOT NULL,
 	"email" varchar(100),
-	"is_first_login" boolean DEFAULT true NOT NULL,
+	"is_new_user" boolean DEFAULT true NOT NULL,
 	"role" "role" DEFAULT 'USER' NOT NULL,
 	"kyc_verification_status" "kyc_status" DEFAULT 'NOT_VERIFIED' NOT NULL,
 	"payment_verification_status" "payment_status" DEFAULT 'NOT_VERIFIED' NOT NULL,

@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import * as schema from './db/schema';
+import * as schema from '@/db/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
 const queryClient = postgres(Bun.env.DATABASE_URL!, {
@@ -9,9 +9,10 @@ const queryClient = postgres(Bun.env.DATABASE_URL!, {
 	prepare: true,
 });
 
-export const db = drizzle(queryClient);
+export const db = drizzle(queryClient, { schema });
 
 export const {
+	// models
 	users,
 	kycs,
 	paymentMethods,

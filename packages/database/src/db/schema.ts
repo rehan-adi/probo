@@ -55,7 +55,7 @@ export const users = pgTable(
 		phone: varchar({ length: 10 }).notNull(),
 		email: varchar({ length: 100 }).unique(),
 
-		isFirstLogin: boolean('is_first_login').default(true).notNull(),
+		isNewUser: boolean('is_new_user').default(true).notNull(),
 
 		role: userRoleEnum('role').default('USER').notNull(),
 

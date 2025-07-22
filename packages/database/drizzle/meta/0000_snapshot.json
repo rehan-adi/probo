@@ -1,5 +1,5 @@
 {
-  "id": "b852f01a-2c5b-4c1d-97db-8693625db686",
+  "id": "c1935e43-89a8-45bc-986d-b9dfecfba438",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -890,8 +890,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_first_login": {
-          "name": "is_first_login",
+        "is_new_user": {
+          "name": "is_new_user",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
