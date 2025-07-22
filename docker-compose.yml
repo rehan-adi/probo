@@ -12,5 +12,25 @@ services:
     volumes:
       - probo_database_data:/var/lib/postgresql/data
 
+  redis-cache:
+    image: redis:7.2
+    container_name: probo-redis-cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-cache-data:/data
+
+  redis-queue:
+    image: redis:7.2
+    container_name: probo-redis-queue
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-queue-data:/data
+
 volumes:
   probo_database_data:
+  redis-cache-data:
+  redis-queue-data:
