@@ -1,0 +1,21 @@
+{
+	"name": "@probo/database",
+	"version": "1.0.0",
+	"description": "database package for probo",
+	"module": "src/index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/pg": "^8.15.4",
+		"drizzle-kit": "^0.31.4"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.44.3",
+		"pg": "^8.16.3",
+		"postgres": "^3.4.7"
+	}
+}
