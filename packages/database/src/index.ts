@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import * as schema from './db/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
 const queryClient = postgres(Bun.env.DATABASE_URL!, {
@@ -9,3 +10,29 @@ const queryClient = postgres(Bun.env.DATABASE_URL!, {
 });
 
 export const db = drizzle(queryClient);
+
+export const {
+	users,
+	kycs,
+	paymentMethods,
+	orders,
+	markets,
+	referralRewards,
+	companyEarnings,
+	categories,
+	inrBalances,
+	stockBalances,
+	transactionHistory,
+
+	// enums
+	feeTypeEnum,
+	kycStatusEnum,
+	orderStatusEnum,
+	orderTypeEnum,
+	paymentStatusEnum,
+	paymentTypeEnum,
+	stockTypeEnum,
+	txnStatusEnum,
+	txnTypeEnum,
+	userRoleEnum,
+} = schema;

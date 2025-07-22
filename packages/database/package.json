@@ -17,5 +17,8 @@
 		"drizzle-orm": "^0.44.3",
 		"pg": "^8.16.3",
 		"postgres": "^3.4.7"
+	},
+	"exports": {
+		".": "./src/index.ts"
 	}
 }
