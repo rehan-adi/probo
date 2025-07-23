@@ -4,24 +4,36 @@
 	"description": "An opinion trading platform where users can trade on the outcome of future events.",
 	"private": "true",
 	"type": "module",
-	"author": {
-		"name": "Rehan",
-		"email": "official.rehan.me@gmail.com"
-	},
-	"license": "Apache-2.0",
 	"scripts": {
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"dev:api": "bun --filter @probo/api-service dev",
 		"start:api": "bun --filter @probo/api-service start",
 		"db:generate": "bun run --filter=@probo/database db:generate",
-		"db:push": "bun run --filter=@probo/database db:push",
-		"db:studio": "bun run --filter=@probo/database db:studio"
+		"db:migrate": "bun run --filter=@probo/database db:migrate",
+		"db:studio": "bun run --filter=@probo/database db:studio",
+		"db:push": "bun run --filter=@probo/database db:push"
 	},
 	"workspaces": [
 		"apps/*",
 		"packages/*",
 		"services/*"
+	],
+	"author": {
+		"name": "Rehan",
+		"email": "official.rehan.me@gmail.com"
+	},
+	"license": "Apache-2.0",
+	"keywords": [
+		"probo",
+		"microservices",
+		"trading system",
+		"Hono",
+		"Bun",
+		"postgresql",
+		"redis",
+		"kafka",
+		"golang"
 	],
 	"devDependencies": {
 		"@types/bun": "latest",
@@ -34,5 +46,8 @@
 		"type": "git",
 		"url": "https://github.com/rehan-adi/probo"
 	},
-	"packageManager": "bun@1.2.17"
+	"packageManager": "bun@1.2.17",
+	"engines": {
+		"bun": ">=1.2.17"
+	}
 }

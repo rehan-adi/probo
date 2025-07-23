@@ -2,4 +2,4 @@ dist/
 node_modules/
 bun.lockb
 services/**/*.go
-packages/database/drizzle
+packages/database/src/generated
