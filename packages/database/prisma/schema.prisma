@@ -61,6 +61,7 @@ enum TransactionType {
   WINNINGS
   REFUND
   REFERRAL_REWARD
+  SIGNUP_BONUS
 }
 
 enum TransactionStatus {
