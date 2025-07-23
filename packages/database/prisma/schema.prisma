@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum KycStatus {
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentStatus {
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PaymentType {
+  BANK
+  UPI
+}
+
+enum OrderType {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+}
+
+enum StockType {
+  YES
+  NO
+}
+
+enum FeeType {
+  TRADE_FEE
+  WITHDRAWAL_FEE
+  REFERRAL_BONUS
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  BET
+  WINNINGS
+  REFUND
+  REFERRAL_REWARD
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id                        String        @id @default(uuid())
+  phone                     String        @unique
+  email                     String?       @unique
+  isNewUser                 Boolean       @default(true)
+  role                      Role          @default(USER)
+  kycVerificationStatus     KycStatus     @default(NOT_VERIFIED)
+  paymentVerificationStatus PaymentStatus @default(NOT_VERIFIED)
+  referralCode              String        @unique
+
+  referrerId String?
+  referrer   User?   @relation("UserReferrer", fields: [referrerId], references: [id])
+  referrals  User[]  @relation("UserReferrer")
+
+  earnedRewards   Referral[] @relation("RewardReferrer")
+  referredRewards Referral[] @relation("RewardReferred")
+
+  totalReferralReward Float @default(0)
+
+  kycs           Kyc[]
+  paymentMethods PaymentMethod[]
+
+  inrBalance    InrBalance?
+  stockBalances StockBalance[]
+  transactions  TransactionHistory[]
+
+  orders Order[]
+
+  companyEarnings CompanyEarning[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Kyc {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  panName     String
+  panNumber   String    @unique
+  dob         String
+  status      KycStatus @default(NOT_VERIFIED)
+  remarks     String?
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PaymentMethod {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  type          PaymentType
+  upiNumber     String?       @unique
+  accountNumber String?
+  ifscCode      String?
+  status        PaymentStatus @default(NOT_VERIFIED)
+  remarks       String?
+  submittedAt   DateTime      @default(now())
+  reviewedAt    DateTime?
+}
+
+model Referral {
+  id         String   @id @default(uuid())
+  referrerId String
+  referredId String
+  amount     Decimal  @default(20.00) @db.Decimal(14, 2)
+  createdAt  DateTime @default(now())
+
+  referrer User @relation("RewardReferrer", fields: [referrerId], references: [id])
+  referred User @relation("RewardReferred", fields: [referredId], references: [id])
+}
+
+model InrBalance {
+  id      String  @id @default(uuid())
+  userId  String  @unique
+  user    User    @relation(fields: [userId], references: [id])
+  balance Decimal @default(0.00) @db.Decimal(14, 2)
+  locked  Decimal @default(0.00) @db.Decimal(14, 2)
+}
+
+model StockBalance {
+  id          String @id @default(uuid())
+  userId      String
+  marketId    String
+  user        User   @relation(fields: [userId], references: [id])
+  market      Market @relation(fields: [marketId], references: [id])
+  yesQuantity Int    @default(0)
+  yesLocked   Int    @default(0)
+  noQuantity  Int    @default(0)
+  noLocked    Int    @default(0)
+}
+
+model TransactionHistory {
+  id        String            @id @default(uuid())
+  userId    String
+  marketId  String?
+  user      User              @relation(fields: [userId], references: [id])
+  market    Market?           @relation(fields: [marketId], references: [id])
+  type      TransactionType
+  amount    Decimal           @db.Decimal(14, 2)
+  status    TransactionStatus @default(PENDING)
+  remarks   String?
+  createdAt DateTime          @default(now())
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  stockSymbol    String
+  stockType      StockType
+  createdAt      DateTime    @default(now())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  quantity       Int
+  price          Decimal     @db.Decimal(14, 2)
+  orderType      OrderType
+  totalPrice     Decimal     @db.Decimal(14, 2)
+  status         OrderStatus @default(PENDING)
+  tradedQuantity Int         @default(0)
+  marketId       String
+  market         Market      @relation(fields: [marketId], references: [id])
+}
+
+model Market {
+  id              String               @id @default(uuid())
+  title           String
+  symbol          String               @unique
+  description     String?
+  startTime       DateTime
+  endTime         DateTime
+  result          String?
+  thumbnail       String?
+  categoryId      String
+  category        Category             @relation(fields: [categoryId], references: [id])
+  sourceOfTruth   String               @default("")
+  numberOfTraders Int                  @default(0)
+  stockBalances   StockBalance[]
+  orders          Order[]
+  transactions    TransactionHistory[]
+  CompanyEarning  CompanyEarning[]
+}
+
+model Category {
+  id           String   @id @default(uuid())
+  categoryName String
+  icon         String?
+  markets      Market[]
+}
+
+model CompanyEarning {
+  id        String   @id @default(uuid())
+  userId    String
+  marketId  String?
+  tradeId   String?
+  user      User     @relation(fields: [userId], references: [id])
+  market    Market?  @relation(fields: [marketId], references: [id])
+  amount    Decimal  @db.Decimal(14, 2)
+  type      FeeType
+  remarks   String?
+  createdAt DateTime @default(now())
+}

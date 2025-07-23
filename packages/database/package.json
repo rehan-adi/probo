@@ -1,28 +1,34 @@
 {
 	"name": "@probo/database",
 	"version": "1.0.0",
-	"description": "database package for probo",
+	"description": "Database package for probo - built with Prisma & Bun",
 	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"db:generate": "bunx drizzle-kit generate",
-		"db:studio": "bunx drizzle-kit studio",
-		"db:push": "bunx drizzle-kit push"
+		"db:migrate": "prisma migrate dev",
+		"db:generate": "prisma generate",
+		"db:studio": "prisma studio",
+		"db:push": "prisma db push"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"@types/pg": "^8.15.4",
-		"drizzle-kit": "^0.31.4"
+		"prisma": "^6.12.0"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"drizzle-orm": "^0.44.3",
-		"pg": "^8.16.3",
-		"postgres": "^3.4.7"
+		"@prisma/client": "^6.12.0"
 	},
+	"keywords": [
+		"orm",
+		"bun",
+		"prisma",
+		"postgresql",
+		"database",
+		"typescript"
+	],
 	"exports": {
 		".": "./src/index.ts"
 	}
