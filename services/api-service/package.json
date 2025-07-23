@@ -1,10 +1,10 @@
 {
 	"name": "@probo/api-service",
-	"description": "Api service for probo",
+	"version": "1.0.0",
+	"description": "API service for Probo built with Bun and Hono",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
-	"version": "1.0.0",
 	"scripts": {
 		"dev": "bun --hot src/server.ts",
 		"start": "bun run src/server.ts"
@@ -16,7 +16,26 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
+		"@probo/database": "workspace:*",
+		"@probo/logger": "workspace:*",
 		"hono": "^4.8.5",
-		"@probo/logger": "workspace:*"
-	}
+		"ioredis": "^5.6.1",
+		"rate-limiter-flexible": "^7.1.1",
+		"twilio": "^5.7.3",
+		"uuid": "^11.1.0",
+		"zod": "^4.0.5"
+	},
+	"keywords": [
+		"bun",
+		"hono",
+		"twilio",
+		"redis",
+		"api-service",
+		"typescript",
+		"microservices",
+		"zod",
+		"ioredis",
+		"uuid",
+		"probo"
+	]
 }
