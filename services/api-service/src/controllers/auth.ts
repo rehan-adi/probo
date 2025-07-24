@@ -22,11 +22,11 @@ export const login = async (c: Context) => {
 		const validateData = loginSchema.safeParse(data);
 
 		if (!validateData.success) {
-			logger.error(`data validation failed ${validateData.data}`);
+			logger.warn({ error: validateData.error }, 'Phone validation failed');
 			return c.json(
 				{
 					success: false,
-					error: validateData.error,
+					error: 'Invalid phone number',
 				},
 				400,
 			);
@@ -52,7 +52,7 @@ export const login = async (c: Context) => {
 		if (existingUser) {
 			try {
 				await sendOtp(phone, otp);
-				logger.info('OTP send for existing user');
+				logger.info('OTP sent for existing user');
 			} catch (err) {
 				return c.json({ success: false, message: 'Failed to send OTP. Try again later.' }, 502);
 			}
@@ -76,9 +76,11 @@ export const login = async (c: Context) => {
 			},
 		});
 
+		logger.info(`New user created with phone: ${user.phone} and ID: ${user.id}`);
+
 		try {
 			await sendOtp(phone, otp);
-			logger.info('OTP send for new user');
+			logger.info('OTP sent for new user');
 		} catch (err) {
 			return c.json({ success: false, message: 'Failed to send OTP. Try again later.' }, 502);
 		}
@@ -97,7 +99,7 @@ export const login = async (c: Context) => {
 			201,
 		);
 	} catch (error) {
-		logger.error(`Error in login handler: ${error}`, error);
+		logger.error({ error }, 'Login controller failed');
 		return c.json(
 			{
 				success: false,
@@ -118,25 +120,25 @@ export const verify = async (c: Context) => {
 	try {
 		const data = await c.req.json<{ phone: string; otp: string }>();
 
-		const validatdata = verifyOtpSchema.safeParse(data);
+		const validatedData = verifyOtpSchema.safeParse(data);
 
-		if (!validatdata.success) {
-			logger.error(`failed to validate data ${validatdata.data}`);
+		if (!validatedData.success) {
+			logger.warn({ error: validatedData.error }, 'OTP validation failed');
 			return c.json(
 				{
 					success: false,
-					error: validatdata.error,
+					error: 'Invalid phone or otp',
 				},
 				400,
 			);
 		}
 
-		const key = `otp:${validatdata.data.phone}`;
+		const key = `otp:${validatedData.data.phone}`;
 
 		const savedOtp = await client.get(key);
 
 		if (!savedOtp) {
-			logger.error(`Otp is no more present ${validatdata.data}`);
+			logger.warn({ phone: validatedData.data.phone }, 'OTP not found or expired for user');
 			return c.json(
 				{
 					success: false,
@@ -146,16 +148,22 @@ export const verify = async (c: Context) => {
 			);
 		}
 
-		if (savedOtp !== validatdata.data.otp) {
-			logger.error(`Otp is not valid for ${validatdata.data.phone}`);
-			return c.json({ success: false, message: 'Invalid OTP. Please try again.' }, 401);
+		if (savedOtp !== validatedData.data.otp) {
+			logger.warn({ phone: validatedData.data.phone }, 'Invalid OTP entered');
+			return c.json(
+				{
+					success: false,
+					message: 'Invalid OTP. Please try again.',
+				},
+				401,
+			);
 		}
 
 		await client.del(key);
 
 		const user = await prisma.user.findFirst({
 			where: {
-				phone: validatdata.data.phone,
+				phone: validatedData.data.phone,
 			},
 		});
 
@@ -177,25 +185,36 @@ export const verify = async (c: Context) => {
 			});
 
 			if (!existingBalance) {
-				await prisma.$transaction(async (tx) => {
-					await tx.inrBalance.create({
-						data: {
-							userId: user.id,
-							balance: '15.00',
-							locked: '0.00',
-						},
-					});
+				try {
+					await prisma.$transaction(async (tx) => {
+						await tx.inrBalance.create({
+							data: {
+								userId: user.id,
+								balance: '15.00',
+								locked: '0.00',
+							},
+						});
 
-					await tx.transactionHistory.create({
-						data: {
-							userId: user.id,
-							type: 'SIGNUP_BONUS',
-							status: 'SUCCESS',
-							amount: '15.00',
-							remarks: 'signin bonus credited',
-						},
+						await tx.transactionHistory.create({
+							data: {
+								userId: user.id,
+								type: 'SIGNUP_BONUS',
+								status: 'SUCCESS',
+								amount: '15.00',
+								remarks: 'signin bonus credited',
+							},
+						});
 					});
-				});
+				} catch (error) {
+					logger.error({ error }, 'Failed to credit signup bonus');
+					return c.json(
+						{
+							success: false,
+							error: 'Signup bonus failed. Please try again later.',
+						},
+						500,
+					);
+				}
 			}
 		}
 
@@ -207,7 +226,10 @@ export const verify = async (c: Context) => {
 			maxAge: 7 * 24 * 60 * 60,
 			expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 			sameSite: 'Strict',
+			path: '/',
 		});
+
+		logger.info({ userId: user.id }, 'User logged in successfully with OTP');
 
 		return c.json(
 			{
@@ -222,7 +244,7 @@ export const verify = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
-		logger.error('Error occored at verify handler', error);
+		logger.error({ error }, 'Unexpected error in verify controller');
 		return c.json(
 			{
 				success: false,
@@ -240,15 +262,28 @@ export const verify = async (c: Context) => {
  */
 
 export const logout = async (c: Context) => {
-	deleteCookie(c, 'token');
+	try {
+		deleteCookie(c, 'token');
 
-	logger.info(`User loges out, IP: ${c.req.header('x-forwarded-for') || c.req.header('host')}`);
+		logger.info(
+			`User logs out, IP: ${c.req.header('x-forwarded-for') || c.req.header('host') || 'unknown'}`,
+		);
 
-	return c.json(
-		{
-			success: true,
-			message: 'You have been logged out successfully.',
-		},
-		200,
-	);
+		return c.json(
+			{
+				success: true,
+				message: 'You have been logged out successfully.',
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error({ error }, 'Logout failed: error clearing auth cookie');
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
+			},
+			500,
+		);
+	}
 };
