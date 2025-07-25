@@ -1,14 +1,21 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { compress } from 'hono/compress';
 
 import { authRoutes } from '@/routes/auth';
 import { healthRoutes } from '@/routes/health';
+import { referralRoutes } from './routes/referral';
 
 const app = new Hono();
 
 // middlewares
 app.use(logger());
+app.use(
+	compress({
+		encoding: 'gzip',
+	}),
+);
 app.use(
 	cors({
 		origin: ['http://localhost:5173'],
@@ -30,5 +37,6 @@ app.use('*', async (c, next) => {
 // routes
 app.route('/api/v1/health', healthRoutes);
 app.route('/api/v1/auth', authRoutes);
+app.route('/api/v1/referral', referralRoutes);
 
 export default app;
