@@ -55,7 +55,7 @@ export const submitReferral = async (c: Context) => {
 					data: { isNewUser: false },
 				});
 			} catch (error) {
-				logger.error({ error }, 'database update failed for new user update');
+				logger.error({ error }, 'database update failed for user update');
 				return c.json(
 					{
 						status: false,
@@ -135,6 +135,14 @@ export const submitReferral = async (c: Context) => {
 					referrerId: referrer.id,
 				},
 			});
+
+			await tx.referral.create({
+				data: {
+					referrerId: referrer.id,
+					referredId: user.id,
+					amount: 20,
+				},
+			});
 		});
 
 		logger.info(
@@ -151,6 +159,137 @@ export const submitReferral = async (c: Context) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Referral processing failed');
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
+
+/**
+ * Get all users referred by the current user with earnings info
+ *
+ * @param c Hono context
+ * @returns JSON with referral earnings
+ */
+
+export const getReferralEarnings = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+
+		if (!userId) {
+			logger.warn('Unauthorized access attempt to /referral');
+			return c.json(
+				{
+					success: false,
+					error: 'Unauthorized',
+				},
+				401,
+			);
+		}
+
+		const referrals = await prisma.referral.findMany({
+			where: {
+				referrerId: userId,
+			},
+			include: {
+				referred: {
+					select: {
+						id: true,
+						phone: true,
+						createdAt: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+		});
+
+		const formatted = referrals.map((ref) => ({
+			id: ref.referred.id,
+			phone: ref.referred.phone,
+			joinedAt: ref.referred.createdAt,
+			amount: Number(ref.amount),
+		}));
+
+		return c.json(
+			{
+				success: true,
+				data: formatted,
+				message: 'Referral earnings fetched successfully',
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error({ error }, 'Failed to get referral earnings');
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
+
+/**
+ * Fetches the top 5 users with the highest referral earnings.
+ * @param c - Hono context
+ * @returns JSON response containing the top earners
+ */
+
+export const referralLeaderboard = async (c: Context) => {
+	try {
+		const topReferrers = await prisma.referral.groupBy({
+			by: ['referrerId'],
+			_sum: {
+				amount: true,
+			},
+			orderBy: {
+				_sum: {
+					amount: 'desc',
+				},
+			},
+			take: 5,
+		});
+
+		const userIds = topReferrers.map((r) => r.referrerId);
+
+		const users = await prisma.user.findMany({
+			where: {
+				id: {
+					in: userIds,
+				},
+			},
+			select: {
+				id: true,
+				phone: true,
+				totalReferralReward: true,
+				createdAt: true,
+			},
+		});
+
+		// Merge earnings into user objects
+		const leaderboard = users.map((user) => {
+			const refData = topReferrers.find((r) => r.referrerId === user.id);
+			return {
+				id: user.id,
+				phone: user.phone,
+				totalEarned: refData?._sum.amount || 0,
+				joinedAt: user.createdAt,
+			};
+		});
+
+		return c.json({
+			success: true,
+			leaderboard,
+		});
+	} catch (error) {
+		logger.error({ error }, 'Failed to fetch referral leaderboard');
 		return c.json(
 			{
 				success: false,
