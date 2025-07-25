@@ -42,8 +42,6 @@ export const login = async (c: Context) => {
 			},
 		});
 
-		logger.info('Existing user query result:', existingUser);
-
 		const otp = crypto.randomInt(100000, 999999).toString();
 		logger.info(`otp is ${otp}`);
 
@@ -61,7 +59,7 @@ export const login = async (c: Context) => {
 				{
 					success: true,
 					message: 'Please check SMS section for the OTP!!',
-					isFirstLogin: existingUser.isNewUser,
+					isNewUser: existingUser.isNewUser,
 				},
 				200,
 			);
@@ -89,7 +87,6 @@ export const login = async (c: Context) => {
 			{
 				success: true,
 				message: 'Please check SMS section for the OTP!!',
-				isFirstLogin: true,
 				data: {
 					id: user.id,
 					phone: user.phone,
