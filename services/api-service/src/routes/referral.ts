@@ -13,11 +13,11 @@ import { referralLeaderboard, submitReferral, getReferralEarnings } from '@/cont
 
 export const referralRoutes = new Hono();
 
+referralRoutes.post('/submit', authorization, submitReferral);
 referralRoutes.get(
-	'/',
+	'/referral-earnings',
 	authorization,
-	rateLimiter({ points: 20, duration: 300 }),
+	rateLimiter({ points: 30, duration: 60 }),
 	getReferralEarnings,
 );
-referralRoutes.post('/submit', authorization, submitReferral);
-referralRoutes.get('/leaderboard', rateLimiter({ points: 60, duration: 60 }), referralLeaderboard);
+referralRoutes.get('/leaderboard', rateLimiter({ points: 50, duration: 60 }), referralLeaderboard);

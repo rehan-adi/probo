@@ -50,12 +50,22 @@ export const submitReferral = async (c: Context) => {
 
 		if (skip) {
 			try {
-				await prisma.user.update({
-					where: { id: userId },
-					data: { isNewUser: false },
+				await prisma.$transaction(async (tx) => {
+					await tx.user.update({
+						where: { id: userId },
+						data: { isNewUser: false },
+					});
+
+					await tx.referral.create({
+						data: {
+							referrerId: null,
+							referredId: user.id,
+							amount: 0,
+						},
+					});
 				});
 			} catch (error) {
-				logger.error({ error }, 'database update failed for user update');
+				logger.error({ error }, 'Database update failed for skip referral');
 				return c.json(
 					{
 						status: false,
@@ -258,11 +268,12 @@ export const referralLeaderboard = async (c: Context) => {
 		});
 
 		const userIds = topReferrers.map((r) => r.referrerId);
+		const filteredUserIds = userIds.filter((id): id is string => id !== null);
 
 		const users = await prisma.user.findMany({
 			where: {
 				id: {
-					in: userIds,
+					in: filteredUserIds,
 				},
 			},
 			select: {
@@ -273,7 +284,6 @@ export const referralLeaderboard = async (c: Context) => {
 			},
 		});
 
-		// Merge earnings into user objects
 		const leaderboard = users.map((user) => {
 			const refData = topReferrers.find((r) => r.referrerId === user.id);
 			return {
