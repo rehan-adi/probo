@@ -135,13 +135,13 @@ model PaymentMethod {
 
 model Referral {
   id         String   @id @default(uuid())
-  referrerId String
+  referrerId String?
   referredId String
   amount     Decimal  @default(20.00) @db.Decimal(14, 2)
   createdAt  DateTime @default(now())
 
-  referrer User @relation("RewardReferrer", fields: [referrerId], references: [id])
-  referred User @relation("RewardReferred", fields: [referredId], references: [id])
+  referrer User? @relation("RewardReferrer", fields: [referrerId], references: [id])
+  referred User  @relation("RewardReferred", fields: [referredId], references: [id])
 }
 
 model InrBalance {
