@@ -337,3 +337,78 @@ export const getVerificationStatus = async (c: Context) => {
 		);
 	}
 };
+
+export const getVerificationDetails = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+
+		if (!userId) {
+			logger.warn({ path: 'getVerificationDetails' }, 'Unauthorized access attempt');
+			return c.json(
+				{
+					success: false,
+					message: 'Unauthorized access',
+				},
+				401,
+			);
+		}
+
+		const [kyc, payment] = await Promise.all([
+			prisma.kyc.findFirst({
+				where: { userId },
+				select: {
+					panName: true,
+					panNumber: true,
+					dob: true,
+					status: true,
+				},
+			}),
+			prisma.paymentMethod.findFirst({
+				where: { userId },
+				select: {
+					type: true,
+					status: true,
+					upiNumber: true,
+					accountNumber: true,
+					ifscCode: true,
+				},
+			}),
+		]);
+
+		const paymentMethod = payment
+			? payment.type === 'UPI'
+				? {
+						type: 'UPI',
+						upiNumber: payment.upiNumber,
+						status: payment.status,
+					}
+				: {
+						type: 'BANK',
+						accountNumber: payment.accountNumber,
+						ifscCode: payment.ifscCode,
+						status: payment.status,
+					}
+			: null;
+
+		logger.info({ userId, path: 'getVerificationDetails' }, 'Fetched verification details');
+
+		return c.json({
+			success: true,
+			message: 'Verification details fetched successfully',
+			data: {
+				kyc,
+				paymentMethod,
+				fetchedAt: new Date().toISOString(),
+			},
+		});
+	} catch (error) {
+		logger.error({ error, path: 'getVerificationDetails' }, 'Failed to fetch verification details');
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
