@@ -1,13 +1,15 @@
 import crypto from 'crypto';
 import { Context } from 'hono';
-import { prisma } from '@probo/database';
 import { logger } from '@/utils/logger';
+import { prisma } from '@probo/database';
 import { sendOtp } from '@/lib/twilio/otp';
+import { EVENTS } from '@/constants/constants';
+import { pushToQueue } from '@/lib/redis/queue';
 import { client } from '@/lib/redis/connection';
 import { generateJwtToken } from '@/utils/token';
 import { deleteCookie, setCookie } from 'hono/cookie';
-import { generateReferralCode } from '@/utils/generateReferralCode';
 import { loginSchema, verifyOtpSchema } from '@/validations/auth';
+import { generateReferralCode } from '@/utils/generateReferralCode';
 
 /**
  * This login controller creates an account if it doesn't exist and sends OTP,
@@ -31,8 +33,6 @@ export const login = async (c: Context) => {
 				400,
 			);
 		}
-
-		logger.info(`data is validate for ${validateData.data.phone}`);
 
 		const phone = validateData.data.phone;
 
@@ -74,7 +74,16 @@ export const login = async (c: Context) => {
 			},
 		});
 
-		logger.info(`New user created with phone: ${user.phone} and ID: ${user.id}`);
+		logger.info(`New user created with phone: ${user.phone}`);
+
+		const payload = {
+			id: user.id,
+			phone: user.phone,
+			kycVerificationStatus: user.kycVerificationStatus,
+			paymentVerificationStatus: user.paymentVerificationStatus,
+		};
+
+		await pushToQueue(EVENTS.CREATE_USER, payload);
 
 		try {
 			await sendOtp(phone, otp);
@@ -201,6 +210,12 @@ export const verify = async (c: Context) => {
 								remarks: 'signin bonus credited',
 							},
 						});
+					});
+
+					await pushToQueue(EVENTS.INIT_BALANCE, {
+						userId: user.id,
+						balance: '15.00',
+						locked: '0.00',
 					});
 				} catch (error) {
 					logger.error({ error }, 'Failed to credit signup bonus');

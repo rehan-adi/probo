@@ -1,0 +1,5 @@
+export const EVENTS = {
+	CREATE_USER: 'CREATE_USER',
+	INIT_BALANCE: 'INIT_BALANCE',
+	ADD_BALANCE: 'ADD_BALANCE',
+} as const;
