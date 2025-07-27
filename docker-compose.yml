@@ -21,16 +21,16 @@ services:
     volumes:
       - redis-cache-data:/data
 
-  redis-queue:
+  redis-pubsub:
     image: redis:7.2
-    container_name: probo-redis-queue
+    container_name: probo-redis-pubsub
     restart: always
     ports:
       - '6380:6379'
     volumes:
-      - redis-queue-data:/data
+      - redis-pubsub-data:/data
 
 volumes:
   probo_database_data:
   redis-cache-data:
-  redis-queue-data:
+  redis-pubsub-data:
