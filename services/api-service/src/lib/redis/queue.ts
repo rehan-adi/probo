@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { logger } from '@/utils/logger';
-import { queueClient } from '@/lib/redis/connection';
+import { client, pubsubClient } from '@/lib/redis/connection';
 
 /**
  * Pushes an event payload to the Redis queue and waits for a response.
@@ -11,38 +11,45 @@ import { queueClient } from '@/lib/redis/connection';
  */
 
 export const pushToQueue = async (eventType: string, data: any) => {
-	const respId = uuid();
-	const response_queue = `engine:response:queue:${respId}`;
+	const responseId = uuid();
+	const responseChannel = `engine:response:${responseId}`;
 
 	try {
 		const payload = {
-			respId,
+			responseId,
 			eventType,
 			data,
 		};
 
-		await queueClient.lpush('engine:queue', JSON.stringify(payload));
+		await pubsubClient.subscribe(responseChannel);
 
-		logger.info('Event pushed to queue. Event type:', payload.eventType);
+		await client.lpush('engine:queue', JSON.stringify(payload));
 
-		const result = await queueClient.brpop(response_queue, 30);
+		logger.info('Event pushed to queue:', payload.eventType);
 
-		if (!result) {
-			logger.warn(`Response timeout for event: ${eventType}, respId: ${respId}`);
-			return {
-				success: false,
-				message: 'response timeout',
-				data: null,
-			};
-		}
+		const result = await new Promise((resolve) => {
+			const timeout = setTimeout(async () => {
+				await pubsubClient.unsubscribe(responseChannel);
+				resolve({
+					success: false,
+					message: 'Timeout waiting for engine response',
+					data: null,
+				});
+			}, 30000);
 
-		const [, message] = result;
-		const parsed = JSON.parse(message);
+			pubsubClient.once('message', async (channel, message) => {
+				if (channel === responseChannel) {
+					clearTimeout(timeout);
+					await pubsubClient.unsubscribe(responseChannel);
+					resolve({
+						success: true,
+						message: JSON.parse(message),
+					});
+				}
+			});
+		});
 
-		return {
-			success: true,
-			message: parsed,
-		};
+		return result;
 	} catch (error) {
 		logger.error(`Failed to push to queue for event: ${eventType}. Error: ${error}`);
 		return {

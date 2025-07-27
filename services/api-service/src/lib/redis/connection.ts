@@ -3,8 +3,8 @@ import { ENV } from '@/config/env';
 import { logger } from '@/utils/logger';
 
 /**
- * Redis client used for caching and rate limiting.
- * Uses database 0 for general cache and rate-limit storage.
+ * General Redis client for cache, rate-limit, queue push.
+ * Non-blocking operations only.
  */
 
 export const client = new Redis({
@@ -14,28 +14,27 @@ export const client = new Redis({
 });
 
 client.on('connect', () => {
-	logger.info('connected to redis');
+	logger.info('Connected to Redis client');
 });
 
 client.on('error', () => {
-	logger.error('Failed to connect to redis');
+	logger.error('Failed to connect to Redis client');
 });
 
 /**
- * Redis client dedicated to queue operations.
- * Uses database 1 for storing job queues.
+ * Pub/Sub dedicated client (used only for `.subscribe()`).
  */
 
-export const queueClient = new Redis({
-	host: ENV.REDIS_QUEUE_HOST,
-	port: Number(ENV.REDIS_QUEUE_PORT),
-	db: 1,
+export const pubsubClient = new Redis({
+	host: ENV.REDIS_PUBSUB_HOST,
+	port: Number(ENV.REDIS_PUBSUB_PORT),
+	db: 0,
 });
 
-queueClient.on('connect', () => {
-	logger.info('Queue client is connected');
+pubsubClient.on('connect', () => {
+	logger.info('PubSub client is connected');
 });
 
-queueClient.on('error', () => {
-	logger.error('Queue client connection failed');
+pubsubClient.on('error', () => {
+	logger.error('PubSub client connection failed');
 });
