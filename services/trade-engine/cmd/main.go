@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"trade-engine/internals/engine"
-	"trade-engine/internals/queue/redis"
+	"trade-engine/internals/services/redis"
 	"trade-engine/internals/utils"
 
 	"github.com/joho/godotenv"
