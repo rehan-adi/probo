@@ -1,7 +1,75 @@
 import { Context } from 'hono';
 import { logger } from '@/utils/logger';
 import { prisma } from '@probo/database';
+import { pushToQueue } from '@/lib/redis/queue';
 import { referralCodeSchema } from '@/validations/referral';
+
+/**
+ * Get referral code of the logged-in user
+ * @param c Hono context
+ * @returns Json response
+ */
+
+export const getreferralCode = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+
+		if (!userId) {
+			logger.warn('Unauthorized access attempt to /referral');
+			return c.json(
+				{
+					success: false,
+					error: 'Unauthorized',
+				},
+				401,
+			);
+		}
+
+		const referalCode = await prisma.user.findUnique({
+			where: {
+				id: userId,
+			},
+			select: {
+				referralCode: true,
+			},
+		});
+
+		if (!referalCode) {
+			c.json(
+				{
+					success: false,
+					message: 'Failed to find code for user',
+				},
+				404,
+			);
+		}
+
+		return c.json(
+			{
+				success: true,
+				message: 'referral code fetched sucessfully',
+				data: referalCode,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'GET_REFERRAL_CODE_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error in getreferralCode controller',
+		);
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
 
 /**
  * This handler will get referal code or skip and change is new user to false. If referal code is provided then the owner of the code will get reward.
@@ -126,6 +194,11 @@ export const submitReferral = async (c: Context) => {
 						increment: 20,
 					},
 				},
+			});
+
+			await pushToQueue('BALANCE_CREDITED', {
+				userId: referrer.id,
+				amount: 20,
 			});
 
 			await tx.transactionHistory.create({
