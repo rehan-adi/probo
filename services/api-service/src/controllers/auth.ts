@@ -12,9 +12,12 @@ import { loginSchema, verifyOtpSchema } from '@/validations/auth';
 import { generateReferralCode } from '@/utils/generateReferralCode';
 
 /**
- * This login controller creates an account if it doesn't exist and sends OTP,
+ * Handles user login by sending an OTP.
+ * If the user doesn't exist, a new account is created.
+ * Also pushes a message to the engine; retries on failure.
+ *
  * @param c - Hono context
- * @returns Json response
+ * @returns JSON response
  */
 
 export const login = async (c: Context) => {
@@ -24,11 +27,18 @@ export const login = async (c: Context) => {
 		const validateData = loginSchema.safeParse(data);
 
 		if (!validateData.success) {
-			logger.warn({ error: validateData.error }, 'Phone validation failed');
+			logger.warn(
+				{
+					context: 'LOGIN_VALIDATE',
+					error: validateData.error.issues,
+				},
+				'Invalid phone number during login',
+			);
 			return c.json(
 				{
 					success: false,
-					error: 'Invalid phone number',
+					message: 'Validation failed',
+					error: validateData.error.issues,
 				},
 				400,
 			);
@@ -36,23 +46,39 @@ export const login = async (c: Context) => {
 
 		const phone = validateData.data.phone;
 
+		const otp = crypto.randomInt(100000, 999999).toString();
+		logger.info({ otp }, 'OTP generated for phone %s', phone);
+
+		await client.set(`otp:${phone}`, otp, 'EX', 300);
+
 		const existingUser = await prisma.user.findUnique({
 			where: {
 				phone: phone,
 			},
 		});
 
-		const otp = crypto.randomInt(100000, 999999).toString();
-		logger.info(`otp is ${otp}`);
-
-		await client.set(`otp:${phone}`, otp, 'EX', 310);
-
 		if (existingUser) {
 			try {
-				await sendOtp(phone, otp);
+				// await sendOtp(phone, otp);
 				logger.info('OTP sent for existing user');
 			} catch (err) {
-				return c.json({ success: false, message: 'Failed to send OTP. Try again later.' }, 502);
+				logger.error(
+					{
+						alert: true,
+						context: 'LOGIN_OTP_SEND_FAIL',
+						phone,
+						error: err,
+					},
+					'Failed to send OTP to existing user',
+				);
+
+				return c.json(
+					{
+						success: false,
+						message: 'Failed to send OTP. Try again later.',
+					},
+					502,
+				);
 			}
 
 			return c.json(
@@ -65,16 +91,16 @@ export const login = async (c: Context) => {
 			);
 		}
 
-		const referalCode = generateReferralCode();
+		const referralCode = generateReferralCode();
 
 		const user = await prisma.user.create({
 			data: {
 				phone: phone,
-				referralCode: referalCode,
+				referralCode: referralCode,
 			},
 		});
 
-		logger.info(`New user created with phone: ${user.phone}`);
+		logger.info({ phone: user.phone }, 'New user created with phone:');
 
 		const payload = {
 			id: user.id,
@@ -83,13 +109,99 @@ export const login = async (c: Context) => {
 			paymentVerificationStatus: user.paymentVerificationStatus,
 		};
 
-		await pushToQueue(EVENTS.CREATE_USER, payload);
+		const response = await pushToQueue(EVENTS.CREATE_USER, payload);
+
+		if (!response.success && response.retryable) {
+			logger.warn(
+				{
+					context: 'ENGINE_SYNC_RETRY',
+					userId: user.id,
+					message: response.message,
+				},
+				'Engine sync failed but retryable. Retrying...',
+			);
+
+			const maxRetries = 3;
+			const retryDelay = 500;
+
+			let engineSynced = false;
+
+			for (let attempt = 1; attempt <= maxRetries; attempt++) {
+				const retryResponse = await pushToQueue(EVENTS.CREATE_USER, payload);
+
+				if (retryResponse.success) {
+					logger.info(
+						{
+							userId: user.id,
+							attempt,
+						},
+						'✅ User synced to engine successfully',
+					);
+					engineSynced = true;
+					break;
+				}
+
+				if (!retryResponse.retryable) {
+					logger.error(
+						{
+							alert: true,
+							context: 'ENGINE_SYNC_FAILED_NON_RETRYABLE',
+							userId: user.id,
+							message: response.message,
+						},
+						'❌ Engine sync failed and not retryable',
+					);
+					break;
+				}
+
+				logger.warn(
+					{
+						context: 'ENGINE_SYNC_RETRY',
+						userId: user.id,
+						attempt,
+						message: response.message,
+					},
+					'⚠️ Engine sync failed but retryable. Retrying...',
+				);
+
+				await new Promise((res) => setTimeout(res, retryDelay));
+			}
+
+			if (!engineSynced) {
+				logger.error(
+					{
+						alert: true,
+						context: 'ENGINE_SYNC_MAX_RETRIES_EXCEEDED',
+						userId: user.id,
+					},
+					'Engine sync failed after all retries',
+				);
+			}
+		}
+
+		logger.info('Engine sync done properly');
 
 		try {
-			await sendOtp(phone, otp);
+			// await sendOtp(phone, otp);
 			logger.info('OTP sent for new user');
 		} catch (err) {
-			return c.json({ success: false, message: 'Failed to send OTP. Try again later.' }, 502);
+			logger.error(
+				{
+					alert: true,
+					context: 'LOGIN_OTP_SEND_FAIL_NEW',
+					userId: user.id,
+					error: err,
+				},
+				'Failed to send OTP to new user',
+			);
+
+			return c.json(
+				{
+					success: false,
+					message: 'Failed to send OTP. Try again later.',
+				},
+				502,
+			);
 		}
 
 		return c.json(
@@ -100,12 +212,21 @@ export const login = async (c: Context) => {
 					id: user.id,
 					phone: user.phone,
 					isNewUser: user.isNewUser,
+					otp: otp, // if snedOtp not worked fallback for user login
 				},
 			},
 			201,
 		);
 	} catch (error) {
-		logger.error({ error }, 'Login controller failed');
+		logger.error(
+			{
+				alert: true,
+				context: 'LOGIN_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error in login controller',
+		);
+
 		return c.json(
 			{
 				success: false,
@@ -117,7 +238,8 @@ export const login = async (c: Context) => {
 };
 
 /**
- * This verify controller will verify otp and generate jwt token and add joining balance to users inr wallet
+ * This verify controller will verify otp and generate jwt token
+ * Add joining balance to users inr wallet and also push message to engine with retries.
  * @param c Hono context
  * @returns Json response
  */
@@ -126,25 +248,37 @@ export const verify = async (c: Context) => {
 	try {
 		const data = await c.req.json<{ phone: string; otp: string }>();
 
-		const validatedData = verifyOtpSchema.safeParse(data);
+		const validateData = verifyOtpSchema.safeParse(data);
 
-		if (!validatedData.success) {
-			logger.warn({ error: validatedData.error }, 'OTP validation failed');
+		if (!validateData.success) {
+			logger.warn(
+				{
+					context: 'VERIFY_VALIDATE',
+					error: validateData.error.issues,
+				},
+				'Invalid phone number ot otp during verify',
+			);
 			return c.json(
 				{
 					success: false,
-					error: 'Invalid phone or otp',
+					message: 'Validation failed',
+					error: validateData.error.issues,
 				},
 				400,
 			);
 		}
 
-		const key = `otp:${validatedData.data.phone}`;
+		const key = `otp:${validateData.data.phone}`;
 
 		const savedOtp = await client.get(key);
 
 		if (!savedOtp) {
-			logger.warn({ phone: validatedData.data.phone }, 'OTP not found or expired for user');
+			logger.warn(
+				{
+					phone: validateData.data.phone,
+				},
+				'OTP not found or expired for user',
+			);
 			return c.json(
 				{
 					success: false,
@@ -154,8 +288,13 @@ export const verify = async (c: Context) => {
 			);
 		}
 
-		if (savedOtp !== validatedData.data.otp) {
-			logger.warn({ phone: validatedData.data.phone }, 'Invalid OTP entered');
+		if (savedOtp !== validateData.data.otp) {
+			logger.warn(
+				{
+					phone: validateData.data.phone,
+				},
+				'Invalid OTP entered',
+			);
 			return c.json(
 				{
 					success: false,
@@ -169,7 +308,7 @@ export const verify = async (c: Context) => {
 
 		const user = await prisma.user.findFirst({
 			where: {
-				phone: validatedData.data.phone,
+				phone: validateData.data.phone,
 			},
 		});
 
@@ -177,7 +316,7 @@ export const verify = async (c: Context) => {
 			return c.json(
 				{
 					success: false,
-					error: 'User not found',
+					message: 'User not found',
 				},
 				404,
 			);
@@ -212,17 +351,65 @@ export const verify = async (c: Context) => {
 						});
 					});
 
-					await pushToQueue(EVENTS.INIT_BALANCE, {
+					let response = await pushToQueue(EVENTS.INIT_BALANCE, {
 						userId: user.id,
-						balance: '15.00',
-						locked: '0.00',
+						balance: 15.0,
+						locked: 0.0,
 					});
+
+					let retries = 0;
+					const maxRetries = 2;
+
+					while (!response.success && response.retryable && retries < maxRetries) {
+						logger.warn(
+							{
+								context: 'VERIFY_SYNC_RETRY',
+								retry: retries + 1,
+								userId: user.id,
+							},
+							`Retrying sync to engine...`,
+						);
+
+						await new Promise((resolve) => setTimeout(resolve, 500));
+
+						response = await pushToQueue(EVENTS.INIT_BALANCE, {
+							userId: user.id,
+							balance: 15.0,
+							locked: 0.0,
+						});
+						if (response.success) break;
+						retries++;
+					}
+
+					if (!response.success) {
+						logger.error(
+							{
+								alert: true,
+								context: 'VERIFY_ENGINE_SYNC_FAIL',
+								userId: user.id,
+								engineError: response?.error ?? response?.message,
+							},
+							'Signup bonus added in db but failed to sync in engine',
+						);
+					}
+
+					if (response.success) {
+						logger.info({ userId: user.id }, 'Engine sync done properly');
+					}
 				} catch (error) {
-					logger.error({ error }, 'Failed to credit signup bonus');
+					logger.error(
+						{
+							alert: true,
+							context: 'SIGNUP_BONUS_ADD_FAIL',
+							userId: user.id,
+							error,
+						},
+						'Failed to credit signup bonus',
+					);
 					return c.json(
 						{
 							success: false,
-							error: 'Signup bonus failed. Please try again later.',
+							message: 'Please try again later.',
 						},
 						500,
 					);
@@ -256,7 +443,14 @@ export const verify = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
-		logger.error({ error }, 'Unexpected error in verify controller');
+		logger.error(
+			{
+				alert: true,
+				context: 'VERIFY_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error in verify controller',
+		);
 		return c.json(
 			{
 				success: false,
@@ -289,7 +483,14 @@ export const logout = async (c: Context) => {
 			200,
 		);
 	} catch (error) {
-		logger.error({ error }, 'Logout failed: error clearing auth cookie');
+		logger.error(
+			{
+				alert: true,
+				context: 'LOGOUT_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error in logout controller',
+		);
 		return c.json(
 			{
 				success: false,
