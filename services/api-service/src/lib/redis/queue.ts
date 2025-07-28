@@ -10,52 +10,81 @@ import { client, pubsubClient } from '@/lib/redis/connection';
  * @returns The response from the engine if successful, or an error object
  */
 
-export const pushToQueue = async (eventType: string, data: any) => {
+type EngineResponse = {
+	success: boolean;
+	message: string;
+	data?: any;
+	error?: string;
+	retryable?: boolean;
+};
+
+export const pushToQueue = async (eventType: string, data: any): Promise<EngineResponse> => {
 	const responseId = uuid();
 	const responseChannel = `engine:response:${responseId}`;
 
-	try {
-		const payload = {
-			responseId,
-			eventType,
-			data,
+	const payload = {
+		responseId,
+		eventType,
+		data,
+	};
+
+	return new Promise<EngineResponse>(async (resolve) => {
+		let handled = false;
+
+		logger.info({ responseId }, 'Waiting for engine response');
+
+		const messageHandler = async (channel: string, message: string) => {
+			if (channel === responseChannel) {
+				logger.info({ responseId, message }, '✅ Received engine response');
+
+				handled = true;
+				clearTimeout(timeout);
+				await pubsubClient.unsubscribe(responseChannel);
+				pubsubClient.removeListener('message', messageHandler);
+
+				try {
+					const parsed = JSON.parse(message);
+
+					const status = parsed.status ?? parsed.Status;
+					const messageText = parsed.message ?? parsed.Message;
+					const retryable = parsed.retryable ?? parsed.Retryable;
+					const data = parsed.data ?? parsed.Data;
+
+					resolve({
+						success: status === 'success',
+						message: messageText || '',
+						data: data ?? null,
+						error: status === 'error' ? messageText : undefined,
+						retryable: retryable ?? true,
+					});
+				} catch (err) {
+					resolve({
+						success: false,
+						message: 'Invalid JSON from engine',
+						error: 'Parse error',
+					});
+				}
+			}
 		};
+
+		pubsubClient.on('message', messageHandler);
 
 		await pubsubClient.subscribe(responseChannel);
 
 		await client.lpush('engine:queue', JSON.stringify(payload));
+		logger.info({ payload }, 'Pushed payload to engine queue');
 
-		logger.info('Event pushed to queue:', payload.eventType);
-
-		const result = await new Promise((resolve) => {
-			const timeout = setTimeout(async () => {
+		const timeout = setTimeout(async () => {
+			if (!handled) {
+				logger.warn({ responseChannel }, '⏰ Timeout waiting for engine response');
 				await pubsubClient.unsubscribe(responseChannel);
+				pubsubClient.removeListener('message', messageHandler);
 				resolve({
 					success: false,
 					message: 'Timeout waiting for engine response',
-					data: null,
+					retryable: true,
 				});
-			}, 30000);
-
-			pubsubClient.once('message', async (channel, message) => {
-				if (channel === responseChannel) {
-					clearTimeout(timeout);
-					await pubsubClient.unsubscribe(responseChannel);
-					resolve({
-						success: true,
-						message: JSON.parse(message),
-					});
-				}
-			});
-		});
-
-		return result;
-	} catch (error) {
-		logger.error(`Failed to push to queue for event: ${eventType}. Error: ${error}`);
-		return {
-			success: false,
-			data: null,
-			error: error instanceof Error ? error.message : String(error),
-		};
-	}
+			}
+		}, 5000);
+	});
 };
