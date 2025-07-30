@@ -9,10 +9,10 @@ import (
 )
 
 type CreateUserDataRequest struct {
-	ID            string
-	Phone         string
-	KycStatus     bool
-	PaymentStatus bool
+	ID            string              `mapstructure:"id"`
+	Phone         string              `mapstructure:"phone"`
+	KycStatus     types.KycStatus     `mapstructure:"kycVerificationStatus"`
+	PaymentStatus types.PaymentStatus `mapstructure:"paymentVerificationStatus"`
 }
 
 func CreateUser(payload types.QueuePayload) types.QueueResponse {
@@ -48,13 +48,16 @@ func CreateUser(payload types.QueuePayload) types.QueueResponse {
 	}
 
 	user := &types.User{
-		ID:            data.ID,
-		Phone:         data.Phone,
-		KycStatus:     data.KycStatus,
-		PaymentStatus: data.PaymentStatus,
+		ID:                        data.ID,
+		Phone:                     data.Phone,
+		KycVerificationStatus:     data.KycStatus,
+		PaymentVerificationStatus: data.PaymentStatus,
 		Balance: &types.Balance{
-			WalletBalance: types.WalletBalance{},
-			StockBalance:  make(map[string]types.StockBalance),
+			WalletBalance: types.WalletBalance{
+				Amount: 0.0,
+				Locked: 0.0,
+			},
+			StockBalance: make(map[string]types.StockBalance),
 		},
 	}
 
@@ -70,4 +73,3 @@ func CreateUser(payload types.QueuePayload) types.QueueResponse {
 		Message:    "User created in engine",
 	}
 }
-

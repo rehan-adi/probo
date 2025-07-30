@@ -8,15 +8,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type InitBalanceDataRequest struct {
+type AddReferralBonusDataRequest struct {
 	UserId string  `json:"userId"`
 	Amount float64 `json:"amount"`
-	Locked float64 `json:"locked"`
 }
 
-func InitBalance(payload types.QueuePayload) types.QueueResponse {
-
-	var data InitBalanceDataRequest
+func AddReferralBonus(payload types.QueuePayload) types.QueueResponse {
+	var data AddReferralBonusDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
 		log.Error().
@@ -34,32 +32,29 @@ func InitBalance(payload types.QueuePayload) types.QueueResponse {
 	engine.EngineInstance.UM.Lock()
 	defer engine.EngineInstance.UM.Unlock()
 
-	user, ok := engine.EngineInstance.User[data.UserId]
-
-	if !ok {
+	user, exists := engine.EngineInstance.User[data.UserId]
+	if !exists {
 		log.Error().
 			Str("userId", data.UserId).
-			Msg("User not found in engine memory")
+			Msg("User not found in engine")
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
-			Message:    "user not found",
+			Message:    "User not found",
 			Retryable:  false,
 		}
 	}
 
-	user.Balance.WalletBalance.Amount = data.Amount
-	user.Balance.WalletBalance.Locked = data.Locked
+	user.Balance.WalletBalance.Amount += data.Amount
 
 	log.Info().
 		Str("userId", data.UserId).
-		Float64("balance", data.Amount).
-		Float64("locked", data.Locked).
-		Msg("User balance initialized in engine")
+		Float64("bonus", data.Amount).
+		Msg("Referral bonus added to wallet")
 
 	return types.QueueResponse{
 		ResponseId: payload.ResponseId,
 		Status:     types.Success,
-		Message:    "Balance initialized in engine",
+		Message:    "Referral bonus added",
 	}
 }

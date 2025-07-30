@@ -17,6 +17,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "INIT_BALANCE":
 		return handlers.InitBalance(payload)
 
+	case "REFERRAL_CREDIT":
+		return handlers.AddReferralBonus(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{
