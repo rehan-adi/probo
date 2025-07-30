@@ -4,8 +4,8 @@ import { logger } from '@/utils/logger';
 import { prisma } from '@probo/database';
 import { sendOtp } from '@/lib/twilio/otp';
 import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
 import { client } from '@/lib/redis/connection';
+import { pushToQueue } from '@/lib/redis/queue';
 import { generateJwtToken } from '@/utils/token';
 import { deleteCookie, setCookie } from 'hono/cookie';
 import { loginSchema, verifyOtpSchema } from '@/validations/auth';
@@ -59,7 +59,7 @@ export const login = async (c: Context) => {
 
 		if (existingUser) {
 			try {
-				// await sendOtp(phone, otp);
+				await sendOtp(phone, otp);
 				logger.info('OTP sent for existing user');
 			} catch (err) {
 				logger.error(
@@ -174,15 +174,15 @@ export const login = async (c: Context) => {
 						context: 'ENGINE_SYNC_MAX_RETRIES_EXCEEDED',
 						userId: user.id,
 					},
-					'Engine sync failed after all retries',
+					'❌ Engine sync failed after all retries',
 				);
+			} else {
+				logger.info({ userId: user.id }, '✅ Engine sync done successfully after retries');
 			}
 		}
 
-		logger.info('Engine sync done properly');
-
 		try {
-			// await sendOtp(phone, otp);
+			await sendOtp(phone, otp);
 			logger.info('OTP sent for new user');
 		} catch (err) {
 			logger.error(
