@@ -353,7 +353,7 @@ export const verify = async (c: Context) => {
 
 					let response = await pushToQueue(EVENTS.INIT_BALANCE, {
 						userId: user.id,
-						balance: 15.0,
+						amount: 15.0,
 						locked: 0.0,
 					});
 
