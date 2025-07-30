@@ -1,6 +1,7 @@
 import { Context } from 'hono';
 import { logger } from '@/utils/logger';
 import { prisma } from '@probo/database';
+import { EVENTS } from '@/constants/constants';
 import { pushToQueue } from '@/lib/redis/queue';
 import { referralCodeSchema } from '@/validations/referral';
 
@@ -10,12 +11,17 @@ import { referralCodeSchema } from '@/validations/referral';
  * @returns Json response
  */
 
-export const getreferralCode = async (c: Context) => {
+export const getReferralCode = async (c: Context) => {
 	try {
 		const userId = c.get('user').id;
 
 		if (!userId) {
-			logger.warn('Unauthorized access attempt to /referral');
+			logger.warn(
+				{
+					context: 'GET_REFERRAL_CODE_UNAUTHORIZED',
+				},
+				'Unauthorized access attempt to /referral route',
+			);
 			return c.json(
 				{
 					success: false,
@@ -25,7 +31,7 @@ export const getreferralCode = async (c: Context) => {
 			);
 		}
 
-		const referalCode = await prisma.user.findUnique({
+		const referralData = await prisma.user.findUnique({
 			where: {
 				id: userId,
 			},
@@ -34,8 +40,15 @@ export const getreferralCode = async (c: Context) => {
 			},
 		});
 
-		if (!referalCode) {
-			c.json(
+		if (!referralData) {
+			logger.warn(
+				{
+					context: 'GET_REFERRAL_CODE_NOT_FOUND',
+					userId,
+				},
+				'Referral code not found for user',
+			);
+			return c.json(
 				{
 					success: false,
 					message: 'Failed to find code for user',
@@ -47,8 +60,8 @@ export const getreferralCode = async (c: Context) => {
 		return c.json(
 			{
 				success: true,
-				message: 'referral code fetched sucessfully',
-				data: referalCode,
+				message: 'Referral code fetched successfully',
+				data: referralData,
 			},
 			200,
 		);
@@ -59,7 +72,7 @@ export const getreferralCode = async (c: Context) => {
 				context: 'GET_REFERRAL_CODE_CONTROLLER_FAIL',
 				error,
 			},
-			'Unhandled error in getreferralCode controller',
+			'Unhandled error in getReferralCode controller',
 		);
 		return c.json(
 			{
@@ -82,7 +95,12 @@ export const submitReferral = async (c: Context) => {
 		const userId = c.get('user').id;
 
 		if (!userId) {
-			logger.warn('Unauthorized access attempt to /referral');
+			logger.warn(
+				{
+					context: 'SUBMIT_REFERRAL_UNAUTHORIZED',
+				},
+				'Unauthorized access attempt to /referral route',
+			);
 			return c.json(
 				{
 					success: false,
@@ -152,11 +170,18 @@ export const submitReferral = async (c: Context) => {
 		const validateData = referralCodeSchema.safeParse({ referralCode });
 
 		if (!validateData.success) {
-			logger.warn({ error: validateData.error }, 'Failed to validate referal code');
+			logger.warn(
+				{
+					context: 'SUBMIT_REFERRAL',
+					error: validateData.error.issues,
+				},
+				'Failed to validate referal code',
+			);
 			return c.json(
 				{
 					success: false,
-					error: 'Failed to validate referal code',
+					message: 'validation failed',
+					error: validateData.error.issues,
 				},
 				400,
 			);
@@ -186,47 +211,82 @@ export const submitReferral = async (c: Context) => {
 			);
 		}
 
-		await prisma.$transaction(async (tx) => {
-			await tx.inrBalance.update({
-				where: { userId: referrer.id },
-				data: {
-					balance: {
-						increment: 20,
+		try {
+			await prisma.$transaction(async (tx) => {
+				await tx.inrBalance.update({
+					where: { userId: referrer.id },
+					data: {
+						balance: {
+							increment: 20,
+						},
 					},
-				},
-			});
+				});
 
-			await pushToQueue('BALANCE_CREDITED', {
-				userId: referrer.id,
-				amount: 20,
-			});
+				await tx.transactionHistory.create({
+					data: {
+						userId: referrer.id,
+						type: 'REFERRAL_REWARD',
+						status: 'SUCCESS',
+						amount: '20.00',
+						remarks: `Referral bonus from ${userId}`,
+					},
+				});
 
-			await tx.transactionHistory.create({
-				data: {
-					userId: referrer.id,
-					type: 'REFERRAL_REWARD',
-					status: 'SUCCESS',
-					amount: '20.00',
-					remarks: `Referral bonus from ${userId}`,
-				},
-			});
+				await tx.user.update({
+					where: { id: userId },
+					data: {
+						isNewUser: false,
+						referrerId: referrer.id,
+					},
+				});
 
-			await tx.user.update({
-				where: { id: userId },
-				data: {
-					isNewUser: false,
-					referrerId: referrer.id,
-				},
+				await tx.referral.create({
+					data: {
+						referrerId: referrer.id,
+						referredId: user.id,
+						amount: 20,
+					},
+				});
 			});
+		} catch (error) {
+			logger.error(
+				{
+					alert: true,
+					contsxt: 'SUBMIT_REFERRAL',
+					error,
+				},
+				'DB transaction failed during referral',
+			);
+			return c.json(
+				{
+					success: false,
+					message: 'failed to update db, Internal error',
+				},
+				500,
+			);
+		}
 
-			await tx.referral.create({
-				data: {
-					referrerId: referrer.id,
-					referredId: user.id,
-					amount: 20,
-				},
-			});
+		let response = await pushToQueue(EVENTS.REFERRAL_CREDIT, {
+			userId: referrer.id,
+			amount: 20,
 		});
+
+		if (!response.success && response.retryable) {
+			for (let i = 0; i < 3; i++) {
+				await new Promise((r) => setTimeout(r, 500));
+
+				response = await pushToQueue(EVENTS.REFERRAL_CREDIT, {
+					userId: referrer.id,
+					amount: 20,
+				});
+
+				if (response.success) break;
+			}
+		}
+
+		if (response.success) {
+			logger.info('Engine sync done properly');
+		}
 
 		logger.info(
 			{
