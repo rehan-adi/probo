@@ -20,6 +20,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "REFERRAL_CREDIT":
 		return handlers.AddReferralBonus(payload)
 
+	case "VERIFICATION_STATUS_UPDATE":
+		return handlers.UpdateVerificationStatus(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{
@@ -28,5 +31,4 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 			Message:    "Unhandled event type: " + payload.EventType,
 		}
 	}
-
 }
