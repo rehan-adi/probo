@@ -23,6 +23,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "VERIFICATION_STATUS_UPDATE":
 		return handlers.UpdateVerificationStatus(payload)
 
+	case "GET_BALANCE":
+		return handlers.GetBalance(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{
