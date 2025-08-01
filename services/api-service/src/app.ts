@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 
 import { authRoutes } from '@/routes/auth';
 import { healthRoutes } from '@/routes/health';
+import { balanceRoutes } from './routes/balance';
 import { referralRoutes } from './routes/referral';
 import { verificationRoutes } from './routes/verification';
 
@@ -37,6 +38,7 @@ app.use('*', async (c, next) => {
 // routes
 app.route('/api/v1/health', healthRoutes);
 app.route('/api/v1/auth', authRoutes);
+app.route('/api/v1/balance', balanceRoutes);
 app.route('/api/v1/referral', referralRoutes);
 app.route('/api/v1/verification', verificationRoutes);
 
