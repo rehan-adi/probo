@@ -1,14 +1,16 @@
-import Navbar from "@/components/Navbar"
-import OnboardModal from "./components/modals/OnboardModal"
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import OnboardModal from '@/components/modals/OnboardModal';
 
 function App() {
-
-  return (
-    <>
-     <Navbar />
-     <OnboardModal /> 
-    </>
-  )
+	return (
+		<>
+			<Navbar />
+			<OnboardModal />
+			<div className="py-40">This is Markets listing</div>
+			<Footer />
+		</>
+	);
 }
 
-export default App
+export default App;
