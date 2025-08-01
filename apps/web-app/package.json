@@ -12,9 +12,12 @@
 	},
 	"dependencies": {
 		"@tailwindcss/vite": "^4.1.11",
+		"jwt-decode": "^4.0.0",
+		"lucide-react": "^0.535.0",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
-		"tailwindcss": "^4.1.11"
+		"tailwindcss": "^4.1.11",
+		"zustand": "^5.0.7"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.30.1",

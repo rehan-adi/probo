@@ -1,1 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
 @import "tailwindcss";
+
+body {
+  font-family: 'Work Sans', sans-serif;
+}
+
+@media (min-width: 1024px) and (max-width: 1100px) {
+  .custom-gap {
+    gap: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1219px) {
+  .custom-px {
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+}

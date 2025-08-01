@@ -1,8 +1,12 @@
+import Navbar from "@/components/Navbar"
+import OnboardModal from "./components/modals/OnboardModal"
+
 function App() {
 
   return (
     <>
-     <h1 className='text-red-500 bg-red-400'>Let's go</h1>
+     <Navbar />
+     <OnboardModal /> 
     </>
   )
 }
