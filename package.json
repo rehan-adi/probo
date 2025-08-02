@@ -12,7 +12,9 @@
 		"db:generate": "bun run --filter=@probo/database db:generate",
 		"db:migrate": "bun run --filter=@probo/database db:migrate",
 		"db:studio": "bun run --filter=@probo/database db:studio",
-		"db:push": "bun run --filter=@probo/database db:push"
+		"db:push": "bun run --filter=@probo/database db:push",
+		"web:dev": "bun run --filter=@probo/web-app dev",
+		"web:build": "bun run --filter=@probo/web-app build"
 	},
 	"workspaces": [
 		"apps/*",
