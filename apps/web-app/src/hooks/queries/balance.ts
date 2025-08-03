@@ -1,0 +1,18 @@
+import { getBalance } from '@/api/balance';
+import { useAuthStore } from '@/store/auth';
+import { useQuery } from '@tanstack/react-query';
+
+export const useBalanceQuery = () => {
+	const isLoggedIn = useAuthStore((s) => s.isLoggedIn());
+
+	return useQuery({
+		queryKey: ['balance'],
+		queryFn: () => getBalance(),
+		enabled: isLoggedIn,
+		retry: 2,
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+		refetchOnMount: false,
+		refetchOnWindowFocus: true,
+		staleTime: 1000 * 60 * 5,
+	});
+};
