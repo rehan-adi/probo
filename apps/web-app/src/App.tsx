@@ -1,20 +1,31 @@
 import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import EventsPage from '@/pages/Events';
 import WalletPage from '@/pages/Wallet';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { useAuthStore } from './store/auth';
+import PrivateRoute from './PrivateRoute';
 import NotFoundPage from './pages/NotFound';
+import RechargePage from './pages/Recharge';
+import { useAuthStore } from './store/auth';
 import OnboardModal from '@/components/modals/OnboardModal';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import PrivateRoute from './PrivateRoute';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
+	const isHydrated = useAuthStore((state) => state.isHydrated);
 
 	useEffect(() => {
 		hydrate();
 	}, []);
+
+	if (!isHydrated) {
+		return (
+			<div className="w-full bg-[#f4f4f5] flex justify-center items-center h-screen">
+				<Loader2 className="animate-spin w-8 h-8" />
+			</div>
+		);
+	}
 
 	return (
 		<BrowserRouter>
@@ -23,7 +34,10 @@ function App() {
 			<Routes>
 				<Route path="/" element={<EventsPage />} />
 				<Route element={<PrivateRoute />}>
-					<Route path="/wallet" element={<WalletPage />} />
+					<Route path="/wallet">
+						<Route index element={<WalletPage />} />
+						<Route path="recharge" element={<RechargePage />} />
+					</Route>
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>

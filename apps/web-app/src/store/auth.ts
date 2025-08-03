@@ -11,6 +11,7 @@ interface User {
 interface AuthState {
 	user: User | null;
 	token: string | null;
+	isHydrated: boolean;
 	login: (token: string) => void;
 	logout: () => void;
 	hydrate: () => void;
@@ -21,6 +22,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
 	user: null,
 	token: null,
+	isHydrated: false,
 
 	login: (token) => {
 		try {
@@ -44,13 +46,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 	hydrate: () => {
 		const token = localStorage.getItem('token');
-		if (!token) return;
-		try {
-			const decoded = jwtDecode<User>(token);
-			set({ token, user: decoded });
-		} catch {
-			localStorage.removeItem('token');
+		let decodedUser: User | null = null;
+
+		if (token) {
+			try {
+				decodedUser = jwtDecode<User>(token);
+			} catch (err) {
+				console.error('Failed to decode token:', err);
+			}
 		}
+
+		set({
+			token: token || null,
+			user: decodedUser,
+			isHydrated: true,
+		});
 	},
 
 	isLoggedIn: () => {
