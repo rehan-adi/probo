@@ -5,6 +5,7 @@ interface User {
 	id: string;
 	phone: string;
 	role: string;
+	isNewUser?: boolean;
 }
 
 interface AuthState {
@@ -13,23 +14,27 @@ interface AuthState {
 	login: (token: string) => void;
 	logout: () => void;
 	hydrate: () => void;
+	setUserWithToken: (user: User, token: string) => void;
+	isLoggedIn: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-	// user: null,
-
 	user: null,
-		// id: 'default-id',
-		// phone: '0000000000',
-		// role: 'guest',
-
-
 	token: null,
 
-	login: (token: string) => {
-		const decoded = jwtDecode<User>(token);
+	login: (token) => {
+		try {
+			const decoded = jwtDecode<User>(token);
+			localStorage.setItem('token', token);
+			set({ user: decoded, token });
+		} catch (err) {
+			console.error('Invalid token:', err);
+		}
+	},
+
+	setUserWithToken: (user, token) => {
 		localStorage.setItem('token', token);
-		set({ user: decoded, token });
+		set({ user, token });
 	},
 
 	logout: () => {
@@ -46,5 +51,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 		} catch {
 			localStorage.removeItem('token');
 		}
+	},
+
+	isLoggedIn: () => {
+		const token = localStorage.getItem('token');
+		return !!token;
 	},
 }));
