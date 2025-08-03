@@ -86,6 +86,7 @@ export const login = async (c: Context) => {
 					success: true,
 					message: 'Please check SMS section for the OTP!!',
 					isNewUser: existingUser.isNewUser,
+					otp: otp, // if snedOtp not worked fallback for user login
 				},
 				200,
 			);
@@ -436,6 +437,8 @@ export const verify = async (c: Context) => {
 				message: 'Login successful and OTP verified.',
 				data: {
 					id: user.id,
+					phone: user.phone,
+					role: user.role,
 					isNewUser: user.isNewUser,
 				},
 				token: token,
