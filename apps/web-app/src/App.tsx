@@ -7,6 +7,7 @@ import { useAuthStore } from './store/auth';
 import NotFoundPage from './pages/NotFound';
 import OnboardModal from '@/components/modals/OnboardModal';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import PrivateRoute from './PrivateRoute';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
@@ -21,7 +22,9 @@ function App() {
 			<OnboardModal />
 			<Routes>
 				<Route path="/" element={<EventsPage />} />
-				<Route path="/wallet" element={<WalletPage />} />
+				<Route element={<PrivateRoute />}>
+					<Route path="/wallet" element={<WalletPage />} />
+				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
 			<Footer />
