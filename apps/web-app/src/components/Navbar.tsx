@@ -1,5 +1,4 @@
 import { logout } from '@/api/auth';
-import { Link } from 'react-router-dom';
 import BottomNavbar from './BottomNavbar';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
@@ -7,8 +6,9 @@ import logo from '@/assets/images/logo.avif';
 import { LINKS } from '@/constants/constants';
 import pfpIcon from '@/assets/images/pfp.avif';
 import homeIcon from '@/assets/images/home.svg';
-import walletIcon from '@/assets/images/wallet.svg';
 import { useEffect, useRef, useState } from 'react';
+import walletIcon from '@/assets/images/wallet.svg';
+import { Link, useNavigate } from 'react-router-dom';
 import portfolioIcon from '@/assets/images/portfolio.svg';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
@@ -16,6 +16,8 @@ import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
 import translationIcon from '@/assets/images/translation.avif';
 
 export default function Navbar() {
+	const navigate = useNavigate();
+
 	const { user } = useAuthStore();
 	const { openOnboardModal } = useModalStore();
 
@@ -48,7 +50,7 @@ export default function Navbar() {
 
 			if (response.status == 200) {
 				useAuthStore.getState().logout();
-				window.location.reload();
+				navigate('/');
 			}
 		} catch (error) {
 			console.error('Logout failed', error);
