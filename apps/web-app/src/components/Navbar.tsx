@@ -1,4 +1,5 @@
 import { logout } from '@/api/auth';
+import { Link } from 'react-router-dom';
 import BottomNavbar from './BottomNavbar';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
@@ -108,15 +109,19 @@ export default function Navbar() {
 							<img src={portfolioIcon} alt="Portfolio icon" className="w-5 h-5" />
 							<span className="text-sm">Portfolio</span>
 						</div>
-
-						<div className="lg:py-2 py-1 pl-3 pr-8 gap-6 border rounded border-gray-300/50 flex items-center">
+						<Link
+							to="/wallet"
+							className="lg:py-2 py-1 pl-3 pr-8 gap-6 border rounded border-gray-300/50 flex items-center hover:bg-gray-100 transition"
+						>
 							<img src={walletIcon} alt="Wallet icon" className="w-4 h-4" />
 							{isLoading ? (
-								<span className="text-gray-500 text-sm">Loading...</span>
+								<span className="text-gray-800 text-sm font-semibold">₹0</span>
 							) : (
-								<span className="text-gray-800 text-sm font-semibold">₹{balance?.data.data}</span>
+								<span className="text-gray-800 text-sm font-semibold">
+									₹{balance?.data.data ?? 0}
+								</span>
 							)}
-						</div>
+						</Link>
 
 						<div
 							ref={menuRef}
@@ -142,6 +147,8 @@ export default function Navbar() {
 								</div>
 							)}
 						</div>
+
+						<img src={translationIcon} alt="Translate" className="w-5 cursor-pointer h-5" />
 
 						{showLogoutModal && (
 							<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-3.5 sm:px-0 ">
