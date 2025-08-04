@@ -425,6 +425,18 @@ export const getVerificationStatus = async (c: Context) => {
 				id: true,
 				kycVerificationStatus: true,
 				paymentVerificationStatus: true,
+				kycs: {
+					where: {
+						status: 'VERIFIED',
+					},
+					orderBy: {
+						reviewedAt: 'desc',
+					},
+					take: 1,
+					select: {
+						reviewedAt: true,
+					},
+				},
 			},
 		});
 
@@ -458,6 +470,7 @@ export const getVerificationStatus = async (c: Context) => {
 					userId: user.id,
 					kycVerificationStatus: user.kycVerificationStatus,
 					paymentVerificationStatus: user.paymentVerificationStatus,
+					kycVerifiedAt: user.kycs[0]?.reviewedAt ?? null,
 				},
 			},
 			200,
