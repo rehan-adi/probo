@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import kycWalletIcon from '@/assets/images/kyc_v2.avif';
 import emailWalletIcon from '@/assets/images/email_v2.avif';
@@ -10,7 +11,6 @@ import transactionWalletIcon from '@/assets/images/transaction_v2.avif';
 import winningsWalletIcon from '@/assets/images/winnings_wallet_icon.png';
 import promotionalWalletIcon from '@/assets/images/promotional_wallet_icon.avif';
 import { useBalanceQuery, useDepositAmountQuery } from '@/hooks/queries/balance';
-import { useNavigate } from 'react-router-dom';
 
 export default function WalletPage() {
 	const navigate = useNavigate();
@@ -22,6 +22,10 @@ export default function WalletPage() {
 
 	const goToRecharge = () => {
 		navigate('/wallet/recharge');
+	};
+
+	const goToverification = () => {
+		navigate('/verification');
 	};
 
 	return (
@@ -54,9 +58,10 @@ export default function WalletPage() {
 							</>
 						)}
 						<div className="w-full px-4">
-							<button 
-							onClick={goToRecharge}
-							className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white">
+							<button
+								onClick={goToRecharge}
+								className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white"
+							>
 								Recharge
 							</button>
 						</div>
@@ -86,9 +91,9 @@ export default function WalletPage() {
 
 						<div className="px-4 w-full">
 							<button
-								className={`px-4 py-2.5 w-full text-xs font-semibold rounded-md ${
+								className={`px-4 py-2.5 mt-1 w-full text-xs font-semibold rounded-md ${
 									verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED'
-										? 'text-white cursor-pointer bg-black'
+										? 'text-white cursor-pointer bg-[#262626]'
 										: 'text-[#B0B0B0] cursor-not-allowed bg-[#EDEDED]'
 								}`}
 							>
@@ -98,7 +103,7 @@ export default function WalletPage() {
 
 						{verificationStatus?.data.data.kycVerificationStatus !== 'VERIFIED' && (
 							<>
-								<div className="w-full mt-1 h-px bg-gray-400/20" />
+								<div className="w-full mt-0.5 h-px bg-gray-400/20" />
 								<p className="text-xs mt-1 px-4 w-full text-start text-[#B32306]">
 									Complete KYC to withdraw funds
 								</p>
@@ -140,7 +145,6 @@ export default function WalletPage() {
 							</button>
 						</div>
 
-						{/* Action 2 */}
 						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
 							<img src={vaultWalletIcon} className="w-8 h-8" />
 							<h3 className="text-base mt-4 font-normal">Probo Vault</h3>
@@ -153,8 +157,25 @@ export default function WalletPage() {
 						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
 							<img src={kycWalletIcon} className="w-8 h-8" />
 							<h3 className="text-base mt-4 font-normal">KYC verification</h3>
-							<p className="text-xs text-[#D29822]">Tap to verify</p>
-							<button className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition">
+							{verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED' ? (
+								<p className="text-xs text-green-600">
+									Verified on{' '}
+									{new Date(verificationStatus.data.data.kycVerifiedAt).toLocaleDateString(
+										'en-US',
+										{
+											day: 'numeric',
+											month: 'long',
+											year: 'numeric',
+										},
+									)}
+								</p>
+							) : (
+								<p className="text-xs text-[#D29822]">Tap to verify</p>
+							)}
+							<button
+								onClick={goToverification}
+								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition"
+							>
 								<ArrowRight className="w-6 h-6 text-black" />
 							</button>
 						</div>
