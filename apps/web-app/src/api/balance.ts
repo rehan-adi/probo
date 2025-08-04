@@ -7,3 +7,7 @@ export const getBalance = () => {
 export const getDepositAmount = () => {
 	return api.get('/balance/deposit');
 };
+
+export const deposit = (amount: string) => {
+	return api.post('/balance/deposit', { amount });
+};

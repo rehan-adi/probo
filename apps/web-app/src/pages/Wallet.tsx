@@ -10,12 +10,19 @@ import transactionWalletIcon from '@/assets/images/transaction_v2.avif';
 import winningsWalletIcon from '@/assets/images/winnings_wallet_icon.png';
 import promotionalWalletIcon from '@/assets/images/promotional_wallet_icon.avif';
 import { useBalanceQuery, useDepositAmountQuery } from '@/hooks/queries/balance';
+import { useNavigate } from 'react-router-dom';
 
 export default function WalletPage() {
+	const navigate = useNavigate();
+
 	const { data: balance, isLoading } = useBalanceQuery();
 	const { data: referralData } = useGetReferralCodeQuery();
 	const { data: verificationStatus } = useGetVerificationStaus();
 	const { data: depositeAmountData } = useDepositAmountQuery();
+
+	const goToRecharge = () => {
+		navigate('/wallet/recharge');
+	};
 
 	return (
 		<div className="w-full bg-[#f4f4f5] flex justify-center px-4 md:pt-24 pt-20">
@@ -37,7 +44,9 @@ export default function WalletPage() {
 						</div>
 						{depositeAmountData ? (
 							<>
-								<p className="text-xl font-semibold">₹{depositeAmountData?.data?.data?.totalDepositAmount ?? 0}</p>
+								<p className="text-xl font-semibold">
+									₹{depositeAmountData?.data?.data?.totalDepositAmount ?? 0}
+								</p>
 							</>
 						) : (
 							<>
@@ -45,7 +54,9 @@ export default function WalletPage() {
 							</>
 						)}
 						<div className="w-full px-4">
-							<button className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white">
+							<button 
+							onClick={goToRecharge}
+							className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white">
 								Recharge
 							</button>
 						</div>
