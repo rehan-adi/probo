@@ -347,7 +347,7 @@ export const verify = async (c: Context) => {
 								type: 'SIGNUP_BONUS',
 								status: 'SUCCESS',
 								amount: '15.00',
-								remarks: 'signin bonus credited',
+								remarks: 'Joining Money Addition For New user',
 							},
 						});
 					});

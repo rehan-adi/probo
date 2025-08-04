@@ -228,7 +228,7 @@ export const submitReferral = async (c: Context) => {
 						type: 'REFERRAL_REWARD',
 						status: 'SUCCESS',
 						amount: '20.00',
-						remarks: `Referral bonus from ${userId}`,
+						remarks: `Referral bonus from +91-XXXXXX${referrer.phone.slice(-4)}`,
 					},
 				});
 

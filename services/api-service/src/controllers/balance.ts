@@ -168,6 +168,7 @@ export const deposit = async (c: Context) => {
 						type: 'DEPOSIT',
 						status: 'SUCCESS',
 						amount: validateData.data.amount,
+						remarks: 'Wallet recharge successful',
 					},
 				});
 			});
