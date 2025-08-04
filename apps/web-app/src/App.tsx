@@ -8,6 +8,7 @@ import PrivateRoute from './PrivateRoute';
 import NotFoundPage from './pages/NotFound';
 import RechargePage from './pages/Recharge';
 import { useAuthStore } from './store/auth';
+import VerificationgePage from './pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
@@ -38,6 +39,7 @@ function App() {
 						<Route index element={<WalletPage />} />
 						<Route path="recharge" element={<RechargePage />} />
 					</Route>
+					<Route path='/verification' element={<VerificationgePage />}/>
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
