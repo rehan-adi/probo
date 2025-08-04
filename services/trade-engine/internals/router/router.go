@@ -26,6 +26,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "GET_BALANCE":
 		return handlers.GetBalance(payload)
 
+	case "DEPOSIT_BALANCE":
+		return handlers.Deposit(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{

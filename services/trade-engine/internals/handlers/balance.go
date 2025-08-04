@@ -60,7 +60,7 @@ func InitBalance(payload types.QueuePayload) types.QueueResponse {
 	return types.QueueResponse{
 		ResponseId: payload.ResponseId,
 		Status:     types.Success,
-		Message:    "Balance initialized in engine",
+		Message:    "Balance initialized successfully",
 	}
 }
 
@@ -104,8 +104,58 @@ func GetBalance(payload types.QueuePayload) types.QueueResponse {
 	return types.QueueResponse{
 		ResponseId: payload.ResponseId,
 		Status:     types.Success,
-		Message:    "Balance fetched succesfully",
+		Message:    "Balance fetched successfully",
 		Data:       user.Balance.WalletBalance.Amount,
+	}
+
+}
+
+type DepositDataRequest struct {
+	UserId string  `json:"userId"`
+	Amount float64 `json:"amount"`
+}
+
+func Deposit(payload types.QueuePayload) types.QueueResponse {
+
+	var data DepositDataRequest
+
+	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		log.Error().
+			Err(err).
+			Interface("payload", payload.Data).
+			Msg("Failed to decode deposit payload")
+
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  true,
+			Message:    "Invalid format",
+		}
+	}
+
+	engine.EngineInstance.UM.Lock()
+	defer engine.EngineInstance.UM.Unlock()
+
+	user, ok := engine.EngineInstance.User[data.UserId]
+
+	if !ok {
+		log.Error().
+			Str("userId", data.UserId).
+			Msg("User not found in deposit handler")
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "User not found",
+		}
+	}
+
+	user.Balance.WalletBalance.Amount += data.Amount
+
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     types.Success,
+		Message:    "Deposit processed successfully",
 	}
 
 }
