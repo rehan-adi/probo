@@ -11,6 +11,7 @@ import { useAuthStore } from './store/auth';
 import VerificationgePage from './pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import TransactionHistoryPage from './pages/TransactionHistory';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
@@ -40,6 +41,7 @@ function App() {
 						<Route path="recharge" element={<RechargePage />} />
 					</Route>
 					<Route path='/verification' element={<VerificationgePage />}/>
+					<Route path='/transaction-history' element={<TransactionHistoryPage />}/>
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
