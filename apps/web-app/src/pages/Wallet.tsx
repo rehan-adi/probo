@@ -1,6 +1,5 @@
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import kycWalletIcon from '@/assets/images/kyc_v2.avif';
-import { useBalanceQuery } from '@/hooks/queries/balance';
 import emailWalletIcon from '@/assets/images/email_v2.avif';
 import vaultWalletIcon from '@/assets/images/VaultIconV2.avif';
 import gaugeWalletIcon from '@/assets/images/gauge_icon_v2.avif';
@@ -10,11 +9,13 @@ import depositWalletIcon from '@/assets/images/deposit_wallet_icon.png';
 import transactionWalletIcon from '@/assets/images/transaction_v2.avif';
 import winningsWalletIcon from '@/assets/images/winnings_wallet_icon.png';
 import promotionalWalletIcon from '@/assets/images/promotional_wallet_icon.avif';
+import { useBalanceQuery, useDepositAmountQuery } from '@/hooks/queries/balance';
 
 export default function WalletPage() {
 	const { data: balance, isLoading } = useBalanceQuery();
 	const { data: referralData } = useGetReferralCodeQuery();
 	const { data: verificationStatus } = useGetVerificationStaus();
+	const { data: depositeAmountData } = useDepositAmountQuery();
 
 	return (
 		<div className="w-full bg-[#f4f4f5] flex justify-center px-4 md:pt-24 pt-20">
@@ -34,7 +35,15 @@ export default function WalletPage() {
 							<img src={depositWalletIcon} alt="Deposite Icon" className="w-8 h-8" />
 							<h3 className="text-sm text-[#545454]">Deposit</h3>
 						</div>
-						<p className="text-xl font-semibold">₹0</p>
+						{depositeAmountData ? (
+							<>
+								<p className="text-xl font-semibold">₹{depositeAmountData?.data?.data?.totalDepositAmount ?? 0}</p>
+							</>
+						) : (
+							<>
+								<p className="text-xl font-semibold">₹0</p>
+							</>
+						)}
 						<div className="w-full px-4">
 							<button className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white">
 								Recharge
