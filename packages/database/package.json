@@ -9,7 +9,8 @@
 		"db:migrate": "prisma migrate dev",
 		"db:generate": "prisma generate",
 		"db:studio": "prisma studio",
-		"db:push": "prisma db push"
+		"db:push": "prisma db push",
+		"db:seed": "bun run src/seed.ts"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
