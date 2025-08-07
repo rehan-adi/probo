@@ -199,6 +199,8 @@ model Market {
   title           String
   symbol          String               @unique
   description     String?
+  yesPrice        Decimal              @db.Decimal(14, 2)
+  NoPrice         Decimal              @db.Decimal(14, 2)
   startTime       DateTime
   endTime         DateTime
   result          String?
