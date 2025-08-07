@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type MarketMessage interface{}
 
@@ -10,14 +13,15 @@ type Market struct {
 	Decsription string
 	Category    string
 	Volume      float64
-	YesPrice    int
-	NoPrice     int
+	YesPrice    float32
+	NoPrice     float32
 	Status      MarketStatus
 	OrderBook   *OrderBook
 	Overview    Overview
 	Activities  []Activity
 	Timeline    []PricePoint
 	Inbox       chan MarketMessage
+	Mu          sync.RWMutex
 }
 
 type MarketStatus string
