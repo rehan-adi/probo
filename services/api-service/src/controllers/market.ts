@@ -105,6 +105,8 @@ export const createMarket = async (c: Context) => {
 			data: {
 				title: data.title,
 				symbol,
+				yesPrice: 5.0,
+				NoPrice: 5.0,
 				description: data.description,
 				startTime: data.startTime,
 				endTime: data.endTime,
@@ -114,9 +116,14 @@ export const createMarket = async (c: Context) => {
 			},
 		});
 
+		const yesPrice = parseFloat(newMarket.yesPrice.toString());
+		const noPrice = parseFloat(newMarket.NoPrice.toString());
+
 		const queuePayload = {
 			marketId: newMarket.id,
 			symbol: newMarket.symbol,
+			yesPrice: yesPrice,
+			NoPrice: noPrice,
 			endDate: newMarket.endTime,
 			startDate: newMarket.startTime,
 			categoryId: newMarket.categoryId,
