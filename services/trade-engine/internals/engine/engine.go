@@ -9,6 +9,7 @@ type Engine struct {
 	User   map[string]*types.User
 	Market map[string]*types.Market
 	UM     sync.RWMutex
+	MM     sync.RWMutex
 }
 
 var EngineInstance *Engine
@@ -18,4 +19,23 @@ func InitEngine() {
 		User:   make(map[string]*types.User),
 		Market: make(map[string]*types.Market),
 	}
+}
+
+func (e *Engine) AddMarket(market *types.Market) {
+
+	e.MM.Lock()
+	defer e.MM.Unlock()
+
+	e.Market[market.MarketId] = market
+
+	go e.runMarket(market)
+
+}
+
+func (e *Engine) GetMarket(id string) (*types.Market, bool) {
+	e.MM.RLock()
+	defer e.MM.RUnlock()
+	market, ok := e.Market[id]
+
+	return market, ok
 }

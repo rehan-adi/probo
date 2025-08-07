@@ -16,7 +16,7 @@ func Consumer(ctx context.Context) {
 
 	for {
 
-		result, err := Client.BRPop(ctx, 30*time.Second, "engine:queue").Result()
+		result, err := Client.BRPop(ctx, 5*time.Minute, "engine:queue").Result()
 
 		if err != nil {
 			log.Warn().Err(err).Msg("Failed to consume from queue")

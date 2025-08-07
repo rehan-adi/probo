@@ -20,3 +20,7 @@ type QueueResponse struct {
 	Retryable  bool
 	Data       interface{}
 }
+
+type GetOrderBookMessage struct {
+	ReplyChan chan *OrderBook
+}
