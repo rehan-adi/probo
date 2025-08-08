@@ -48,6 +48,11 @@ enum StockType {
   NO
 }
 
+enum MarketStatus {
+  OPEN
+  CLOSED
+}
+
 enum FeeType {
   TRADE_FEE
   WITHDRAWAL_FEE
@@ -213,6 +218,8 @@ model Market {
   orders          Order[]
   transactions    TransactionHistory[]
   CompanyEarning  CompanyEarning[]
+  status          MarketStatus         @default(OPEN)
+  createdAt       DateTime             @default(now())
 }
 
 model Category {
