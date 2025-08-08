@@ -10,13 +10,13 @@ import googleFirebaseIcon from '@/assets/images/google-firebase.avif';
 
 export default function Footer() {
 	return (
-		<footer className="bg-[#f4f4f5] bottom-0 text-gray-800 px-4 md:px-16 py-10 text-sm">
+		<footer className="bg-[#f4f4f5] bottom-0 text-gray-800 px-4 md:px-12 py-10 text-sm">
 			{/* Top section */}
 			<div className="grid grid-cols-1 border-t pt-10 md:grid-cols-4 gap-6 border-b border-gray-400/25 pb-10">
 				<div>
-					<h2 className="md:text-lg text-base font-semibold mb-2">Company</h2>
+					<h2 className="text-base font-semibold mb-2">Company</h2>
 					<ul className="space-y-1">
-						<li>
+						<li className='hover:font-medium'>
 							<a href="#">About Us</a>
 						</li>
 						<li>
@@ -26,7 +26,7 @@ export default function Footer() {
 				</div>
 
 				<div>
-					<h2 className="md:text-lg text-base font-semibold mb-2">Resources</h2>
+					<h2 className="text-base font-semibold mb-2">Resources</h2>
 					<ul className="space-y-1">
 						<li>
 							<a href="#">Help Centre</a>
@@ -41,7 +41,7 @@ export default function Footer() {
 				</div>
 
 				<div>
-					<h2 className="md:text-lg text-base font-semibold mb-2">Careers</h2>
+					<h2 className="text-base font-semibold mb-2">Careers</h2>
 					<ul>
 						<li>
 							<a href="#">Open Roles</a>
@@ -50,7 +50,7 @@ export default function Footer() {
 				</div>
 
 				<div>
-					<h2 className="md:text-lg text-base font-semibold mb-2">Contact Us</h2>
+					<h2 className="text-base font-semibold mb-2">Contact Us</h2>
 					<ul className="space-y-1">
 						<li>
 							<a href="mailto:help@probo.in">help@probo.in</a>
