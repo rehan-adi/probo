@@ -5,13 +5,14 @@ import WalletPage from '@/pages/Wallet';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PrivateRoute from './PrivateRoute';
-import NotFoundPage from './pages/NotFound';
 import RechargePage from './pages/Recharge';
+import NotFoundPage from './pages/NotFound';
 import { useAuthStore } from './store/auth';
+import CreateEvent from './pages/CreateEvent';
 import VerificationgePage from './pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import TransactionHistoryPage from './pages/TransactionHistory';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
@@ -34,14 +35,17 @@ function App() {
 			<Navbar />
 			<OnboardModal />
 			<Routes>
-				<Route path="/" element={<EventsPage />} />
+				<Route path="/" element={<Navigate to="/events" replace />} />
+				<Route path="/events" element={<EventsPage />} />
+
 				<Route element={<PrivateRoute />}>
+					<Route path="/events/create" element={<CreateEvent />} />
 					<Route path="/wallet">
 						<Route index element={<WalletPage />} />
 						<Route path="recharge" element={<RechargePage />} />
 					</Route>
-					<Route path='/verification' element={<VerificationgePage />}/>
-					<Route path='/transaction-history' element={<TransactionHistoryPage />}/>
+					<Route path="/verification" element={<VerificationgePage />} />
+					<Route path="/transaction-history" element={<TransactionHistoryPage />} />
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>

@@ -3,4 +3,5 @@ export const LINKS = {
 	read: 'https://probo.in/read',
 	trust: 'https://probo.in/trust&safety',
 	careers: 'https://probo.in/careers',
+	about: 'https://probo.in/about-us',
 };
