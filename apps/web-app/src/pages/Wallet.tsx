@@ -28,6 +28,10 @@ export default function WalletPage() {
 		navigate('/verification');
 	};
 
+	const goToTransactionHistory = () => {
+		navigate('/transaction-history');
+	};
+
 	return (
 		<div className="w-full bg-[#f4f4f5] flex justify-center px-4 md:pt-24 pt-20">
 			<div className="w-full max-w-[910px] flex flex-col gap-8">
@@ -140,7 +144,10 @@ export default function WalletPage() {
 							<img src={transactionWalletIcon} className="w-8 h-8" />
 							<h3 className="text-base mt-4 text-[#262626] font-normal">Transaction History</h3>
 							<p className="text-xs text-[#757575]">For all balance debits & credits</p>
-							<button className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition">
+							<button
+								onClick={goToTransactionHistory}
+								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition"
+							>
 								<ArrowRight className="w-6 h-6 text-black" />
 							</button>
 						</div>

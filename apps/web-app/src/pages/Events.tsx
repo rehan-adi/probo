@@ -1,10 +1,9 @@
 import { api } from '@/lib/axios';
+import { Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CategoryNav from '@/components/CategoryNav';
-import workerIcon from '@/assets/images/worker.avif';
 import downloadIcon from '@/assets/images/download.avif';
 import barChartIcon from '@/assets/images/Bar_Chart.avif';
-import { Clock } from 'lucide-react';
 
 export default function EventsPage() {
 	const [events, setEvents] = useState<any[]>([]);
@@ -58,7 +57,7 @@ export default function EventsPage() {
 
 										<div className="flex gap-3 mt-2.5">
 											<img
-												src={event.thumbnail || workerIcon}
+												src={event.thumbnail}
 												alt={event.title}
 												className="w-16 h-16 object-cover rounded-lg"
 											/>
