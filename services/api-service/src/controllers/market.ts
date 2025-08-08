@@ -191,3 +191,152 @@ export const createMarket = async (c: Context) => {
 		);
 	}
 };
+
+/**
+ * fetch all markets or events from db
+ * @param c Hono context
+ * @returns json response
+ */
+
+export const getAllMarket = async (c: Context) => {
+	try {
+		const markets = await prisma.market.findMany({
+			where: {
+				status: 'OPEN',
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+			select: {
+				id: true,
+				title: true,
+				description: true,
+				yesPrice: true,
+				NoPrice: true,
+				endTime: true,
+				numberOfTraders: true,
+				thumbnail: true,
+				categoryId: true,
+				sourceOfTruth: true,
+				status: true,
+				symbol: true,
+			},
+		});
+
+		return c.json(
+			{
+				success: true,
+				message: 'Markets or events fetched successfully',
+				data: markets,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'GET_ALL_MARKET_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error during get all market',
+		);
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
+
+/**
+ * fetch market or event from db for a category (Crypto, Cricket)
+ * @param c Hono context
+ * @returns json response
+ */
+
+export const getMarketsByCategory = async (c: Context) => {
+	try {
+		const categoryId = c.req.param('categoryId');
+
+		if (!categoryId) {
+			logger.warn(
+				{
+					context: 'GET_MARKETS_BY_CATEGORY_MISSING_PARAM',
+				},
+				'Missing categoryId in request',
+			);
+			return c.json(
+				{
+					success: false,
+					message: 'categoryId is required',
+				},
+				400,
+			);
+		}
+
+		const category = await prisma.category.findUnique({
+			where: { id: categoryId },
+		});
+
+		if (!category) {
+			return c.json(
+				{
+					success: false,
+					message: 'Invalid categoryId',
+				},
+				400,
+			);
+		}
+
+		const markets = await prisma.market.findMany({
+			where: {
+				categoryId,
+				status: 'OPEN',
+			},
+			orderBy: {
+				createdAt: 'desc',
+			},
+			select: {
+				id: true,
+				title: true,
+				categoryId: true,
+				description: true,
+				yesPrice: true,
+				NoPrice: true,
+				endTime: true,
+				numberOfTraders: true,
+				thumbnail: true,
+				sourceOfTruth: true,
+				status: true,
+				symbol: true,
+			},
+		});
+
+		return c.json(
+			{
+				success: true,
+				message: 'Markets fetched successfully',
+				data: markets,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'GET_MARKETS_BY_CATEGORY_FAIL',
+				error,
+			},
+			'Unhandled error during fetching markets by category',
+		);
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
