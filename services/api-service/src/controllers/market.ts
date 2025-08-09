@@ -121,14 +121,17 @@ export const createMarket = async (c: Context) => {
 
 		const queuePayload = {
 			marketId: newMarket.id,
+			title: newMarket.title,
 			symbol: newMarket.symbol,
+			description: newMarket.description,
 			yesPrice: yesPrice,
 			NoPrice: noPrice,
+			thumbnail: newMarket.thumbnail,
 			endDate: newMarket.endTime,
 			startDate: newMarket.startTime,
 			categoryId: newMarket.categoryId,
-			description: newMarket.description,
-			SourceOfTruth: newMarket.sourceOfTruth,
+			sourceOfTruth: newMarket.sourceOfTruth,
+			numberOftraders: newMarket.numberOfTraders,
 		};
 
 		let response = await pushToQueue(EVENTS.CREATE_MARKET, queuePayload);
@@ -177,7 +180,8 @@ export const createMarket = async (c: Context) => {
 			{
 				alert: true,
 				context: 'CREATE_MARKET_CONTROLLER_FAIL',
-				error,
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
 				userId: c.get('user')?.id,
 			},
 			'Unhandled error during market creation',
@@ -186,6 +190,7 @@ export const createMarket = async (c: Context) => {
 			{
 				success: false,
 				message: 'Internal server error',
+				error: error instanceof Error ? error.message : 'Unknown error',
 			},
 			500,
 		);
@@ -236,14 +241,17 @@ export const getAllMarket = async (c: Context) => {
 			{
 				alert: true,
 				context: 'GET_ALL_MARKET_CONTROLLER_FAIL',
-				error,
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
 			},
 			'Unhandled error during get all market',
 		);
+
 		return c.json(
 			{
 				success: false,
 				message: 'Internal server error',
+				error: error instanceof Error ? error.message : 'Unknown error',
 			},
 			500,
 		);
@@ -326,15 +334,106 @@ export const getMarketsByCategory = async (c: Context) => {
 		logger.error(
 			{
 				alert: true,
-				context: 'GET_MARKETS_BY_CATEGORY_FAIL',
-				error,
+				context: 'GET_MARKET_DETAILS_CONTROLLER_FAIL',
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
 			},
 			'Unhandled error during fetching markets by category',
 		);
+
 		return c.json(
 			{
 				success: false,
 				message: 'Internal server error',
+				error: error instanceof Error ? error.message : 'Unknown error',
+			},
+			500,
+		);
+	}
+};
+
+/**
+ * Get Market details from engine and send back to clien which includes orderbook, timeline and activity of the market.
+ * @param c Hono context
+ * @returns Json response with market details
+ */
+
+export const getMarketDetails = async (c: Context) => {
+	try {
+		const symbol = c.req.param('symbol');
+
+		if (!symbol) {
+			logger.warn({
+				context: 'GET_MARKET_DETAILS',
+				reason: 'Missing symbol parameter',
+			});
+			return c.json(
+				{
+					success: false,
+					message: 'Symbol parameter is required',
+				},
+				400,
+			);
+		}
+
+		const response = await pushToQueue(EVENTS.GET_MARKET_WITH_SYMBOL, { symbol });
+
+		if (response.error) {
+			logger.error(
+				{
+					alert: true,
+					context: 'GET_MARKET_DETAILS_ENGINE_ERROR',
+					symbol,
+					engineMessage: response.message || 'No message from engine',
+					engineData: response.data || null,
+				},
+				'Engine failed to return market details',
+			);
+
+			return c.json(
+				{
+					success: false,
+					message: 'Unable to fetch market details at the moment. Please try again later.',
+					error: response.message || 'Unknown error message',
+				},
+				502,
+			);
+		}
+
+		logger.info(
+			{
+				context: 'GET_MARKET_DETAILS_SUCCESS',
+				symbol,
+				engineMessage: response.message,
+				dataPreview: response.data ? JSON.stringify(response.data).slice(0, 200) : null,
+			},
+			'Successfully retrieved market details from engine',
+		);
+
+		return c.json(
+			{
+				success: true,
+				message: response.message || 'Market details retrieved successfully',
+				data: response.data,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'GET_MARKET_DETAILS_CONTROLLER_FAIL',
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
+			},
+			'Unhandled error during getMarketDetails',
+		);
+
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
+				error: error instanceof Error ? error.message : 'Unknown error',
 			},
 			500,
 		);
