@@ -8,20 +8,24 @@ import (
 type MarketMessage interface{}
 
 type Market struct {
-	MarketId    string
-	Symbol      string
-	Decsription string
-	Category    string
-	Volume      float64
-	YesPrice    float32
-	NoPrice     float32
-	Status      MarketStatus
-	OrderBook   *OrderBook
-	Overview    Overview
-	Activities  []Activity
-	Timeline    []PricePoint
-	Inbox       chan MarketMessage
-	Mu          sync.RWMutex
+	MarketId        string
+	Title           string
+	Symbol          string
+	Description     string
+	YesPrice        float32
+	NoPrice         float32
+	Thumbnail       string
+	CategoryId      string
+	NumberOfTraders int16
+	Volume          float64
+	Status          MarketStatus
+	OrderBook       *OrderBook
+
+	Overview   Overview
+	Activities []Activity
+	Timeline   []PricePoint
+	Inbox      chan MarketMessage
+	Mu         sync.RWMutex
 }
 
 type MarketStatus string
@@ -37,6 +41,7 @@ type Overview struct {
 	SourceOfTruth string
 	Details       string
 }
+
 type PricePoint struct {
 	Timestamp time.Time
 	YesPrice  float64
