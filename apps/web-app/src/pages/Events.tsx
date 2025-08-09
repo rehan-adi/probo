@@ -1,11 +1,13 @@
 import { api } from '@/lib/axios';
 import { Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CategoryNav from '@/components/CategoryNav';
 import downloadIcon from '@/assets/images/download.avif';
 import barChartIcon from '@/assets/images/Bar_Chart.avif';
 
 export default function EventsPage() {
+	const navigate = useNavigate();
 	const [events, setEvents] = useState<any[]>([]);
 
 	const [selectedCategoryId, setSelectedCategoryId] = useState('all');
@@ -47,7 +49,8 @@ export default function EventsPage() {
 							events.map((event, idx) => (
 								<div
 									key={idx}
-									className="bg-white rounded-xl p-4 flex flex-col justify-between gap-2 h-[220px]"
+									onClick={() => navigate(`/events/${event.symbol}`)}
+									className="bg-white cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-2 h-[220px]"
 								>
 									<div>
 										<div className="flex items-center">
@@ -69,7 +72,7 @@ export default function EventsPage() {
 
 									<div>
 										<p className="text-xs flex items-center justify-start gap-3">
-											<Clock size={16} className='text-[#262626]'/>
+											<Clock size={16} className="text-[#262626]" />
 											Expires in{' '}
 											{(() => {
 												const now = new Date();
@@ -88,10 +91,10 @@ export default function EventsPage() {
 									</div>
 
 									<div className="flex gap-4 w-full">
-										<button className="text-[#197BFF] bg-[#E8F2FF] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
+										<button className="text-[#197BFF] cursor-pointer bg-[#E8F2FF] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
 											Yes ₹{event.yesPrice}
 										</button>
-										<button className="text-[#DC2804] bg-[#FDF3F2] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
+										<button className="text-[#DC2804] cursor-pointer bg-[#FDF3F2] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
 											No ₹{event.NoPrice}
 										</button>
 									</div>

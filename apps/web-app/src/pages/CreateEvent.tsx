@@ -374,7 +374,6 @@ const CreateEvent = () => {
 										Back
 									</button>
 								)}
-								<p>{`isPending: ${isPending}`}</p>
 							</>
 						)}
 					</div>
