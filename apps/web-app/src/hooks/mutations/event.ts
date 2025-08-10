@@ -3,7 +3,8 @@ import { useMutation } from '@tanstack/react-query';
 
 type CreateEventPayload = {
 	title: string;
-	description: string;
+	eos: string;
+	rules: string;
 	startTime: string;
 	endTime: string;
 	sourceOfTruth: string;

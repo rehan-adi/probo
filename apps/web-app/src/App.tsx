@@ -5,13 +5,14 @@ import WalletPage from '@/pages/Wallet';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PrivateRoute from './PrivateRoute';
-import RechargePage from './pages/Recharge';
-import NotFoundPage from './pages/NotFound';
-import { useAuthStore } from './store/auth';
-import CreateEvent from './pages/CreateEvent';
-import VerificationgePage from './pages/Verification';
+import RechargePage from '@/pages/Recharge';
+import NotFoundPage from '@/pages/NotFound';
+import { useAuthStore } from '@/store/auth';
+import CreateEvent from '@/pages/CreateEvent';
+import MarketDetails from '@/pages/EventDetails';
+import VerificationgePage from '@/pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
-import TransactionHistoryPage from './pages/TransactionHistory';
+import TransactionHistoryPage from '@/pages/TransactionHistory';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
 			<Routes>
 				<Route path="/" element={<Navigate to="/events" replace />} />
 				<Route path="/events" element={<EventsPage />} />
+				<Route path="/events/:symbol" element={<MarketDetails />} />
 
 				<Route element={<PrivateRoute />}>
 					<Route path="/events/create" element={<CreateEvent />} />
