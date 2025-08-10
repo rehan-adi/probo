@@ -107,9 +107,10 @@ export const createMarket = async (c: Context) => {
 				symbol,
 				yesPrice: 5.0,
 				NoPrice: 5.0,
-				description: data.description,
 				startTime: data.startTime,
 				endTime: data.endTime,
+				eos: data.eos,
+				rules: data.rules,
 				thumbnail: data.thumbnail,
 				categoryId: data.categoryId,
 				sourceOfTruth: data.sourceOfTruth,
@@ -123,11 +124,12 @@ export const createMarket = async (c: Context) => {
 			marketId: newMarket.id,
 			title: newMarket.title,
 			symbol: newMarket.symbol,
-			description: newMarket.description,
 			yesPrice: yesPrice,
 			NoPrice: noPrice,
-			thumbnail: newMarket.thumbnail,
+			eos: newMarket.eos,
+			rules: newMarket.rules,
 			endDate: newMarket.endTime,
+			thumbnail: newMarket.thumbnail,
 			startDate: newMarket.startTime,
 			categoryId: newMarket.categoryId,
 			sourceOfTruth: newMarket.sourceOfTruth,
@@ -215,14 +217,12 @@ export const getAllMarket = async (c: Context) => {
 			select: {
 				id: true,
 				title: true,
-				description: true,
 				yesPrice: true,
 				NoPrice: true,
 				endTime: true,
 				numberOfTraders: true,
 				thumbnail: true,
 				categoryId: true,
-				sourceOfTruth: true,
 				status: true,
 				symbol: true,
 			},
@@ -310,13 +310,11 @@ export const getMarketsByCategory = async (c: Context) => {
 				id: true,
 				title: true,
 				categoryId: true,
-				description: true,
 				yesPrice: true,
 				NoPrice: true,
 				endTime: true,
 				numberOfTraders: true,
 				thumbnail: true,
-				sourceOfTruth: true,
 				status: true,
 				symbol: true,
 			},
@@ -390,11 +388,35 @@ export const getMarketDetails = async (c: Context) => {
 				'Engine failed to return market details',
 			);
 
+			// if engine fails or down to send back response then i just call db for fallback.
+			// but this has some stale data problem
+
+			const marketDetails = await prisma.market.findUnique({
+				where: {
+					symbol,
+				},
+				select: {
+					id: true,
+					title: true,
+					symbol: true,
+					yesPrice: true,
+					NoPrice: true,
+					thumbnail: true,
+					eos: true,
+					rules: true,
+					endTime: true,
+					startTime: true,
+					sourceOfTruth: true,
+					status: true,
+				},
+			});
+
 			return c.json(
 				{
-					success: false,
-					message: 'Unable to fetch market details at the moment. Please try again later.',
-					error: response.message || 'Unknown error message',
+					success: true,
+					message: 'Market details retrieved successfully',
+					data: marketDetails,
+					source: 'db',
 				},
 				502,
 			);
