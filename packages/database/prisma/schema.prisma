@@ -203,7 +203,6 @@ model Market {
   id              String               @id @default(uuid())
   title           String
   symbol          String               @unique
-  description     String?
   yesPrice        Decimal              @db.Decimal(14, 2)
   NoPrice         Decimal              @db.Decimal(14, 2)
   startTime       DateTime
@@ -213,6 +212,8 @@ model Market {
   categoryId      String
   category        Category             @relation(fields: [categoryId], references: [id])
   sourceOfTruth   String               @default("")
+  eos             String? // Event Overview & Statistics
+  rules           String?
   numberOfTraders Int                  @default(0)
   stockBalances   StockBalance[]
   orders          Order[]
