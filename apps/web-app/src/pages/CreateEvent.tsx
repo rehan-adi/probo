@@ -22,7 +22,8 @@ const CreateEvent = () => {
 	const [step, setStep] = useState(0);
 	const [form, setForm] = useState({
 		title: '',
-		description: '',
+		eos: '',
+		rules: '',
 		startTime: '',
 		endTime: '',
 		sourceOfTruth: '',
@@ -106,7 +107,8 @@ const CreateEvent = () => {
 			createEvent(
 				{
 					title: form.title,
-					description: form.description,
+					eos: form.eos,
+					rules: form.rules,
 					startTime: form.startTime,
 					endTime: form.endTime,
 					sourceOfTruth: form.sourceOfTruth,
@@ -150,12 +152,26 @@ const CreateEvent = () => {
 							</div>
 
 							<div>
-								<label className="block text-base text-[#262626] mb-1">Description of Event</label>
+								<label className="block text-base text-[#262626] mb-1">
+									Event Overview & Statistics
+								</label>
 								<textarea
-									name="description"
+									name="eos"
 									rows={4}
-									placeholder="Market Description"
-									value={form.description}
+									placeholder="Event Overview & Statistics"
+									value={form.eos}
+									onChange={handleChange}
+									className="w-full p-3 border border-gray-400/40 rounded-lg focus:outline-none"
+								/>
+							</div>
+
+							<div>
+								<label className="block text-base text-[#262626] mb-1">Event Rules</label>
+								<textarea
+									name="rules"
+									rows={4}
+									placeholder="Event Rules"
+									value={form.rules}
 									onChange={handleChange}
 									className="w-full p-3 border border-gray-400/40 rounded-lg focus:outline-none"
 								/>
