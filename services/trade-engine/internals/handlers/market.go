@@ -13,14 +13,15 @@ type CreateMarketDataRequest struct {
 	ID              string  `mapstructure:"marketId"`
 	Title           string  `mapstructure:"title"`
 	Symbol          string  `mapstructure:"symbol"`
-	Description     string  `mapstructure:"description"`
 	YesPrice        float32 `mapstructure:"yesPrice"`
 	NoPrice         float32 `mapstructure:"NoPrice"`
+	EOS             string  `mapstructure:"eos"`
+	Rules           string  `mapstructure:"rules"`
 	Thumbnail       string  `mapstructure:"thumbnail"`
 	CategoryId      string  `mapstructure:"categoryId"`
-	SourceOfTruth   string  `mapstructure:"sourceOfTruth"`
 	StartDate       string  `mapstructure:"startDate"`
 	EndDate         string  `mapstructure:"endDate"`
+	SourceOfTruth   string  `mapstructure:"sourceOfTruth"`
 	NumberOfTraders int16   `mapstructure:"numberOfTraders"`
 }
 
@@ -45,6 +46,7 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 	}
 
 	startTime, err := time.Parse(time.RFC3339, data.StartDate)
+
 	if err != nil {
 		log.Error().Err(err).Msg("Invalid startDate format")
 		return types.QueueResponse{
@@ -56,6 +58,7 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 	}
 
 	endTime, err := time.Parse(time.RFC3339, data.EndDate)
+
 	if err != nil {
 		log.Error().Err(err).Msg("Invalid endDate format")
 		return types.QueueResponse{
@@ -70,7 +73,6 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 		MarketId:        data.ID,
 		Title:           data.Title,
 		Symbol:          data.Symbol,
-		Description:     data.Description,
 		YesPrice:        data.YesPrice,
 		NoPrice:         data.NoPrice,
 		Thumbnail:       data.Thumbnail,
@@ -81,10 +83,11 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 		Inbox:           make(chan types.MarketMessage, 100),
 		OrderBook:       &types.OrderBook{},
 		Overview: types.Overview{
+			SourceOfTruth: data.SourceOfTruth,
 			StartDate:     startTime,
 			EndDate:       endTime,
-			SourceOfTruth: data.SourceOfTruth,
-			Details:       "Some random things right now",
+			EOS:           data.EOS,
+			Rules:         data.Rules,
 		},
 	}
 
@@ -127,33 +130,35 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 				Status:     types.Success,
 				Message:    "Market details fetched successfully",
 				Data: struct {
-					MarketId    string             `json:"marketId"`
-					Title       string             `json:"title"`
-					Symbol      string             `json:"symbol"`
-					Description string             `json:"description"`
-					YesPrice    float32            `json:"yesPrice"`
-					NoPrice     float32            `json:"noPrice"`
-					Thumbnail   string             `json:"thumbnail"`
-					Volume      float64            `json:"volume"`
-					Status      string             `json:"status"`
-					OrderBook   types.OrderBook    `json:"orderbook"`
-					Overview    types.Overview     `json:"overview"`
-					Activities  []types.Activity   `json:"activities"`
-					Timeline    []types.PricePoint `json:"timeline"`
+					MarketId   string             `json:"marketId"`
+					Title      string             `json:"title"`
+					Symbol     string             `json:"symbol"`
+					YesPrice   float32            `json:"yesPrice"`
+					NoPrice    float32            `json:"noPrice"`
+					Thumbnail  string             `json:"thumbnail"`
+					EOS        string             `json:"eos"`
+					Rules      string             `json:"rules"`
+					Volume     float64            `json:"volume"`
+					Status     string             `json:"status"`
+					OrderBook  types.OrderBook    `json:"orderbook"`
+					Overview   types.Overview     `json:"overview"`
+					Activities []types.Activity   `json:"activities"`
+					Timeline   []types.PricePoint `json:"timeline"`
 				}{
-					MarketId:    market.MarketId,
-					Title:       market.Title,
-					Symbol:      market.Symbol,
-					Volume:      market.Volume,
-					YesPrice:    market.YesPrice,
-					Thumbnail:   market.Thumbnail,
-					Description: market.Description,
-					NoPrice:     market.NoPrice,
-					Status:      string(market.Status),
-					OrderBook:   *market.OrderBook,
-					Overview:    market.Overview,
-					Activities:  market.Activities,
-					Timeline:    market.Timeline,
+					MarketId:   market.MarketId,
+					Title:      market.Title,
+					Symbol:     market.Symbol,
+					Volume:     market.Volume,
+					YesPrice:   market.YesPrice,
+					Thumbnail:  market.Thumbnail,
+					EOS:        market.Overview.EOS,
+					Rules:      market.Overview.Rules,
+					NoPrice:    market.NoPrice,
+					Status:     string(market.Status),
+					OrderBook:  *market.OrderBook,
+					Overview:   market.Overview,
+					Activities: market.Activities,
+					Timeline:   market.Timeline,
 				},
 			}
 		}

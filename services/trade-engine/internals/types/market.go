@@ -11,7 +11,6 @@ type Market struct {
 	MarketId        string
 	Title           string
 	Symbol          string
-	Description     string
 	YesPrice        float32
 	NoPrice         float32
 	Thumbnail       string
@@ -39,7 +38,8 @@ type Overview struct {
 	StartDate     time.Time
 	EndDate       time.Time
 	SourceOfTruth string
-	Details       string
+	Rules         string
+	EOS           string
 }
 
 type PricePoint struct {
