@@ -10,14 +10,24 @@ func (e *Engine) runMarket(market *types.Market) {
 	log.Info().Str("marketId", market.MarketId).Msg("Started market goroutine")
 
 	for msg := range market.Inbox {
-		switch m := msg.(type) {
+		switch msg.Type {
 
-		case types.GetOrderBookMessage:
-			log.Info().Str("marketId", market.MarketId).Msg("Returning order book")
-			m.ReplyChan <- market.OrderBook
+		case types.MarketPlaceOrder:
+			order, ok := msg.Payload.(types.Order)
+			if !ok {
+				log.Error().Msg("invalid payload type for MarketPlaceOrder")
+				msg.ReplyChan <- types.PlaceOrderResponse{
+					Success: false,
+					Message: "Invalid payload type",
+				}
+				continue
+			}
+
+			result := e.handlePlaceOrder(market, order)
+			msg.ReplyChan <- result
 
 		default:
-			log.Error().Str("marketId", market.MarketId).Msg("Unknown message received")
+			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")
 		}
 	}
 }

@@ -24,3 +24,13 @@ type QueueResponse struct {
 type GetOrderBookMessage struct {
 	ReplyChan chan *OrderBook
 }
+
+type PlaceOrderMessage struct {
+	Order     Order
+	ReplyChan chan PlaceOrderResponse
+}
+
+type PlaceOrderResponse struct {
+	Success bool
+	Message string
+}

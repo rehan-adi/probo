@@ -35,6 +35,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "GET_MARKET_WITH_SYMBOL":
 		return handlers.GetMarketDetails(payload)
 
+	case "PLACE_ORDER":
+		return handlers.PlaceOrder(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{

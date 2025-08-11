@@ -26,16 +26,17 @@ func (e *Engine) AddMarket(market *types.Market) {
 	e.MM.Lock()
 	defer e.MM.Unlock()
 
-	e.Market[market.MarketId] = market
+	e.Market[market.Symbol] = market
 
 	go e.runMarket(market)
-
 }
 
-func (e *Engine) GetMarket(id string) (*types.Market, bool) {
+func (e *Engine) GetMarket(symbol string) (*types.Market, bool) {
+
 	e.MM.RLock()
 	defer e.MM.RUnlock()
-	market, ok := e.Market[id]
+
+	market, ok := e.Market[symbol]
 
 	return market, ok
 }

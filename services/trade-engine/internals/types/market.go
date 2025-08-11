@@ -5,7 +5,18 @@ import (
 	"time"
 )
 
-type MarketMessage interface{}
+type MarketMessageType string
+
+const (
+	MarketPlaceOrder  MarketMessageType = "PLACE_ORDER"
+	MarketCancelOrder MarketMessageType = "CANCEL_ORDER"
+)
+
+type MarketMessage struct {
+	Type      MarketMessageType
+	Payload   interface{}
+	ReplyChan chan interface{}
+}
 
 type Market struct {
 	MarketId        string
