@@ -33,4 +33,5 @@ type PlaceOrderMessage struct {
 type PlaceOrderResponse struct {
 	Success bool
 	Message string
+	Data    interface{}
 }

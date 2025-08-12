@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"time"
 	"trade-engine/internals/engine"
 	"trade-engine/internals/types"
@@ -78,10 +79,14 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 		Thumbnail:       data.Thumbnail,
 		CategoryId:      data.CategoryId,
 		NumberOfTraders: data.NumberOfTraders,
+		Traders:         make(map[string]struct{}),
 		Volume:          0,
 		Status:          types.Open,
 		Inbox:           make(chan types.MarketMessage, 100),
-		OrderBook:       &types.OrderBook{},
+		OrderBook: &types.OrderBook{
+			Yes: make([]*types.Order, 0),
+			No:  make([]*types.Order, 0),
+		},
 		Overview: types.Overview{
 			SourceOfTruth: data.SourceOfTruth,
 			StartDate:     startTime,
@@ -117,61 +122,66 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 	}
 
 	engine.EngineInstance.MM.RLock()
-	defer engine.EngineInstance.MM.RUnlock()
+	market, ok := engine.EngineInstance.Market[data.Symbol]
+	engine.EngineInstance.MM.RUnlock()
 
-	for _, market := range engine.EngineInstance.Market {
-
-		if market.Symbol == data.Symbol {
-			log.Info().
-				Str("symbol", data.Symbol).
-				Msg("Market found successfully")
-			return types.QueueResponse{
-				ResponseId: payload.ResponseId,
-				Status:     types.Success,
-				Message:    "Market details fetched successfully",
-				Data: struct {
-					MarketId   string             `json:"marketId"`
-					Title      string             `json:"title"`
-					Symbol     string             `json:"symbol"`
-					YesPrice   float32            `json:"yesPrice"`
-					NoPrice    float32            `json:"noPrice"`
-					Thumbnail  string             `json:"thumbnail"`
-					EOS        string             `json:"eos"`
-					Rules      string             `json:"rules"`
-					Volume     float64            `json:"volume"`
-					Status     string             `json:"status"`
-					OrderBook  types.OrderBook    `json:"orderbook"`
-					Overview   types.Overview     `json:"overview"`
-					Activities []types.Activity   `json:"activities"`
-					Timeline   []types.PricePoint `json:"timeline"`
-				}{
-					MarketId:   market.MarketId,
-					Title:      market.Title,
-					Symbol:     market.Symbol,
-					Volume:     market.Volume,
-					YesPrice:   market.YesPrice,
-					Thumbnail:  market.Thumbnail,
-					EOS:        market.Overview.EOS,
-					Rules:      market.Overview.Rules,
-					NoPrice:    market.NoPrice,
-					Status:     string(market.Status),
-					OrderBook:  *market.OrderBook,
-					Overview:   market.Overview,
-					Activities: market.Activities,
-					Timeline:   market.Timeline,
-				},
-			}
+	if !ok {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Market not found",
 		}
 	}
 
-	log.Warn().
-		Str("symbol", data.Symbol).
-		Msg("Market not found for symbol")
+	orderBook, ok := engine.EngineInstance.GetOrderBook(market.Symbol)
+
+	if !ok {
+		orderBook = types.AggregatedOrderBook{}
+		fmt.Println("Order book is empty")
+	}
+
+	log.Info().
+		Str("marketId", market.MarketId).
+		Int("YesOrders", len(orderBook.Yes)).
+		Int("NoOrders", len(orderBook.No)).
+		Msg("Fetched order book")
 
 	return types.QueueResponse{
 		ResponseId: payload.ResponseId,
-		Status:     types.Error,
-		Message:    "Market not found",
+		Status:     types.Success,
+		Message:    "Market details fetched successfully",
+		Data: struct {
+			MarketId        string                    `json:"marketId"`
+			Title           string                    `json:"title"`
+			Symbol          string                    `json:"symbol"`
+			YesPrice        float32                   `json:"yesPrice"`
+			NoPrice         float32                   `json:"noPrice"`
+			Thumbnail       string                    `json:"thumbnail"`
+			EOS             string                    `json:"eos"`
+			Rules           string                    `json:"rules"`
+			Volume          float64                   `json:"volume"`
+			Status          string                    `json:"status"`
+			OrderBook       types.AggregatedOrderBook `json:"orderbook"`
+			Overview        types.Overview            `json:"overview"`
+			Activities      []types.Activity          `json:"activities"`
+			Timeline        []types.PricePoint        `json:"timeline"`
+			NumberOfTraders int16                     `json:"numberOfTraders"`
+		}{
+			MarketId:        market.MarketId,
+			Title:           market.Title,
+			Symbol:          market.Symbol,
+			Volume:          market.Volume,
+			YesPrice:        market.YesPrice,
+			Thumbnail:       market.Thumbnail,
+			EOS:             market.Overview.EOS,
+			Rules:           market.Overview.Rules,
+			NoPrice:         market.NoPrice,
+			Status:          string(market.Status),
+			OrderBook:       orderBook,
+			Overview:        market.Overview,
+			Activities:      market.Activities,
+			Timeline:        market.Timeline,
+			NumberOfTraders: market.NumberOfTraders,
+		},
 	}
-
 }
