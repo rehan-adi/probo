@@ -1,0 +1,7 @@
+package types
+
+type EVENTS string
+
+const (
+	INCREASE_TRADERS_COUNT EVENTS = "INCREASE_TRADERS_COUNT"
+)

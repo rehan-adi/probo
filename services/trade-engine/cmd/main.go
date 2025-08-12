@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"trade-engine/internals/engine"
+	"trade-engine/internals/services/kafka"
 	"trade-engine/internals/services/redis"
 	"trade-engine/internals/utils"
 
@@ -25,6 +26,10 @@ func main() {
 
 	// connect to redis
 	redis.ConnectRedis()
+
+	// conect to kafka
+	kafka.InitProducer()
+	defer kafka.CloseProducer()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
