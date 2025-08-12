@@ -3,6 +3,7 @@ import { logger } from 'hono/logger';
 import { Context, Hono } from 'hono';
 
 import { authRoutes } from '@/routes/auth';
+import { orderRoutes } from './routes/order';
 import { healthRoutes } from '@/routes/health';
 import { marketRoutes } from './routes/market';
 import { balanceRoutes } from './routes/balance';
@@ -36,6 +37,7 @@ app.use('*', async (c, next) => {
 
 // routes
 app.route('/api/v1/auth', authRoutes);
+app.route('/api/v1/order', orderRoutes);
 app.route('/api/v1/health', healthRoutes);
 app.route('/api/v1/market', marketRoutes);
 app.route('/api/v1/balance', balanceRoutes);
