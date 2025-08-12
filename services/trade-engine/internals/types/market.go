@@ -8,8 +8,9 @@ import (
 type MarketMessageType string
 
 const (
-	MarketPlaceOrder  MarketMessageType = "PLACE_ORDER"
-	MarketCancelOrder MarketMessageType = "CANCEL_ORDER"
+	MarketPlaceOrder   MarketMessageType = "PLACE_ORDER"
+	MarketCancelOrder  MarketMessageType = "CANCEL_ORDER"
+	MarketGetOrderBook MarketMessageType = "GET_ORDERBOOK"
 )
 
 type MarketMessage struct {
@@ -27,6 +28,7 @@ type Market struct {
 	Thumbnail       string
 	CategoryId      string
 	NumberOfTraders int16
+	Traders         map[string]struct{}
 	Volume          float64
 	Status          MarketStatus
 	OrderBook       *OrderBook

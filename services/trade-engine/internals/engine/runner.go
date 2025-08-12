@@ -2,6 +2,7 @@ package engine
 
 import (
 	"trade-engine/internals/types"
+	"trade-engine/internals/utils"
 
 	"github.com/rs/zerolog/log"
 )
@@ -13,18 +14,14 @@ func (e *Engine) runMarket(market *types.Market) {
 		switch msg.Type {
 
 		case types.MarketPlaceOrder:
-			order, ok := msg.Payload.(types.Order)
-			if !ok {
-				log.Error().Msg("invalid payload type for MarketPlaceOrder")
-				msg.ReplyChan <- types.PlaceOrderResponse{
-					Success: false,
-					Message: "Invalid payload type",
-				}
-				continue
-			}
+			e.handlePlaceOrder(msg, market)
 
-			result := e.handlePlaceOrder(market, order)
-			msg.ReplyChan <- result
+		case types.MarketGetOrderBook:
+			market.Mu.RLock()
+			aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+			market.Mu.RUnlock()
+
+			msg.ReplyChan <- aggOrderBook
 
 		default:
 			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")

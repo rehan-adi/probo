@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"time"
 	"trade-engine/internals/engine"
 	"trade-engine/internals/types"
+	"trade-engine/internals/utils"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -58,8 +60,11 @@ func PlaceOrder(payload types.QueuePayload) types.QueueResponse {
 
 	replyChannel := make(chan interface{})
 
+	orderId := utils.GenerateOrderID()
+
 	order := types.Order{
 		UserId:    data.UserId,
+		OrderId:   orderId,
 		MarketId:  data.MarketId,
 		Symbol:    data.Symbol,
 		Side:      types.Side(data.Side),
@@ -67,6 +72,7 @@ func PlaceOrder(payload types.QueuePayload) types.QueueResponse {
 		Action:    types.Action(data.Action),
 		OrderType: types.OrderType(data.OrderType),
 		Quantity:  data.Quantity,
+		Timestamp: time.Now().UTC(),
 	}
 
 	market.Inbox <- types.MarketMessage{
@@ -78,16 +84,17 @@ func PlaceOrder(payload types.QueuePayload) types.QueueResponse {
 	rawResp := <-replyChannel
 
 	placeOrderResp, ok := rawResp.(types.PlaceOrderResponse)
+
 	if !ok {
 		return types.QueueResponse{
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
-			Message:    "Invalid response from market",
+			Message:    "Invalid response from market, having internal issues.",
 		}
 	}
 
-	// Convert PlaceOrderResponse -> QueueResponse
 	status := types.Error
+
 	if placeOrderResp.Success {
 		status = types.Success
 	}
@@ -96,7 +103,7 @@ func PlaceOrder(payload types.QueuePayload) types.QueueResponse {
 		ResponseId: payload.ResponseId,
 		Status:     status,
 		Message:    placeOrderResp.Message,
-		Data:       nil,
+		Data:       placeOrderResp.Data,
 	}
 
 }
