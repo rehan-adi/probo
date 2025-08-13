@@ -15,7 +15,8 @@
 		"db:push": "bun run --filter=@probo/database db:push",
 		"db:seed": "bun run --filter=@probo/database db:seed",
 		"web:dev": "bun run --filter=@probo/web-app dev",
-		"web:build": "bun run --filter=@probo/web-app build"
+		"web:build": "bun run --filter=@probo/web-app build",
+		"db:processor:start": "bun run --filter=@probo/db-processor start"
 	},
 	"workspaces": [
 		"apps/*",

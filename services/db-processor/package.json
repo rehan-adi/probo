@@ -1,0 +1,33 @@
+{
+	"name": "@probo/db-processor",
+	"version": "1.0.0",
+	"description": "Database processor service for Probo",
+	"module": "src/server.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun run src/server.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@probo/database": "workspace:*",
+		"@probo/logger": "workspace:*",
+		"kafkajs": "^2.2.4"
+	},
+	"keywords": [
+		"probo",
+		"db-processor",
+		"service",
+		"database",
+		"typescript",
+		"bun",
+		"postgres",
+		"kafka",
+		"microservices"
+	]
+}

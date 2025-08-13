@@ -1,0 +1,3 @@
+export const DB_EVENTS = {
+	INCREASE_TRADERS_COUNT: 'INCREASE_TRADERS_COUNT',
+} as const;
