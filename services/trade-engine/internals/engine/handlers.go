@@ -187,7 +187,7 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 
 		// push events to kafka for DB update
 		err := kafka.ProduceEventToDBProcessor(
-			"process:db",
+			"process_db",
 			string(types.INCREASE_TRADERS_COUNT),
 			map[string]interface{}{
 				"marketId": order.MarketId,
