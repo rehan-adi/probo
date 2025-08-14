@@ -9,6 +9,7 @@
 		"format:check": "prettier --check .",
 		"dev:api": "bun --filter @probo/api-service dev",
 		"start:api": "bun --filter @probo/api-service start",
+		"start:stream:service": "bun --filter @probo/stream-service start",
 		"db:generate": "bun run --filter=@probo/database db:generate",
 		"db:migrate": "bun run --filter=@probo/database db:migrate",
 		"db:studio": "bun run --filter=@probo/database db:studio",
