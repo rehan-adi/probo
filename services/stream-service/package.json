@@ -1,0 +1,34 @@
+{
+	"name": "@probo/stream-service",
+	"version": "1.0.0",
+	"description": "stream service for Probo",
+	"module": "src/server.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun run src/server.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@probo/logger": "workspace:*",
+		"hono": "^4.9.1",
+		"ioredis": "^5.7.0",
+		"socket.io": "^4.8.1"
+	},
+	"keywords": [
+		"probo",
+		"bun",
+		"typescript",
+		"socket.io",
+		"web socket",
+		"stream-service",
+		"redis",
+		"pub/sub",
+		"microservices"
+	]
+}
