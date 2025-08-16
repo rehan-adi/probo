@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios';
+import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
 import { ChevronRight } from 'lucide-react';
 import { useParams } from 'react-router-dom';
@@ -12,7 +13,6 @@ export default function MarketDetails() {
 	const { symbol } = useParams<{ symbol: string }>();
 
 	const { isLoggedIn } = useAuthStore();
-
 	const loggedIn = isLoggedIn();
 
 	const [market, setMarket] = useState<any>(null);
@@ -22,6 +22,31 @@ export default function MarketDetails() {
 	const orderbookRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<HTMLDivElement>(null);
 	const overviewRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!symbol) return;
+
+		if (socket.connected) {
+			socket.emit('SUBSCRIBE', symbol);
+		} else {
+			socket.connect();
+			socket.once('connect', () => {
+				socket.emit('SUBSCRIBE', symbol);
+			});
+		}
+
+		socket.on('market:update', (data) => {
+			console.log(data);
+			// setMarket(data);
+		});
+
+		return () => {
+			socket.emit('UNSUBSCRIBE', symbol);
+			socket.off('market:update');
+			socket.off('connect');
+			socket.disconnect();
+		};
+	}, [symbol]);
 
 	useEffect(() => {
 		if (!symbol) return;
@@ -46,22 +71,6 @@ export default function MarketDetails() {
 	};
 
 	const [innerTab, setInnerTab] = useState('orderbook');
-
-	const yesOrders = [
-		{ price: 3.5, qty: 10 },
-		{ price: 4, qty: 39 },
-		{ price: 4.5, qty: 499 },
-		{ price: 5, qty: 496 },
-		{ price: 9, qty: 5 },
-	];
-
-	const noOrders = [
-		{ price: 8, qty: 120 },
-		{ price: 8.5, qty: 1155 },
-		{ price: 9, qty: 3 },
-		{ price: 9.5, qty: 46 },
-		{ price: 0, qty: 0 },
-	];
 
 	if (loading) return <p className="p-4">Loading...</p>;
 	if (!market) return <p className="p-4">Market not found.</p>;
@@ -140,24 +149,32 @@ export default function MarketDetails() {
 												QTY <span className="text-[#197BFF]">YES</span>
 											</span>
 										</div>
-										{yesOrders.map((yes, idx) => {
-											const maxQty = Math.max(...yesOrders.map((o) => o.qty));
-											const widthPercent = (yes.qty / maxQty) * 100;
+										{[...market.orderbook.yes]
+											.filter((order) => order.price > 0)
+											.sort((a, b) => a.price - b.price)
+											.slice(0, 5)
+											.map((yes: { quantity: number; price: number }, idx: number) => {
+												const maxQty = Math.max(
+													...market.orderbook.yes
+														.filter((o: any) => o.price > 0)
+														.map((o: any) => o.quantity),
+												);
+												const widthPercent = maxQty > 0 ? (yes.quantity / maxQty) * 100 : 0;
 
-											return (
-												<div key={idx} className="grid grid-cols-2 border-t">
-													<span className="px-1 py-1.5">{yes.price}</span>
-													<span
-														className="text-right relative py-1.5 px-1"
-														style={{
-															background: `linear-gradient(to left, #BCD8FE ${widthPercent}%, transparent ${widthPercent}%)`,
-														}}
-													>
-														{yes.qty}
-													</span>
-												</div>
-											);
-										})}
+												return (
+													<div key={idx} className="grid grid-cols-2 border-t">
+														<span className="px-1 py-1.5">{yes.price}</span>
+														<span
+															className="text-right relative py-1.5 px-1 block"
+															style={{
+																background: `linear-gradient(to left, #BCD8FE ${widthPercent}%, transparent ${widthPercent}%)`,
+															}}
+														>
+															{yes.quantity}
+														</span>
+													</div>
+												);
+											})}
 									</div>
 
 									<div>
@@ -167,24 +184,32 @@ export default function MarketDetails() {
 												QTY <span className="text-[#DC2804]">NO</span>
 											</span>
 										</div>
-										{noOrders.map((no, idx) => {
-											const maxQty = Math.max(...noOrders.map((o) => o.qty));
-											const widthPercent = (no.qty / maxQty) * 100;
+										{[...market.orderbook.no]
+											.filter((order) => order.price > 0)
+											.sort((a, b) => a.price - b.price)
+											.slice(0, 5)
+											.map((no: { price: number; quantity: number }, idx: number) => {
+												const maxQty = Math.max(
+													...market.orderbook.no
+														.filter((o: any) => o.price > 0)
+														.map((o: any) => o.quantity),
+												);
+												const widthPercent = maxQty > 0 ? (no.quantity / maxQty) * 100 : 0;
 
-											return (
-												<div key={idx} className="grid grid-cols-2 border-t">
-													<span className="px-1 py-1.5">{no.price}</span>
-													<span
-														className="text-right relative py-1.5 px-1"
-														style={{
-															background: `linear-gradient(to left, #FFDCDB ${widthPercent}%, transparent ${widthPercent}%)`,
-														}}
-													>
-														{no.qty}
-													</span>
-												</div>
-											);
-										})}
+												return (
+													<div key={idx} className="grid grid-cols-2 border-t">
+														<span className="px-1 py-1.5">{no.price}</span>
+														<span
+															className="text-right relative py-1.5 px-1 block"
+															style={{
+																background: `linear-gradient(to left, #FFDCDB ${widthPercent}%, transparent ${widthPercent}%)`,
+															}}
+														>
+															{no.quantity}
+														</span>
+													</div>
+												);
+											})}
 									</div>
 								</div>
 							)}
