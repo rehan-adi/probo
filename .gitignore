@@ -139,5 +139,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 
-trade-engine (Go)
-/services/trade-engine/bin/
+matching-engine (Go)
+/services/matching-engine/bin/
