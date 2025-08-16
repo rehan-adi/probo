@@ -1,10 +1,10 @@
 .PHONY: build run clean
 
 build:
-	cd services/trade-engine && go build -o bin/trade-engine ./cmd
+	cd services/matching-engine && go build -o bin/matching-engine ./cmd
 
 run:
-	cd services/trade-engine && go run ./cmd
+	cd services/matching-engine && go run ./cmd
 
 clean:
-	cd services/trade-engine && rm -rf bin/
+	cd services/matching-engine && rm -rf bin/
