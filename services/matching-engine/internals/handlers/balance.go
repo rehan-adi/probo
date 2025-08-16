@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"trade-engine/internals/engine"
-	"trade-engine/internals/types"
+	"matching-engine/internals/engine"
+	"matching-engine/internals/types"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"

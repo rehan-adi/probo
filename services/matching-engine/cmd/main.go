@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"trade-engine/internals/engine"
-	"trade-engine/internals/services/kafka"
-	"trade-engine/internals/services/redis"
-	"trade-engine/internals/utils"
+	"matching-engine/internals/engine"
+	"matching-engine/internals/services/kafka"
+	"matching-engine/internals/services/redis"
+	"matching-engine/internals/utils"
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -25,7 +25,7 @@ func main() {
 	log.Info().Msg("📄 Logger initialized")
 
 	// connect to redis
-	redis.ConnectRedis()
+	client := redis.ConnectRedis()
 
 	// conect to kafka
 	kafka.InitProducer()
@@ -35,10 +35,10 @@ func main() {
 	defer cancel()
 
 	// Initialize engine
-	engine.InitEngine()
+	engine.InitEngine(client)
 	log.Info().Msg("Trade engine initialized")
 
-	redis.Consumer(ctx)
+	redis.Consumer(ctx, client)
 
 	log.Info().Msg("🚀 Trade Engine started successfully")
 

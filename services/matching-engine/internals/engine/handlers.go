@@ -1,10 +1,10 @@
 package engine
 
 import (
+	"matching-engine/internals/services/kafka"
+	"matching-engine/internals/types"
 	"sort"
 	"time"
-	"trade-engine/internals/services/kafka"
-	"trade-engine/internals/types"
 
 	"github.com/rs/zerolog/log"
 )
@@ -154,6 +154,8 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 			market.OrderBook.Yes = oppositeBook
 		}
 
+		e.BroadcastMessage("", "")
+
 		log.Info().
 			Str("marketId", market.MarketId).
 			Int("YesOrders", len(market.OrderBook.Yes)).
@@ -191,7 +193,7 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 			string(types.INCREASE_TRADERS_COUNT),
 			map[string]interface{}{
 				"marketId": order.MarketId,
-				"count": 1,
+				"count":    1,
 			},
 		)
 

@@ -1,8 +1,8 @@
 package router
 
 import (
-	"trade-engine/internals/handlers"
-	"trade-engine/internals/types"
+	"matching-engine/internals/handlers"
+	"matching-engine/internals/types"
 
 	"github.com/rs/zerolog/log"
 )

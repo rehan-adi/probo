@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"trade-engine/internals/types"
-	"trade-engine/internals/utils"
+	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 
 	"github.com/rs/zerolog/log"
 )

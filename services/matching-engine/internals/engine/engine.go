@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"matching-engine/internals/types"
 	"sync"
-	"trade-engine/internals/types"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type Engine struct {
@@ -10,14 +12,17 @@ type Engine struct {
 	Market map[string]*types.Market
 	UM     sync.RWMutex
 	MM     sync.RWMutex
+
+	Redis *redis.Client
 }
 
 var EngineInstance *Engine
 
-func InitEngine() {
+func InitEngine(r *redis.Client) {
 	EngineInstance = &Engine{
 		User:   make(map[string]*types.User),
 		Market: make(map[string]*types.Market),
+		Redis:  r,
 	}
 }
 

@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"matching-engine/internals/engine"
+	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 	"time"
-	"trade-engine/internals/engine"
-	"trade-engine/internals/types"
-	"trade-engine/internals/utils"
 
 	"github.com/mitchellh/mapstructure"
 )

@@ -8,9 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var Client *redis.Client
-
-func ConnectRedis() {
+func ConnectRedis() *redis.Client {
 
 	url := os.Getenv("REDIS_URL")
 
@@ -20,14 +18,16 @@ func ConnectRedis() {
 		log.Fatal().Err(err).Msg("failed to parse redis url")
 	}
 
-	Client = redis.NewClient(option)
+	client := redis.NewClient(option)
 
-	_, err = Client.Ping(context.Background()).Result()
+	_, err = client.Ping(context.Background()).Result()
 
 	if err != nil {
 		log.Error().Err(err).Msg("failed to connect to redis")
 	}
 
 	log.Info().Msg("connected to redis")
+
+	return client
 
 }

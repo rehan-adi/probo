@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"matching-engine/internals/engine"
+	"matching-engine/internals/types"
 	"time"
-	"trade-engine/internals/engine"
-	"trade-engine/internals/types"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"

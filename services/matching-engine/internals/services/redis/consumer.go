@@ -3,20 +3,21 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"matching-engine/internals/router"
+	"matching-engine/internals/types"
 	"time"
-	"trade-engine/internals/router"
-	"trade-engine/internals/types"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
 
-func Consumer(ctx context.Context) {
+func Consumer(ctx context.Context, client *redis.Client) {
 
-	log.Info().Msg("Consumer started")
+	log.Info().Msg("Consumer started and ready to consume messages")
 
 	for {
 
-		result, err := Client.BRPop(ctx, 5*time.Minute, "engine:queue").Result()
+		result, err := client.BRPop(ctx, 5*time.Minute, "engine:queue").Result()
 
 		if err != nil {
 			log.Warn().Err(err).Msg("Failed to consume from queue")
@@ -55,7 +56,7 @@ func Consumer(ctx context.Context) {
 
 		responseKey := "engine:response:" + response.ResponseId
 
-		err = Client.Publish(ctx, responseKey, responseJSON).Err()
+		err = client.Publish(ctx, responseKey, responseJSON).Err()
 
 		if err != nil {
 			log.Error().Err(err).Str("responseId", response.ResponseId).Msg("Failed to send response to api")
