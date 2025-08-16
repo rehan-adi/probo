@@ -1,3 +1,4 @@
+import { io } from '@/app';
 import Redis from 'ioredis';
 import { ENV } from '@/config/env';
 import { logger } from '@/utils/logger';
@@ -23,9 +24,15 @@ export const startStreamSubscriber = async () => {
 		}
 	});
 
-	redisSubscriber.on('message', (message) => {
+	redisSubscriber.on('message', (channel, message) => {
 		try {
 			const data = JSON.parse(message);
+
+			if (data.symbol) {
+				io.to(data.symbol).emit('MESSAGE', data);
+			} else {
+				logger.warn('Message missing symbol: ' + message);
+			}
 		} catch (e) {
 			logger.error('Invalid message format from Redis: ' + message);
 		}

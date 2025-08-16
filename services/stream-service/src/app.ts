@@ -18,16 +18,24 @@ export const httpServer = createServer(app.fetch as any);
 
 export const io = new Server(httpServer, {
 	cors: {
-		origin: '*',
+		origin: 'localhost:5173',
+		credentials: true,
+		methods: ['GET', 'POST'],
 	},
+	transports: ['websocket', 'polling'],
 });
 
 io.on('connection', (socket) => {
 	console.log(`Client connected: ${socket.id}`);
 
-	socket.on('subscribe', (symbol: string) => {
+	socket.on('SUBSCRIBE', (symbol: string) => {
 		socket.join(symbol);
 		console.log(`Client ${socket.id} joined symbol: ${symbol}`);
+	});
+
+	socket.on('UNSUBSCRIBE', (symbol: string) => {
+		socket.leave(symbol);
+		console.log(`Client ${socket.id} left symbol: ${symbol}`);
 	});
 
 	socket.on('disconnect', () => {
