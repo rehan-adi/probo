@@ -5,6 +5,7 @@ import (
 	"matching-engine/internals/services/kafka"
 	"matching-engine/internals/types"
 	"matching-engine/internals/utils"
+	"math"
 	"sort"
 	"time"
 
@@ -157,10 +158,32 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 		}
 
 		aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+		probability := utils.GetYesProbability(aggOrderBook)
+
+		yesPrice := probability * 10
+		noPrice := (1 - probability) * 10
+
+		yesPrice = math.Round(yesPrice*2) / 2
+		noPrice = math.Round(noPrice*2) / 2
+
+		market.YesPrice = float32(yesPrice)
+		market.NoPrice = float32(noPrice)
+
+		kafka.ProduceEventToDBProcessor(
+			"process_db",
+			string(types.UPDATE_STOCK_PRICE),
+			map[string]interface{}{
+				"marketId": order.MarketId,
+				"yesPrice": yesPrice,
+				"noPrice":  noPrice,
+			},
+		)
 
 		payload := map[string]interface{}{
 			"symbol":    order.Symbol,
 			"orderbook": aggOrderBook,
+			"yesPrice":  yesPrice,
+			"noPrice":   noPrice,
 		}
 
 		data, err := json.Marshal(payload)
@@ -193,10 +216,32 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 		}
 
 		aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+		probability := utils.GetYesProbability(aggOrderBook)
+
+		yesPrice := probability * 10
+		noPrice := (1 - probability) * 10
+
+		yesPrice = math.Round(yesPrice*2) / 2
+		noPrice = math.Round(noPrice*2) / 2
+
+		market.YesPrice = float32(yesPrice)
+		market.NoPrice = float32(noPrice)
+
+		kafka.ProduceEventToDBProcessor(
+			"process_db",
+			string(types.UPDATE_STOCK_PRICE),
+			map[string]interface{}{
+				"marketId": order.MarketId,
+				"yesPrice": yesPrice,
+				"noPrice":  noPrice,
+			},
+		)
 
 		payload := map[string]interface{}{
 			"symbol":    order.Symbol,
 			"orderbook": aggOrderBook,
+			"yesPrice":  yesPrice,
+			"noPrice":   noPrice,
 		}
 
 		data, err := json.Marshal(payload)
