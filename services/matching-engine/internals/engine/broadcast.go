@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (e *Engine) BroadcastMessage(channel, message string) {
+func (e *Engine) BroadcastMessage(channel string, message string) {
 
 	err := e.Redis.Publish(context.Background(), channel, message).Err()
 

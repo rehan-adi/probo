@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"encoding/json"
 	"matching-engine/internals/services/kafka"
 	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 	"sort"
 	"time"
 
@@ -154,13 +156,26 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 			market.OrderBook.Yes = oppositeBook
 		}
 
-		e.BroadcastMessage("", "")
+		aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+
+		payload := map[string]interface{}{
+			"symbol":    order.Symbol,
+			"orderbook": aggOrderBook,
+		}
+
+		data, err := json.Marshal(payload)
+
+		if err != nil {
+			log.Error().Err(err).Msg("failed to marshal payload for broadcast")
+		} else {
+			e.BroadcastMessage("stream:data", string(data))
+		}
 
 		log.Info().
 			Str("marketId", market.MarketId).
 			Int("YesOrders", len(market.OrderBook.Yes)).
 			Int("NoOrders", len(market.OrderBook.No)).
-			Msg("Order book updated after MARKET order")
+			Msg("Order book updated after MARKET order and broadcast to stream service")
 
 	} else if order.OrderType == types.LIMIT {
 		orderCopy := order
@@ -176,6 +191,22 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 				return market.OrderBook.No[i].Price > market.OrderBook.No[j].Price
 			})
 		}
+
+		aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+
+		payload := map[string]interface{}{
+			"symbol":    order.Symbol,
+			"orderbook": aggOrderBook,
+		}
+
+		data, err := json.Marshal(payload)
+
+		if err != nil {
+			log.Error().Err(err).Msg("failed to marshal payload for broadcast")
+		} else {
+			e.BroadcastMessage("stream:data", string(data))
+		}
+
 		log.Info().
 			Str("marketId", market.MarketId).
 			Int("YesOrders", len(market.OrderBook.Yes)).
