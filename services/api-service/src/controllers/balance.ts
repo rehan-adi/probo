@@ -10,6 +10,7 @@ import { balanceSchema } from '@/validations/balance';
  * @param c Hono context
  * @returns Json response with user balance
  */
+
 export const getBalance = async (c: Context) => {
 	try {
 		const userId = c.get('user').id;
@@ -19,7 +20,7 @@ export const getBalance = async (c: Context) => {
 				{
 					context: 'GET_BALANCE_UNAUTHORIZED',
 				},
-				'Unauthorized access attempt to getBalance',
+				'Unauthorized access attempt to getBalance controller',
 			);
 			return c.json(
 				{
@@ -45,7 +46,6 @@ export const getBalance = async (c: Context) => {
 				{
 					success: false,
 					message: response.message,
-					error: response.error,
 				},
 				500,
 			);
@@ -83,7 +83,7 @@ export const getBalance = async (c: Context) => {
 /**
  * Deposite or Onramp balance to user wallet
  * @param c Hono context
- * @returns Json esponse
+ * @returns Json response
  */
 
 export const deposit = async (c: Context) => {
@@ -220,7 +220,8 @@ export const deposit = async (c: Context) => {
 		return c.json(
 			{
 				success: true,
-				message: 'Deposit completed successfully',
+				message: response.message,
+				data: response.data,
 			},
 			200,
 		);
@@ -242,6 +243,12 @@ export const deposit = async (c: Context) => {
 		);
 	}
 };
+
+/**
+ * Get Deposit amount for a user
+ * @param c Hono context
+ * @returns Json response
+ */
 
 export const getDepositAmount = async (c: Context) => {
 	try {
@@ -321,6 +328,131 @@ export const getDepositAmount = async (c: Context) => {
 			{
 				success: false,
 				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
+
+/**
+ * Withdraw money for user
+ * @param c Hono context
+ * @returns Json response
+ */
+
+export const withdraw = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+
+		if (!userId) {
+			logger.warn(
+				{
+					context: 'WITHDRAW_UNAUTHORIZED',
+				},
+				'Unauthorized access attempt to withdraw',
+			);
+			return c.json(
+				{
+					success: false,
+					error: 'Unauthorized',
+				},
+				401,
+			);
+		}
+
+		const reqBody = await c.req.json<{
+			amount: string;
+			currentWalletAmount: string;
+		}>();
+
+		const amount = Number(reqBody.amount);
+		const currentWalletAmount = Number(reqBody.currentWalletAmount);
+
+		if (amount > currentWalletAmount) {
+			return c.json(
+				{
+					success: false,
+					message: 'Insufficient balance for withdrawal',
+				},
+				400,
+			);
+		}
+
+		const response = await pushToQueue(EVENTS.WITHDRAW_BALANCE, {
+			userId: userId,
+			amount: amount,
+		});
+
+		if (!response.success) {
+			return c.json(
+				{
+					success: false,
+					message: response.message,
+					data: response.data,
+				},
+				503,
+			);
+		}
+
+		if (response.success) {
+			try {
+				await prisma.$transaction(async (tx) => {
+					await tx.inrBalance.update({
+						where: { id: userId },
+						data: { balance: { decrement: amount } },
+					});
+
+					await tx.transactionHistory.create({
+						data: {
+							userId,
+							amount,
+							type: 'WITHDRAWAL',
+							status: 'SUCCESS',
+							remarks: 'Withdrawal processed successfully',
+						},
+					});
+				});
+			} catch (error) {
+				logger.error(
+					{
+						alert: true,
+						error,
+						userId,
+						amount,
+					},
+					'Failed to update DB after withdrawal',
+				);
+				return c.json(
+					{
+						success: false,
+						message: 'Withdrawal processed but failed to update DB, please contact support',
+					},
+					500,
+				);
+			}
+		}
+
+		return c.json(
+			{
+				success: true,
+				message: response.message,
+				data: response.data,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'WITHDRAW_CONTROLLER_FAIL',
+				error,
+			},
+			'Unhandled error in withdraw controller',
+		);
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
 			},
 			500,
 		);
