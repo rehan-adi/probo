@@ -29,6 +29,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "DEPOSIT_BALANCE":
 		return handlers.Deposit(payload)
 
+	case "WITHDRAW_BALANCE":
+		return handlers.Withdraw(payload)
+
 	case "CREATE_MARKET":
 		return handlers.CreateMarket(payload)
 
