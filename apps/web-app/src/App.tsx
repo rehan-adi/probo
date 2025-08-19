@@ -8,11 +8,13 @@ import PrivateRoute from './PrivateRoute';
 import RechargePage from '@/pages/Recharge';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
-import CreateEvent from '@/pages/CreateEvent';
 import MarketDetails from '@/pages/EventDetails';
+import CreateEvent from '@/pages/admin/CreateEvent';
 import VerificationgePage from '@/pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
 import TransactionHistoryPage from '@/pages/TransactionHistory';
+import VerificationListsPage from '@/pages/admin/VerificationLists';
+import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function App() {
@@ -36,18 +38,25 @@ function App() {
 			<Navbar />
 			<OnboardModal />
 			<Routes>
+				{/* public routes  */}
 				<Route path="/" element={<Navigate to="/events" replace />} />
 				<Route path="/events" element={<EventsPage />} />
 				<Route path="/events/:symbol" element={<MarketDetails />} />
 
+				{/* all private routes */}
 				<Route element={<PrivateRoute />}>
-					<Route path="/events/create" element={<CreateEvent />} />
+					{/* user specific routes */}
 					<Route path="/wallet">
 						<Route index element={<WalletPage />} />
 						<Route path="recharge" element={<RechargePage />} />
 					</Route>
 					<Route path="/verification" element={<VerificationgePage />} />
 					<Route path="/transaction-history" element={<TransactionHistoryPage />} />
+
+					{/* admin specific routes  */}
+					<Route path="/events/create" element={<CreateEvent />} />
+					<Route path="/verifications" element={<VerificationListsPage />} />
+					<Route path="/verifications/:id" element={<VerificationDetailsPage />} />
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
