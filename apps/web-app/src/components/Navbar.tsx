@@ -1,18 +1,21 @@
 import { logout } from '@/api/auth';
 import BottomNavbar from './BottomNavbar';
+import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
 import logo from '@/assets/images/logo.avif';
 import { LINKS } from '@/constants/constants';
 import pfpIcon from '@/assets/images/pfp.avif';
-import homeIcon from '@/assets/images/home.svg';
 import { useEffect, useRef, useState } from 'react';
 import walletIcon from '@/assets/images/wallet.svg';
 import { Link, useNavigate } from 'react-router-dom';
+import homeActiveIcon from '@/assets/images/home.svg';
+import homeIcon from '@/assets/images/home-active.svg';
 import portfolioIcon from '@/assets/images/portfolio.svg';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
 import translationIcon from '@/assets/images/translation.avif';
+import portfolioAtiveIcon from '@/assets/images/portfolio-active.svg';
 import { ChevronDown, ClipboardCheck, LogOut, Menu, Store, X } from 'lucide-react';
 
 export default function Navbar() {
@@ -61,7 +64,9 @@ export default function Navbar() {
 		<nav className="w-full bg-[#f4f4f5] fixed px-4 lg:px-12 z-50 custom-px">
 			<div className="md:h-16 h-12 border-b border-gray-300/50 flex items-center justify-between">
 				<div className="flex items-center gap-14 lg:gap-14">
-					<img src={logo} className="md:w-[120px] w-[67px] md:h-8 h-[18px]" alt="Logo" />
+					<Link to="/events">
+						<img src={logo} className="md:w-[120px] w-[67px] md:h-8 h-[18px]" alt="Logo" />
+					</Link>
 
 					{!user && (
 						<div className="hidden md:flex items-center gap-9 lg:gap-9 custom-gap text-sm">
@@ -111,14 +116,38 @@ export default function Navbar() {
 
 				{user?.role == 'USER' && (
 					<div className="flex justify-between items-center lg:gap-8 gap-4">
-						<div className="md:flex hidden justify-center items-center flex-col">
-							<img src={homeIcon} alt="Home icon" className="w-5 h-5" />
-							<span className="text-sm">Home</span>
-						</div>
-						<div className="md:flex hidden justify-center items-center flex-col">
-							<img src={portfolioIcon} alt="Portfolio icon" className="w-5 h-5" />
-							<span className="text-sm">Portfolio</span>
-						</div>
+						<NavLink
+							to="/events"
+							end
+							className="md:flex hidden justify-center items-center flex-col"
+						>
+							{({ isActive }) => (
+								<>
+									<img
+										src={isActive ? homeActiveIcon : homeIcon}
+										alt="Home icon"
+										className="w-5 h-6"
+									/>
+									<span className="text-sm">Home</span>
+								</>
+							)}
+						</NavLink>
+						<NavLink
+							to="/portfolio"
+							end
+							className="md:flex hidden justify-center items-center flex-col"
+						>
+							{({ isActive }) => (
+								<>
+									<img
+										src={isActive ? portfolioAtiveIcon : portfolioIcon}
+										alt="Home icon"
+										className="w-5 h-6"
+									/>
+									<span className="text-sm">Portfolio</span>
+								</>
+							)}
+						</NavLink>
 						<Link
 							to="/wallet"
 							className="lg:py-2 py-1 pl-3 pr-8 gap-6 border rounded border-gray-300/50 flex items-center hover:bg-gray-100 transition"
@@ -128,7 +157,7 @@ export default function Navbar() {
 								<span className="text-gray-800 text-sm font-semibold">₹0</span>
 							) : (
 								<span className="text-gray-800 text-sm font-semibold">
-									₹{balance?.data.data ?? 0}
+									₹{balance?.data.data.amount ?? 0}
 								</span>
 							)}
 						</Link>
@@ -241,7 +270,7 @@ export default function Navbar() {
 							<span className="text-sm md:flex hidden text-[#262626]">Create Event</span>
 						</a>
 
-						<a href="/pending-verifications" className="flex flex-col items-center cursor-pointer">
+						<a href="/verifications" className="flex flex-col items-center cursor-pointer">
 							<ClipboardCheck className="w-5 h-5" />
 							<span className="text-sm md:flex hidden text-[#262626]">Verifications</span>
 						</a>
