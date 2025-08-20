@@ -398,7 +398,7 @@ export const withdraw = async (c: Context) => {
 			try {
 				await prisma.$transaction(async (tx) => {
 					await tx.inrBalance.update({
-						where: { id: userId },
+						where: { userId },
 						data: { balance: { decrement: amount } },
 					});
 
