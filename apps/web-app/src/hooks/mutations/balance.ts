@@ -1,4 +1,4 @@
-import { deposit } from '@/api/balance';
+import { deposit, withdraw } from '@/api/balance';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const useDepositMutation = () => {
@@ -10,5 +10,18 @@ export const useDepositMutation = () => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['balance'] });
 		},
+	});
+};
+
+export const useWithdrawMutation = () => {
+	return useMutation({
+		mutationKey: ['withdrawl'],
+		mutationFn: ({
+			amount,
+			currentWalletAmount,
+		}: {
+			amount: string;
+			currentWalletAmount: string;
+		}) => withdraw(amount, currentWalletAmount),
 	});
 };

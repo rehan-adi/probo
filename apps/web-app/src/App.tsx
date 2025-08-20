@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PrivateRoute from './PrivateRoute';
 import RechargePage from '@/pages/Recharge';
+import WithdrawPage from '@/pages/Withdraw';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
 import MarketDetails from '@/pages/EventDetails';
@@ -49,6 +50,7 @@ function App() {
 					<Route path="/wallet">
 						<Route index element={<WalletPage />} />
 						<Route path="recharge" element={<RechargePage />} />
+						<Route path="withdraw" element={<WithdrawPage />} />
 					</Route>
 					<Route path="/verification" element={<VerificationgePage />} />
 					<Route path="/transaction-history" element={<TransactionHistoryPage />} />

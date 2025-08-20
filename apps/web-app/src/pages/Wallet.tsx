@@ -5,8 +5,8 @@ import emailWalletIcon from '@/assets/images/email_v2.avif';
 import vaultWalletIcon from '@/assets/images/VaultIconV2.avif';
 import gaugeWalletIcon from '@/assets/images/gauge_icon_v2.avif';
 import { useGetReferralCodeQuery } from '@/hooks/queries/referral';
-import { useGetVerificationStaus } from '@/hooks/queries/verification';
 import depositWalletIcon from '@/assets/images/deposit_wallet_icon.png';
+import { useGetVerificationStatus } from '@/hooks/queries/verification';
 import transactionWalletIcon from '@/assets/images/transaction_v2.avif';
 import winningsWalletIcon from '@/assets/images/winnings_wallet_icon.png';
 import promotionalWalletIcon from '@/assets/images/promotional_wallet_icon.avif';
@@ -17,11 +17,15 @@ export default function WalletPage() {
 
 	const { data: balance, isLoading } = useBalanceQuery();
 	const { data: referralData } = useGetReferralCodeQuery();
-	const { data: verificationStatus } = useGetVerificationStaus();
+	const { data: verificationStatus } = useGetVerificationStatus();
 	const { data: depositeAmountData } = useDepositAmountQuery();
 
 	const goToRecharge = () => {
 		navigate('/wallet/recharge');
+	};
+
+	const goToWithdraw = () => {
+		navigate('/wallet/withdraw');
 	};
 
 	const goToverification = () => {
@@ -40,7 +44,7 @@ export default function WalletPage() {
 					{isLoading ? (
 						<p className="text-5xl font-semibold mt-1">₹ 0</p>
 					) : (
-						<p className="text-5xl font-semibold mt-1">₹ {balance?.data?.data ?? 0}</p>
+						<p className="text-5xl font-semibold mt-1">₹ {balance?.data?.data.amount ?? 0}</p>
 					)}
 				</div>
 
@@ -90,11 +94,16 @@ export default function WalletPage() {
 									: 'text-[#B0B0B0]'
 							}`}
 						>
-							₹{isLoading ? '0' : (balance?.data?.data ?? 0)}
+							₹{isLoading ? '0' : (balance?.data?.data.amount ?? 0)}
 						</p>
 
 						<div className="px-4 w-full">
 							<button
+								onClick={() => {
+									if (verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED') {
+										goToWithdraw();
+									}
+								}}
 								className={`px-4 py-2.5 mt-1 w-full text-xs font-semibold rounded-md ${
 									verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED'
 										? 'text-white cursor-pointer bg-[#262626]'
