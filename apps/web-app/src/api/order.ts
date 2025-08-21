@@ -3,11 +3,11 @@ import { api } from '@/lib/axios';
 export const placeOrder = (
 	side: string,
 	symbol: string,
-	actio: string,
+	action: string,
 	price: number,
 	orderType: string,
 	quantity: number,
 	marketId: string,
 ) => {
-	return api.post('/order/place', { side, symbol, actio, price, orderType, quantity, marketId });
+	return api.post('/order/place', { side, symbol, action, price, orderType, quantity, marketId });
 };
