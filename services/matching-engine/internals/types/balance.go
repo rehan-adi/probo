@@ -11,6 +11,8 @@ type WalletBalance struct {
 }
 
 type StockBalance struct {
-	Yes int
-	No  int
+	Yes       int
+	No        int
+	LockedYes int
+	LockedNo  int
 }

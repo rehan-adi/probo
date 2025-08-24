@@ -27,10 +27,10 @@ type GetOrderBookMessage struct {
 
 type PlaceOrderMessage struct {
 	Order     Order
-	ReplyChan chan PlaceOrderResponse
+	ReplyChan chan OrderResponse
 }
 
-type PlaceOrderResponse struct {
+type OrderResponse struct {
 	Success bool
 	Message string
 	Data    interface{}

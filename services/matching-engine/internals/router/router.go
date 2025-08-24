@@ -41,6 +41,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "PLACE_ORDER":
 		return handlers.PlaceOrder(payload)
 
+	case "SELL_ORDER":
+		return handlers.SellOrder(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{

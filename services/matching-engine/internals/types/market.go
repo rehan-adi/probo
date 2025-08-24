@@ -9,6 +9,7 @@ type MarketMessageType string
 
 const (
 	MarketPlaceOrder   MarketMessageType = "PLACE_ORDER"
+	MarketSellOrder    MarketMessageType = "SELL_ORDER"
 	MarketCancelOrder  MarketMessageType = "CANCEL_ORDER"
 	MarketGetOrderBook MarketMessageType = "GET_ORDERBOOK"
 )
@@ -59,14 +60,13 @@ type PricePoint struct {
 	Timestamp time.Time
 	YesPrice  float64
 	NoPrice   float64
-	Volume    float64
 }
 
 type Activity struct {
-	BuyerName  string    `json:"buyerName"`
-	SellerName string    `json:"sellerName"`
-	Outcome    string    `json:"outcome"`
-	Price      float64   `json:"price"`
-	Quantity   int       `json:"quantity"`
-	Timestamp  time.Time `json:"timestamp"`
+	Buyerphone  string    `json:"buyerPhone"`
+	SellerPhone string    `json:"sellerPhone"`
+	Outcome     string    `json:"outcome"`
+	Price       float64   `json:"price"`
+	Quantity    int       `json:"quantity"`
+	Timestamp   time.Time `json:"timestamp"`
 }

@@ -23,6 +23,9 @@ func (e *Engine) runMarket(market *types.Market) {
 
 			msg.ReplyChan <- aggOrderBook
 
+		case types.MarketSellOrder:
+			e.handleSellOrder(msg, market)
+
 		default:
 			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")
 		}

@@ -36,10 +36,10 @@ func main() {
 
 	// Initialize engine
 	engine.InitEngine(client)
-	log.Info().Msg("Trade engine initialized")
+	log.Info().Msg("Matching engine initialized")
 
 	redis.Consumer(ctx, client)
 
-	log.Info().Msg("🚀 Trade Engine started successfully")
+	log.Info().Msg("🚀 Matching Engine started successfully")
 
 }
