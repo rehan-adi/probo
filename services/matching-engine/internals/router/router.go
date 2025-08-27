@@ -35,11 +35,14 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "CREATE_MARKET":
 		return handlers.CreateMarket(payload)
 
+	case "ADD_LIQUIDITY":
+		return handlers.AddLiquidity(payload)
+
 	case "GET_MARKET_WITH_SYMBOL":
 		return handlers.GetMarketDetails(payload)
 
 	case "PLACE_ORDER":
-		return handlers.PlaceOrder(payload)
+		return handlers.BuyOrder(payload)
 
 	case "SELL_ORDER":
 		return handlers.SellOrder(payload)

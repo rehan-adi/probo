@@ -5,6 +5,7 @@ import "time"
 type Side string
 type OrderType string
 type Action string
+type Role string
 
 const (
 	Yes Side = "YES"
@@ -21,11 +22,17 @@ const (
 	SELL Action = "SELL"
 )
 
+const (
+	USER  Role = "USER"
+	ADMIN Role = "ADMIN"
+)
+
 type Order struct {
 	OrderId   string
 	UserId    string
 	MarketId  string
 	Symbol    string
+	Role      Role
 	Price     float64
 	Quantity  int
 	Filled    int

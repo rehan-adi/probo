@@ -9,7 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type PlaceOrderDataRequest struct {
+type BuyOrderDataRequest struct {
 	UserId    string  `mapstructure:"userId"`
 	MarketId  string  `mapstructure:"marketId"`
 	Side      string  `mapstructure:"side"`
@@ -25,9 +25,9 @@ type PlaceOrderMessage struct {
 	ReplyChan chan types.OrderResponse
 }
 
-func PlaceOrder(payload types.QueuePayload) types.QueueResponse {
+func BuyOrder(payload types.QueuePayload) types.QueueResponse {
 
-	var data PlaceOrderDataRequest
+	var data BuyOrderDataRequest
 
 	if err := mapstructure.Decode(payload.Data, &data); err != nil {
 		return types.QueueResponse{

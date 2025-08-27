@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"matching-engine/internals/engine"
 	"matching-engine/internals/types"
+	"matching-engine/internals/utils"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -184,4 +185,158 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 			NumberOfTraders: market.NumberOfTraders,
 		},
 	}
+}
+
+type AddLiquidityDataRequest struct {
+	UserId      string  `mapstructure:"userId"`
+	Phone       string  `mapstructure:"phone"`
+	MarketId    string  `mapstructure:"marketId"`
+	Symbol      string  `mapstructure:"symbol"`
+	Role        string  `mapstructure:"role"`
+	PriceYes    float64 `mapstructure:"priceYes"`
+	PriceNo     float64 `mapstructure:"priceNo"`
+	QuantityYes int     `mapstructure:"quantityYes"`
+	QuantityNo  int     `mapstructure:"quantityNo"`
+}
+
+func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
+
+	var data AddLiquidityDataRequest
+
+	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		log.Error().
+			Err(err).
+			Interface("payload", payload.Data).
+			Msg("Failed to decode payload data request")
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "failed to validate payload data " + err.Error(),
+		}
+	}
+
+	engine.EngineInstance.MM.RLock()
+	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
+	engine.EngineInstance.MM.RUnlock()
+
+	if !ok {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "Market not found fuck you",
+		}
+	}
+
+	if market.Status == types.Close {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "Market is closed",
+		}
+	}
+
+	replyBuyYes := make(chan interface{}, 1)
+	replySellYes := make(chan interface{}, 1)
+	replyBuyNo := make(chan interface{}, 1)
+	replySellNo := make(chan interface{}, 1)
+
+	yesOrderBuy := types.Order{
+		OrderId:   utils.GenerateOrderID(),
+		UserId:    data.UserId,
+		MarketId:  data.MarketId,
+		Symbol:    data.Symbol,
+		Side:      types.Yes,
+		Price:     data.PriceYes,
+		Role:      types.Role(data.Role),
+		Quantity:  data.QuantityYes,
+		Action:    types.BUY,
+		OrderType: types.LIMIT,
+		Timestamp: time.Now().UTC(),
+	}
+
+	noOrderBuy := types.Order{
+		OrderId:   utils.GenerateOrderID(),
+		UserId:    data.UserId,
+		MarketId:  data.MarketId,
+		Symbol:    data.Symbol,
+		Side:      types.No,
+		Price:     data.PriceNo,
+		Role:      types.Role(data.Role),
+		Quantity:  data.QuantityNo,
+		Action:    types.BUY,
+		OrderType: types.LIMIT,
+		Timestamp: time.Now().UTC(),
+	}
+
+	yesOrderSell := types.Order{
+		OrderId:   utils.GenerateOrderID(),
+		UserId:    data.UserId,
+		MarketId:  data.MarketId,
+		Symbol:    data.Symbol,
+		Side:      types.Yes,
+		Price:     data.PriceYes,
+		Role:      types.Role(data.Role),
+		Quantity:  data.QuantityYes,
+		Action:    types.SELL,
+		OrderType: types.LIMIT,
+		Timestamp: time.Now().UTC(),
+	}
+
+	noOrderSell := types.Order{
+		OrderId:   utils.GenerateOrderID(),
+		UserId:    data.UserId,
+		MarketId:  data.MarketId,
+		Symbol:    data.Symbol,
+		Side:      types.No,
+		Price:     data.PriceNo,
+		Role:      types.Role(data.Role),
+		Quantity:  data.QuantityNo,
+		Action:    types.SELL,
+		OrderType: types.LIMIT,
+		Timestamp: time.Now().UTC(),
+	}
+
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketPlaceOrder,
+		Payload:   yesOrderBuy,
+		ReplyChan: replyBuyYes,
+	}
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketPlaceOrder,
+		Payload:   noOrderBuy,
+		ReplyChan: replyBuyNo,
+	}
+
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketSellOrder,
+		Payload:   yesOrderSell,
+		ReplyChan: replySellYes,
+	}
+
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketSellOrder,
+		Payload:   noOrderSell,
+		ReplyChan: replySellNo,
+	}
+
+	respBuyYes, _ := (<-replyBuyYes).(types.OrderResponse)
+	respSellYes, _ := (<-replySellYes).(types.OrderResponse)
+	respBuyNo, _ := (<-replyBuyNo).(types.OrderResponse)
+	respSellNo, _ := (<-replySellNo).(types.OrderResponse)
+
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     types.Success,
+		Message:    "Liquidity added successfully",
+		Data: map[string]interface{}{
+			"yesBuy":  respBuyYes,
+			"yesSell": respSellYes,
+			"noBuy":   respBuyNo,
+			"noSell":  respSellNo,
+		},
+	}
+
 }

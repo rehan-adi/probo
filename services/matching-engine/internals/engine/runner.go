@@ -14,7 +14,7 @@ func (e *Engine) runMarket(market *types.Market) {
 		switch msg.Type {
 
 		case types.MarketPlaceOrder:
-			e.handlePlaceOrder(msg, market)
+			e.handleBuyOrder(msg, market)
 
 		case types.MarketGetOrderBook:
 			market.Mu.RLock()

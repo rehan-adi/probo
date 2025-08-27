@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market) {
+func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 
 	order, ok := msg.Payload.(types.Order)
 
@@ -23,6 +23,8 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 		}
 		return
 	}
+
+	isAdmin := order.Role == types.ADMIN
 
 	e.UM.Lock()
 
@@ -46,20 +48,22 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 	totalCost := order.Price * float64(order.Quantity)
 
 	if order.Action == types.BUY {
-		e.UM.Lock()
+		if !isAdmin {
+			e.UM.Lock()
 
-		if user.Balance.WalletBalance.Amount < totalCost {
-			e.UM.Unlock()
-			msg.ReplyChan <- types.OrderResponse{
-				Success: false,
-				Message: "insufficient wallet balance",
-				Data:    user.Balance.WalletBalance.Amount,
+			if user.Balance.WalletBalance.Amount < totalCost {
+				e.UM.Unlock()
+				msg.ReplyChan <- types.OrderResponse{
+					Success: false,
+					Message: "insufficient wallet balance",
+					Data:    user.Balance.WalletBalance.Amount,
+				}
+				return
 			}
-			return
+			user.Balance.WalletBalance.Amount -= totalCost
+			user.Balance.WalletBalance.Locked += totalCost
+			e.UM.Unlock()
 		}
-		user.Balance.WalletBalance.Amount -= totalCost
-		user.Balance.WalletBalance.Locked += totalCost
-		e.UM.Unlock()
 	}
 
 	switch order.OrderType {
@@ -82,6 +86,11 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 
 		for i := 0; i < len(oppositeBook) && quantityToFill > 0; {
 			oppOrder := oppositeBook[i]
+
+			if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+				i++
+				continue
+			}
 
 			if (order.Side == types.Yes && oppOrder.Price > order.Price) ||
 				(order.Side == types.No && oppOrder.Price > order.Price) {
@@ -242,6 +251,11 @@ func (e *Engine) handlePlaceOrder(msg types.MarketMessage, market *types.Market)
 		for i := 0; i < len(oppositeBook) && quantityToFill > 0; {
 			oppOrder := oppositeBook[i]
 
+			if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+				i++
+				continue
+			}
+
 			availableQty := oppOrder.Quantity - oppOrder.Filled
 
 			tradeQty := quantityToFill
@@ -382,6 +396,8 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 		return
 	}
 
+	isAdmin := order.Role == types.ADMIN
+
 	e.UM.RLock()
 	user, exists := e.User[order.UserId]
 	e.UM.RUnlock()
@@ -394,42 +410,45 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 		return
 	}
 
-	stock, ok := user.Balance.StockBalance[order.Symbol]
+	if !isAdmin {
+		stock, ok := user.Balance.StockBalance[order.Symbol]
 
-	if !ok {
-		msg.ReplyChan <- types.OrderResponse{
-			Success: false,
-			Message: "User has no stock for this market",
+		if !ok {
+			msg.ReplyChan <- types.OrderResponse{
+				Success: false,
+				Message: "User has no stock for this market",
+			}
+			return
 		}
-		return
-	}
 
-	var availableQty int
+		var availableQty int
 
-	if order.Side == types.Yes {
-		availableQty = stock.Yes
-	} else {
-		availableQty = stock.No
-	}
-
-	if availableQty < order.Quantity {
-		msg.ReplyChan <- types.OrderResponse{
-			Success: false,
-			Message: "Not enough stocks to sell.",
-			Data:    availableQty,
+		if order.Side == types.Yes {
+			availableQty = stock.Yes
+		} else {
+			availableQty = stock.No
 		}
-		return
-	}
 
-	e.UM.Lock()
+		if availableQty < order.Quantity {
+			msg.ReplyChan <- types.OrderResponse{
+				Success: false,
+				Message: "Not enough stocks to sell.",
+				Data:    availableQty,
+			}
+			return
+		}
 
-	if order.Side == types.Yes {
-		stock.Yes -= order.Quantity
-	} else {
-		stock.No -= order.Quantity
+		e.UM.Lock()
+
+		if order.Side == types.Yes {
+			stock.Yes -= order.Quantity
+		} else {
+			stock.No -= order.Quantity
+		}
+		user.Balance.StockBalance[order.Symbol] = stock
+		e.UM.Unlock()
+
 	}
-	user.Balance.StockBalance[order.Symbol] = stock
-	e.UM.Unlock()
 
 	e.MM.Lock()
 	defer e.MM.Unlock()
@@ -447,6 +466,11 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 
 	for i := 0; i < len(oppositeBook) && quantityToSell > 0; {
 		oppOrder := oppositeBook[i]
+
+		if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+			i++
+			continue
+		}
 
 		availableOppQty := oppOrder.Quantity - oppOrder.Filled
 		tradeQty := quantityToSell
