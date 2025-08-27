@@ -199,6 +199,88 @@ export const createMarket = async (c: Context) => {
 	}
 };
 
+export const addLiquidity = async (c: Context) => {
+	try {
+		const user = c.get('user');
+
+		if (user?.role !== 'ADMIN') {
+			logger.warn(
+				{
+					context: 'CREATE_MARKET_UNAUTHORIZED',
+					userId: user?.id,
+				},
+				'Unauthorized attempt to createMarket',
+			);
+			return c.json(
+				{
+					success: false,
+					message: 'Unauthorized',
+				},
+				403,
+			);
+		}
+
+		const body = await c.req.json<{
+			marketId: string;
+			symbol: string;
+			priceYes: string;
+			priceNo: string;
+			quantityYes: number;
+			quantityNo: number;
+		}>();
+
+		const response = await pushToQueue(EVENTS.ADD_LIQUIDITY, {
+			userId: user.id,
+			phone: user.phone,
+			role: user.role,
+			marketId: body.marketId,
+			symbol: body.symbol,
+			priceYes: body.priceYes,
+			priceNo: body.priceNo,
+			quantityYes: body.quantityYes,
+			quantityNo: body.quantityNo,
+		});
+
+		if (!response.success) {
+			return c.json(
+				{
+					success: false,
+					message: response.message,
+					error: response.error,
+				},
+				500,
+			);
+		}
+
+		return c.json(
+			{
+				success: true,
+				message: 'Added done',
+				data: response.data,
+			},
+			200,
+		);
+	} catch (error) {
+		logger.error(
+			{
+				alert: true,
+				context: 'ADD_LIQUIDITY_CONTROLLER_FAIL',
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
+			},
+			'Unhandled error during addLiquidity',
+		);
+		return c.json(
+			{
+				success: false,
+				message: 'Internal server error',
+				error: error instanceof Error ? error.message : 'Unknown error',
+			},
+			500,
+		);
+	}
+};
+
 /**
  * fetch all markets or events from db
  * @param c Hono context
