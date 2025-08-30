@@ -75,9 +75,9 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		var oppositeBook []*types.Order
 
 		if order.Side == types.Yes {
-			oppositeBook = market.OrderBook.No
-		} else {
 			oppositeBook = market.OrderBook.Yes
+		} else {
+			oppositeBook = market.OrderBook.No
 		}
 
 		quantityToFill := order.Quantity
@@ -87,22 +87,34 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		for i := 0; i < len(oppositeBook) && quantityToFill > 0; {
 			oppOrder := oppositeBook[i]
 
-			if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+			if oppOrder.Action != types.SELL {
 				i++
 				continue
 			}
 
-			if (order.Side == types.Yes && oppOrder.Price > order.Price) ||
-				(order.Side == types.No && oppOrder.Price > order.Price) {
+			remaining := oppOrder.Quantity - oppOrder.Filled
+
+			if oppOrder.UserId == order.UserId {
+				log.Debug().Str("oppOrderId", oppOrder.OrderId).Msg("Skip self-trade")
+				i++
+				continue
+			}
+
+			if order.Price < oppOrder.Price {
 				break
 			}
 
-			availableQty := oppOrder.Quantity - oppOrder.Filled
+			availableQty := remaining
 			tradeQty := quantityToFill
 
 			if availableQty < tradeQty {
 				tradeQty = availableQty
 			}
+
+			log.Debug().
+				Str("oppOrderId", oppOrder.OrderId).
+				Int("tradeQty", tradeQty).
+				Msg("Executing trade (LIMIT BUY)")
 
 			oppOrder.Filled += tradeQty
 			quantityToFill -= tradeQty
@@ -112,20 +124,17 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 			seller := e.User[oppOrder.UserId]
 
 			if order.Side == types.Yes {
-				stock := buyer.Balance.StockBalance[order.Symbol]
-				stock.Yes += tradeQty
-				buyer.Balance.StockBalance[order.Symbol] = stock
-
-				buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
-				seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
+				buyerStock := buyer.Balance.StockBalance[order.Symbol]
+				buyerStock.Yes += tradeQty
+				buyer.Balance.StockBalance[order.Symbol] = buyerStock
 			} else {
-				stock := buyer.Balance.StockBalance[order.Symbol]
-				stock.No += tradeQty
-				buyer.Balance.StockBalance[order.Symbol] = stock
-
-				buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
-				seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
+				buyerStock := buyer.Balance.StockBalance[order.Symbol]
+				buyerStock.No += tradeQty
+				buyer.Balance.StockBalance[order.Symbol] = buyerStock
 			}
+
+			buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
+			seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
 			e.UM.Unlock()
 
 			activities = append(activities, types.Activity{
@@ -145,9 +154,9 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		}
 
 		if order.Side == types.Yes {
-			market.OrderBook.No = oppositeBook
-		} else {
 			market.OrderBook.Yes = oppositeBook
+		} else {
+			market.OrderBook.No = oppositeBook
 		}
 
 		if quantityToFill > 0 {
@@ -203,6 +212,10 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 			)
 		}
 
+		if len(activities) > 0 {
+			market.Activities = append(market.Activities, activities...)
+		}
+
 		payload := map[string]interface{}{
 			"symbol":     order.Symbol,
 			"orderbook":  aggOrderBook,
@@ -240,9 +253,9 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		var oppositeBook []*types.Order
 
 		if order.Side == types.Yes {
-			oppositeBook = market.OrderBook.No
-		} else {
 			oppositeBook = market.OrderBook.Yes
+		} else {
+			oppositeBook = market.OrderBook.No
 		}
 
 		quantityToFill := order.Quantity
@@ -251,17 +264,29 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		for i := 0; i < len(oppositeBook) && quantityToFill > 0; {
 			oppOrder := oppositeBook[i]
 
-			if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+			if oppOrder.Action != types.SELL {
 				i++
 				continue
 			}
 
-			availableQty := oppOrder.Quantity - oppOrder.Filled
+			remaining := oppOrder.Quantity - oppOrder.Filled
 
+			if oppOrder.UserId == order.UserId {
+				log.Debug().Str("oppOrderId", oppOrder.OrderId).Msg("Skip self-trade")
+				i++
+				continue
+			}
+
+			availableQty := remaining
 			tradeQty := quantityToFill
 			if availableQty < tradeQty {
 				tradeQty = availableQty
 			}
+
+			log.Debug().
+				Str("oppOrderId", oppOrder.OrderId).
+				Int("tradeQty", tradeQty).
+				Msg("Executing trade (MARKET BUY)")
 
 			oppOrder.Filled += tradeQty
 			quantityToFill -= tradeQty
@@ -272,20 +297,16 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 			seller := e.User[oppOrder.UserId]
 
 			if order.Side == types.Yes {
-				stock := buyer.Balance.StockBalance[order.Symbol]
-				stock.Yes += tradeQty
-				buyer.Balance.StockBalance[order.Symbol] = stock
-
-				buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
-				seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
+				buyerStock := buyer.Balance.StockBalance[order.Symbol]
+				buyerStock.Yes += tradeQty
+				buyer.Balance.StockBalance[order.Symbol] = buyerStock
 			} else {
-				stock := buyer.Balance.StockBalance[order.Symbol]
-				stock.No += tradeQty
-				buyer.Balance.StockBalance[order.Symbol] = stock
-
-				buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
-				seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
+				buyerStock := buyer.Balance.StockBalance[order.Symbol]
+				buyerStock.No += tradeQty
+				buyer.Balance.StockBalance[order.Symbol] = buyerStock
 			}
+			buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
+			seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
 			e.UM.Unlock()
 
 			activities = append(activities, types.Activity{
@@ -305,10 +326,28 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 		}
 
 		if order.Side == types.Yes {
-			market.OrderBook.No = oppositeBook
-		} else {
 			market.OrderBook.Yes = oppositeBook
+		} else {
+			market.OrderBook.No = oppositeBook
 		}
+
+		kafka.ProduceEventToDBProcessor(
+			"process_db",
+			string(types.ORDER_PLACED),
+			map[string]interface{}{
+				"orderId":           order.OrderId,
+				"marketId":          order.MarketId,
+				"symbol":            order.Symbol,
+				"userId":            order.UserId,
+				"side":              string(order.Side),
+				"action":            string(order.Action),
+				"price":             order.Price,
+				"originalQuantity":  order.Quantity,
+				"filledQuantity":    order.Quantity - quantityToFill,
+				"remainingQuantity": quantityToFill,
+				"timestamp":         time.Now(),
+			},
+		)
 
 		aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
 		probability := utils.GetYesProbability(aggOrderBook)
@@ -336,6 +375,10 @@ func (e *Engine) handleBuyOrder(msg types.MarketMessage, market *types.Market) {
 					"timeline": timeline,
 				},
 			)
+		}
+
+		if len(activities) > 0 {
+			market.Activities = append(market.Activities, activities...)
 		}
 
 		payload := map[string]interface{}{
@@ -456,32 +499,47 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 	var oppositeBook []*types.Order
 
 	if order.Side == types.Yes {
-		oppositeBook = market.OrderBook.No
-	} else {
 		oppositeBook = market.OrderBook.Yes
+	} else {
+		oppositeBook = market.OrderBook.No
 	}
 
 	quantityToSell := order.Quantity
+	originalQuantity := order.Quantity
 	var activities []types.Activity
 
 	for i := 0; i < len(oppositeBook) && quantityToSell > 0; {
 		oppOrder := oppositeBook[i]
 
-		if oppOrder.UserId == order.UserId || oppOrder.Role == types.ADMIN {
+		if oppOrder.Action != types.BUY {
 			i++
 			continue
 		}
 
-		availableOppQty := oppOrder.Quantity - oppOrder.Filled
+		remaining := oppOrder.Quantity - oppOrder.Filled
+
+		if oppOrder.UserId == order.UserId {
+			log.Debug().Str("oppOrderId", oppOrder.OrderId).Msg("Skip self-trade")
+			i++
+			continue
+		}
+
+		availableOppQty := remaining
 		tradeQty := quantityToSell
 		if availableOppQty < tradeQty {
 			tradeQty = availableOppQty
 		}
 
+		log.Debug().
+			Str("oppOrderId", oppOrder.OrderId).
+			Int("tradeQty", tradeQty).
+			Msg("Executing trade (SELL)")
+
 		oppOrder.Filled += tradeQty
 		quantityToSell -= tradeQty
 
 		e.UM.Lock()
+
 		buyer := e.User[oppOrder.UserId]
 		seller := user
 
@@ -490,16 +548,15 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 			buyerStock.Yes += tradeQty
 			buyer.Balance.StockBalance[order.Symbol] = buyerStock
 
-			seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
-			buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
 		} else {
 			buyerStock := buyer.Balance.StockBalance[order.Symbol]
 			buyerStock.No += tradeQty
 			buyer.Balance.StockBalance[order.Symbol] = buyerStock
 
-			seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
-			buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
 		}
+
+		seller.Balance.WalletBalance.Amount += oppOrder.Price * float64(tradeQty)
+		buyer.Balance.WalletBalance.Locked -= oppOrder.Price * float64(tradeQty)
 		e.UM.Unlock()
 
 		activities = append(activities, types.Activity{
@@ -519,15 +576,14 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 	}
 
 	if order.Side == types.Yes {
-		market.OrderBook.No = oppositeBook
-	} else {
 		market.OrderBook.Yes = oppositeBook
+	} else {
+		market.OrderBook.No = oppositeBook
 	}
 
 	if quantityToSell > 0 {
 		order.Quantity = quantityToSell
 		order.Filled = 0
-
 		if order.Side == types.Yes {
 			market.OrderBook.Yes = append(market.OrderBook.Yes, &order)
 			sort.Slice(market.OrderBook.Yes, func(i, j int) bool {
@@ -540,6 +596,28 @@ func (e *Engine) handleSellOrder(msg types.MarketMessage, market *types.Market) 
 			})
 		}
 	}
+
+	if len(activities) > 0 {
+		market.Activities = append(market.Activities, activities...)
+	}
+
+	kafka.ProduceEventToDBProcessor(
+		"process_db",
+		string(types.ORDER_PLACED),
+		map[string]interface{}{
+			"orderId":           order.OrderId,
+			"marketId":          order.MarketId,
+			"symbol":            order.Symbol,
+			"userId":            order.UserId,
+			"side":              string(order.Side),
+			"action":            string(order.Action),
+			"price":             order.Price,
+			"originalQuantity":  originalQuantity,
+			"filledQuantity":    originalQuantity - quantityToSell,
+			"remainingQuantity": quantityToSell,
+			"timestamp":         time.Now(),
+		},
+	)
 
 	msg.ReplyChan <- types.OrderResponse{
 		Success: true,
