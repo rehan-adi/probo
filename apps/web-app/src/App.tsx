@@ -9,7 +9,7 @@ import RechargePage from '@/pages/Recharge';
 import WithdrawPage from '@/pages/Withdraw';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
-import MarketDetails from '@/pages/EventDetails';
+import EventDetails from '@/pages/EventDetails';
 import CreateEvent from '@/pages/admin/CreateEvent';
 import VerificationgePage from '@/pages/Verification';
 import OnboardModal from '@/components/modals/OnboardModal';
@@ -42,7 +42,7 @@ function App() {
 				{/* public routes  */}
 				<Route path="/" element={<Navigate to="/events" replace />} />
 				<Route path="/events" element={<EventsPage />} />
-				<Route path="/events/:symbol" element={<MarketDetails />} />
+				<Route path="/events/:symbol" element={<EventDetails />} />
 
 				{/* all private routes */}
 				<Route element={<PrivateRoute />}>

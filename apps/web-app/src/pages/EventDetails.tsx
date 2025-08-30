@@ -3,25 +3,67 @@ import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
 import { ChevronRight } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import pfpIcon from '@/assets/images/pfp.avif';
+import { formatDistanceToNow } from "date-fns";
 import PlaceOrder from '@/components/PlaceOrder';
+import TimelineSection from '@/components/Timeline';
 import shareIcon from '@/assets/images/share-icon.svg';
 import PlusIcon from '@/assets/images/plus_circled.svg';
 import downloadIcon from '@/assets/images/download.avif';
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function MarketDetails() {
+interface Activity {
+	id?: string;
+	buyerPhone: string;
+	sellerPhone: string;
+	outcome: string;
+	price: number;
+	quantity: number;
+	timestamp: string;
+	buyPrice?: number;
+	sellPrice?: number;
+}
+
+interface Market {
+	symbol: string;
+	marketId: string;
+	title: string;
+	thumbnail: string;
+	yesPrice: number;
+	noPrice: number;
+	orderbook: {
+		yes: any[];
+		no: any[];
+	};
+	activities: Activity[];
+	timeline: any[];
+	overview: any;
+}
+
+export default function EventDetails() {
 	const { symbol } = useParams<{ symbol: string }>();
 
 	const { isLoggedIn } = useAuthStore();
 	const loggedIn = isLoggedIn();
 
-	const [market, setMarket] = useState<any>(null);
+	const [market, setMarket] = useState<Market | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [activeTab, setActiveTab] = useState('orderbook');
 
 	const orderbookRef = useRef<HTMLDivElement>(null);
 	const timelineRef = useRef<HTMLDivElement>(null);
 	const overviewRef = useRef<HTMLDivElement>(null);
+
+	const maskPhoneNumber = (phone: string) => {
+		if (!phone || phone.length < 4) return phone;
+		const last4 = phone.slice(-4);
+		const masked = '*'.repeat(phone.length - 4);
+		return masked + last4;
+	};
+
+	const getOppositeActivityColor = (outcome: string) => {
+		return outcome === 'YES' ? 'text-[#DC2804]' : 'text-[#197BFF]';
+	};
 
 	useEffect(() => {
 		if (!symbol) return;
@@ -35,14 +77,72 @@ export default function MarketDetails() {
 			});
 		}
 
-		socket.on('market:update', (data) => {
-			console.log(data);
-			// setMarket(data);
+		socket.on('MESSAGE', (data) => {
+			setMarket((prev: Market | null) => {
+				if (!prev) return data;
+
+				console.log('socket data is ', data);
+
+				const updatedOrderbook = { ...prev.orderbook };
+
+				['yes', 'no'].forEach((side) => {
+					const sideKey = side as keyof typeof updatedOrderbook;
+					const updates =
+						data.orderbook[side] || data.orderbook[side.charAt(0).toUpperCase() + side.slice(1)];
+					updates?.forEach((update: any) => {
+						const idx = updatedOrderbook[sideKey].findIndex((o: any) => o.price === update.price);
+
+						if (idx > -1) {
+							if (update.quantity > 0) {
+								updatedOrderbook[sideKey][idx] = update;
+							} else {
+								updatedOrderbook[sideKey].splice(idx, 1);
+							}
+						} else {
+							if (update.quantity > 0) {
+								updatedOrderbook[sideKey].push(update);
+							}
+						}
+
+						updatedOrderbook[sideKey].sort((a: any, b: any) =>
+							side === 'yes' ? b.price - a.price : a.price - b.price,
+						);
+					});
+				});
+
+				const newYesPrice = data.yesPrice;
+				const newNoPrice = data.noPrice;
+
+				let updatedActivities = [...prev.activities];
+				if (data.activities && Array.isArray(data.activities)) {
+					data.activities.forEach((newActivity: Activity) => {
+						const exists = updatedActivities.some(
+							(act: Activity) =>
+								act.buyerPhone === newActivity.buyerPhone &&
+								act.sellerPhone === newActivity.sellerPhone &&
+								act.price === newActivity.price &&
+								act.timestamp === newActivity.timestamp
+						);
+						if (!exists) {
+							updatedActivities.unshift(newActivity);
+						}
+					});
+					updatedActivities = updatedActivities.slice(0, 50);
+				}
+
+				return {
+					...prev,
+					orderbook: updatedOrderbook,
+					yesPrice: newYesPrice,
+					noPrice: newNoPrice,
+					activities: updatedActivities
+				};
+			});
 		});
 
 		return () => {
 			socket.emit('UNSUBSCRIBE', symbol);
-			socket.off('market:update');
+			socket.off('MESSAGE');
 			socket.off('connect');
 			socket.disconnect();
 		};
@@ -111,11 +211,10 @@ export default function MarketDetails() {
 							<button
 								key={tab}
 								onClick={() => handleTabClick(tab)}
-								className={`pb-2 capitalize relative w-28 text-[#545454] ${
-									activeTab === tab
-										? 'after:content-[""] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-black'
-										: ''
-								}`}
+								className={`pb-2 capitalize cursor-pointer relative w-28 text-[#545454] ${activeTab === tab
+									? 'after:content-[""] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-black'
+									: ''
+									}`}
 							>
 								{tab.replace(/^\w/, (c) => c.toUpperCase())}
 							</button>
@@ -123,17 +222,16 @@ export default function MarketDetails() {
 					</div>
 
 					{loggedIn && (
-						<div ref={orderbookRef} className="mb-12 bg-white px-6 py-4 border rounded-lg">
+						<div ref={orderbookRef} className="mb-8 bg-white px-6 py-4 border rounded-lg">
 							<div className="flex gap-8 border-b-2 mb-6 border-[#ededed]">
 								{['orderbook', 'Activity'].map((tab) => (
 									<button
 										key={tab}
 										onClick={() => setInnerTab(tab)}
-										className={`pb-2 capitalize text-[#545454] relative ${
-											innerTab === tab
-												? 'after:content-[""] text-black after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black font-semibold'
-												: 'text-[#575757]'
-										}`}
+										className={`pb-2 capitalize cursor-pointer text-[#545454] relative ${innerTab === tab
+											? 'after:content-[""] text-black after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black font-semibold'
+											: 'text-[#575757]'
+											}`}
 									>
 										{tab}
 									</button>
@@ -149,32 +247,45 @@ export default function MarketDetails() {
 												QTY <span className="text-[#197BFF]">YES</span>
 											</span>
 										</div>
-										{[...market.orderbook.yes]
-											.filter((order) => order.price > 0)
-											.sort((a, b) => a.price - b.price)
-											.slice(0, 5)
-											.map((yes: { quantity: number; price: number }, idx: number) => {
-												const maxQty = Math.max(
-													...market.orderbook.yes
-														.filter((o: any) => o.price > 0)
-														.map((o: any) => o.quantity),
-												);
-												const widthPercent = maxQty > 0 ? (yes.quantity / maxQty) * 100 : 0;
+										{(() => {
+											const yesOrders =
+												market?.orderbook?.yes?.filter((order: any) => order.price > 0) || [];
 
-												return (
-													<div key={idx} className="grid grid-cols-2 border-t">
-														<span className="px-1 py-1.5">{yes.price}</span>
-														<span
-															className="text-right relative py-1.5 px-1 block"
-															style={{
-																background: `linear-gradient(to left, #BCD8FE ${widthPercent}%, transparent ${widthPercent}%)`,
-															}}
-														>
-															{yes.quantity}
-														</span>
-													</div>
-												);
-											})}
+											const sortedOrders = yesOrders.sort((a: any, b: any) => a.price - b.price);
+
+											const displayOrders = [
+												...sortedOrders.slice(0, 5),
+												...Array(Math.max(0, 5 - sortedOrders.length)).fill({
+													price: 0,
+													quantity: 0,
+												}),
+											];
+
+											const maxQty =
+												yesOrders.length > 0
+													? Math.max(...yesOrders.map((o: any) => o.quantity))
+													: 0;
+
+											return displayOrders.map(
+												(yes: { quantity: number; price: number }, idx: number) => {
+													const widthPercent = maxQty > 0 ? (yes.quantity / maxQty) * 100 : 0;
+
+													return (
+														<div key={idx} className="grid grid-cols-2 border-t">
+															<span className="px-1 py-1.5">{yes.price}</span>
+															<span
+																className="text-right relative py-1.5 px-1 block"
+																style={{
+																	background: `linear-gradient(to left, #BCD8FE ${widthPercent}%, transparent ${widthPercent}%)`,
+																}}
+															>
+																{yes.quantity}
+															</span>
+														</div>
+													);
+												},
+											);
+										})()}
 									</div>
 
 									<div>
@@ -184,45 +295,115 @@ export default function MarketDetails() {
 												QTY <span className="text-[#DC2804]">NO</span>
 											</span>
 										</div>
-										{[...market.orderbook.no]
-											.filter((order) => order.price > 0)
-											.sort((a, b) => a.price - b.price)
-											.slice(0, 5)
-											.map((no: { price: number; quantity: number }, idx: number) => {
-												const maxQty = Math.max(
-													...market.orderbook.no
-														.filter((o: any) => o.price > 0)
-														.map((o: any) => o.quantity),
-												);
-												const widthPercent = maxQty > 0 ? (no.quantity / maxQty) * 100 : 0;
+										{(() => {
+											const noOrders =
+												market?.orderbook?.no?.filter((order: any) => order.price > 0) || [];
 
-												return (
-													<div key={idx} className="grid grid-cols-2 border-t">
-														<span className="px-1 py-1.5">{no.price}</span>
-														<span
-															className="text-right relative py-1.5 px-1 block"
-															style={{
-																background: `linear-gradient(to left, #FFDCDB ${widthPercent}%, transparent ${widthPercent}%)`,
-															}}
-														>
-															{no.quantity}
-														</span>
-													</div>
-												);
-											})}
+											// sort by price ascending
+											const sortedOrders = noOrders.sort((a: any, b: any) => a.price - b.price);
+
+											// Take top 5 or fill with placeholders
+											const displayOrders = [
+												...sortedOrders.slice(0, 5),
+												...Array(Math.max(0, 5 - sortedOrders.length)).fill({
+													price: 0,
+													quantity: 0,
+												}),
+											];
+
+											const maxQty =
+												noOrders.length > 0 ? Math.max(...noOrders.map((o: any) => o.quantity)) : 0;
+
+											return displayOrders.map(
+												(no: { quantity: number; price: number }, idx: number) => {
+													const widthPercent = maxQty > 0 ? (no.quantity / maxQty) * 100 : 0;
+
+													return (
+														<div key={idx} className="grid grid-cols-2 border-t">
+															<span className="px-1 py-1.5">{no.price}</span>
+															<span
+																className="text-right relative py-1.5 px-1 block"
+																style={{
+																	background: `linear-gradient(to left, #FFDCDB ${widthPercent}%, transparent ${widthPercent}%)`,
+																}}
+															>
+																{no.quantity}
+															</span>
+														</div>
+													);
+												},
+											);
+										})()}
 									</div>
 								</div>
 							)}
 
-							{innerTab === 'activity' && (
-								<div className="text-sm text-gray-500">Activity log will be shown here...</div>
+							{innerTab === 'Activity' && (
+								<div className="">
+									<div className="flex justify-between mb-2 items-center">
+										<div className="text-center">
+											<h3 className="font-semibold text-xs">BUYER</h3>
+										</div>
+										<div className="text-center">
+											<h3 className="font-semibold text-xs">SELLER</h3>
+										</div>
+									</div>
+
+									{market?.activities?.slice(0, 5).map((activity: Activity, index: number) => (
+										<div
+											key={activity.id || index}
+											className={`grid grid-cols-3 gap-4 items-center py-3 ${index < 4 ? 'border-b border-gray-100' : ''
+												}`}
+										>
+											<div className="flex flex-col md:flex-row md:items-center items-start gap-4">
+												<img
+													src={pfpIcon}
+													alt="Buyer"
+													className="md:w-10 w-9 md:h-10 h-9 rounded-full border"
+												/>
+												<div>
+													<p className={`font-medium md:text-sm text-xs`}>
+														{maskPhoneNumber(activity.buyerPhone)}
+													</p>
+												</div>
+											</div>
+
+											<div className="text-center">
+												<div className="space-y-1">
+													<p className="md:text-xs text-[10px] text-black">
+														{formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+													</p>
+												</div>
+											</div>
+
+											<div className="flex flex-col md:flex-row md:items-center items-end gap-4 justify-end">
+												<img
+													src={pfpIcon}
+													alt="Seller"
+													className="md:w-10 w-9 md:h-10 h-9 rounded-full border order-first md:order-last"
+												/>
+												<div className="md:text-sm text-xs text-right order-last md:order-first">
+													<p className="font-medium">
+														{maskPhoneNumber(activity.sellerPhone)}
+													</p>
+												</div>
+											</div>
+
+										</div>
+									))}
+
+									{(!market?.activities || market.activities.length === 0) && (
+										<div className="text-center py-8 text-gray-500">
+											No activities yet
+										</div>
+									)}
+								</div>
 							)}
 						</div>
 					)}
 
 					<div ref={timelineRef} className="mb-12">
-						<h2 className="text-lg font-bold mb-2">Timeline</h2>
-						<p>Timeline content here...</p>
+						<TimelineSection data={market.timeline} />
 					</div>
 
 					<div ref={overviewRef} className="sm:bg-white sm:p-8 rounded-lg sm:border">
@@ -291,10 +472,12 @@ export default function MarketDetails() {
 				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden">
 					{loggedIn ? (
 						<PlaceOrder
-							nPrice={market.yesPrice}
-							yPrice={market.noPrice}
-							yesSide={{ price: 9.5, maxQty: 9111, limitPrice: 19 }}
-							noSide={{ price: 8.5, maxQty: 10000, limitPrice: 20 }}
+							symbol={market.symbol}
+							marketId={market.marketId}
+							yPrice={market.yesPrice}
+							nPrice={market.noPrice}
+							yOrderPrice={market.yesPrice}
+							nOrderPrice={market.noPrice}
 							onOrderPlaced={() => {
 								console.log('Order placed, refresh data if needed');
 							}}
