@@ -9,5 +9,5 @@ export const placeOrder = (
 	quantity: number,
 	marketId: string,
 ) => {
-	return api.post('/order/place', { side, symbol, action, price, orderType, quantity, marketId });
+	return api.post('/order/buy', { side, symbol, action, price, orderType, quantity, marketId });
 };
