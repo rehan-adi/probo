@@ -53,3 +53,30 @@ export const updateStockPrice = async (data: any) => {
 		throw error;
 	}
 };
+
+export const recordActivity = async (data: any) => {
+	try {
+		logger.info({ data }, 'RECORD_ACTIVITY received');
+	} catch (error) {
+		logger.error({ error, data, context: 'RECORD_ACTIVITY_FAIL' }, 'Failed to record activity');
+		throw error;
+	}
+};
+
+export const updateMarketTimeline = async (data: any) => {
+	try {
+		logger.info({ data }, 'UPDATE_MARKET_TIMELINE received');
+	} catch (error) {
+		logger.error({ error, data, context: 'UPDATE_MARKET_TIMELINE_FAIL' }, 'Failed to update timeline');
+		throw error;
+	}
+};
+
+export const recordOrderPlaced = async (data: any) => {
+	try {
+		logger.info({ data }, 'ORDER_PLACED received');
+	} catch (error) {
+		logger.error({ error, data, context: 'ORDER_PLACED_FAIL' }, 'Failed to record order placement');
+		throw error;
+	}
+};
