@@ -1,10 +1,17 @@
 {
-	"name": "@probo/db-processor",
+	"name": "@probo/processor-service",
 	"version": "1.0.0",
-	"description": "Database processor service for Probo",
+	"description": "Processor service for Probo",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
+	"author": "Rehan <official.rehan.me@gmail.com>",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/rehan-adi/probo",
+		"directory": "services/processor-service"
+	},
 	"scripts": {
 		"start": "bun run src/server.ts"
 	},
@@ -21,7 +28,7 @@
 	},
 	"keywords": [
 		"probo",
-		"db-processor",
+		"processor-service",
 		"service",
 		"database",
 		"typescript",

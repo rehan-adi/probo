@@ -5,6 +5,13 @@
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
+	"author": "Rehan <official.rehan.me@gmail.com>",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/rehan-adi/probo",
+		"directory": "services/stream-service"
+	},
 	"scripts": {
 		"start": "bun run src/server.ts"
 	},

@@ -5,12 +5,19 @@
 	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
+	"author": "Rehan <official.rehan.me@gmail.com>",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/rehan-adi/probo",
+		"directory": "packages/database"
+	},
 	"scripts": {
-		"db:migrate": "prisma migrate dev",
-		"db:generate": "prisma generate",
-		"db:studio": "prisma studio",
 		"db:push": "prisma db push",
-		"db:seed": "bun run src/seed.ts"
+		"db:studio": "prisma studio",
+		"db:seed": "bun run src/seed.ts",
+		"db:generate": "prisma generate",
+		"db:migrate": "prisma migrate dev"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

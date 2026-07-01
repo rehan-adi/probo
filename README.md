@@ -1,6 +1,26 @@
 # Probo: Building a High-Frequency Opinion Trading / Prediction Market Platform from scratch where users can trade on the outcome of future events.
 
-> _"I wanted to understand how trading systems and low latency systems work under the hood. Not just the APIs, but the deep internal engineering of how they match thousands of orders per second without race conditions ?How do they handle money when every millisecond counts ? This project is a simple, straightforward implementation of those kinds of systems."_
+> _"I wanted to understand how trading systems and low latency systems work under the hood. Not just the APIs, but the deep internal engineering of how they match thousands of orders per second without race conditions ? How do they handle money when every millisecond counts ? This project is a simple, straightforward implementation of those kinds of systems."_
+
+## Local Development Setup
+
+For detailed instructions on setting up the Probo project, starting the services, and managing the database, please refer to our comprehensive **[Local Development Guide](./docs/DEVELOPMENT.md)**.
+
+### Quick Start
+
+If you have Bun, Go, and Docker installed, you can quickly spin up the backend:
+
+```bash
+bun install
+docker-compose up -d
+bun run db:generate
+bun run db:migrate
+bun run db:seed
+bun run start:all
+```
+*(Run `make run` in `services/matching-engine` to start the Go engine)*
+
+
 
 ## The Architecture: Two Core Journeys
 
@@ -74,7 +94,7 @@ This is the core loop. When a user bets "Yes" on "Will India win?", speed is eve
 3.  **The Reliability Layer (Kafka)**:
     - Matched trades are produced to **Apache Kafka**. This acts as an immutable log. If the DB crashes, we replay the Kafka stream.
 
-4.  **The Persistence (DB Processor)**:
+4.  **The Persistence (Processor Service)**:
     - A separate worker listens to Kafka and batch-inserts trades into **PostgreSQL**.
 
 5.  **The Feedback Loop (Stream Service)**:
@@ -143,7 +163,7 @@ While exact performance gains vary by workload, this approach is widely used in 
 For a resume project or < 1000 users.
 
 - **Provider**: AWS Lightsail or DigitalOcean Droplet.
-- **Setup**: Docker Compose allowing all services (api, matching-engine, db-processor, stream-service, Redis, Postgres) to run on a single instance.
+- **Setup**: Docker Compose allowing all services (api, matching-engine, processor-service, stream-service, Redis, Postgres) to run on a single instance.
 - **Why?**: Simple to manage, zero network latency between services (localhost networking).
 
 ### Option B: High Scale
