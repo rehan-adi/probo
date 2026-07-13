@@ -14,7 +14,7 @@ func (e *Engine) runMarket(market *types.Market) {
 		switch msg.Type {
 
 		case types.MarketPlaceOrder:
-			e.handleBuyOrder(msg, market)
+			e.handleOrder(msg, market)
 
 		case types.MarketGetOrderBook:
 			market.Mu.RLock()
@@ -24,7 +24,7 @@ func (e *Engine) runMarket(market *types.Market) {
 			msg.ReplyChan <- aggOrderBook
 
 		case types.MarketSellOrder:
-			e.handleSellOrder(msg, market)
+			e.handleOrder(msg, market)
 
 		default:
 			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")

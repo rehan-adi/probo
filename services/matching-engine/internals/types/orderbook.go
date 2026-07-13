@@ -1,8 +1,10 @@
 package types
 
 type OrderBook struct {
-	Yes []*Order
-	No  []*Order
+	YesBids *BidHeap
+	YesAsks *AskHeap
+	NoBids  *BidHeap
+	NoAsks  *AskHeap
 }
 
 type PriceQuantity struct {

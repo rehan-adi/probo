@@ -85,8 +85,10 @@ func CreateMarket(payload types.QueuePayload) types.QueueResponse {
 		Status:          types.Open,
 		Inbox:           make(chan types.MarketMessage, 100),
 		OrderBook: &types.OrderBook{
-			Yes: make([]*types.Order, 0),
-			No:  make([]*types.Order, 0),
+			YesBids: &types.BidHeap{OrderHeap: make(types.OrderHeap, 0)},
+			YesAsks: &types.AskHeap{OrderHeap: make(types.OrderHeap, 0)},
+			NoBids:  &types.BidHeap{OrderHeap: make(types.OrderHeap, 0)},
+			NoAsks:  &types.AskHeap{OrderHeap: make(types.OrderHeap, 0)},
 		},
 		Overview: types.Overview{
 			SourceOfTruth: data.SourceOfTruth,

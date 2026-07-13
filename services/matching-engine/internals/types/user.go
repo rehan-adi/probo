@@ -1,6 +1,9 @@
 package types
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type KycStatus string
 
@@ -26,5 +29,6 @@ type User struct {
 	KycVerificationStatus     KycStatus
 	PaymentVerificationStatus PaymentStatus
 	Balance                   *Balance
+	LastActive                time.Time
 	Mutex                     sync.Mutex
 }
