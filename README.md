@@ -18,9 +18,8 @@ bun run db:migrate
 bun run db:seed
 bun run start:all
 ```
-*(Run `make run` in `services/matching-engine` to start the Go engine)*
 
-
+_(Run `make run` in `services/matching-engine` to start the Go engine. You do **not** need to build it first—`go run` compiles and executes in one step!)_
 
 ## The Architecture: Two Core Journeys
 

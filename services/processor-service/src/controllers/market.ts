@@ -67,7 +67,10 @@ export const updateMarketTimeline = async (data: any) => {
 	try {
 		logger.info({ data }, 'UPDATE_MARKET_TIMELINE received');
 	} catch (error) {
-		logger.error({ error, data, context: 'UPDATE_MARKET_TIMELINE_FAIL' }, 'Failed to update timeline');
+		logger.error(
+			{ error, data, context: 'UPDATE_MARKET_TIMELINE_FAIL' },
+			'Failed to update timeline',
+		);
 		throw error;
 	}
 };

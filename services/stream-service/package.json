@@ -36,6 +36,8 @@
 		"stream-service",
 		"redis",
 		"pub/sub",
-		"microservices"
+		"microservices",
+		"real-time",
+		"websockets"
 	]
 }

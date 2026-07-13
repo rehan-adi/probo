@@ -16,7 +16,7 @@ export default function Footer() {
 				<div>
 					<h2 className="text-base font-semibold mb-2">Company</h2>
 					<ul className="space-y-1">
-						<li className='hover:font-medium'>
+						<li className="hover:font-medium">
 							<a href="#">About Us</a>
 						</li>
 						<li>

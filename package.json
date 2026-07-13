@@ -31,14 +31,18 @@
 	"license": "Apache-2.0",
 	"keywords": [
 		"probo",
-		"microservices",
-		"trading system",
-		"Hono",
-		"Bun",
-		"postgresql",
+		"bun",
+		"hono",
 		"redis",
 		"kafka",
-		"golang"
+		"golang",
+		"postgresql",
+		"websockets",
+		"event-driven",
+		"microservices",
+		"trading-system",
+		"real-time-system",
+		"prediction-market"
 	],
 	"devDependencies": {
 		"@types/bun": "latest",

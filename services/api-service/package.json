@@ -45,6 +45,8 @@
 		"zod",
 		"ioredis",
 		"uuid",
-		"probo"
+		"probo",
+		"fintech",
+		"prediction-market"
 	]
 }

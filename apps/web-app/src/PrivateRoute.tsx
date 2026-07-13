@@ -6,7 +6,7 @@ const PrivateRoute = () => {
 	const isHydrated = useAuthStore((state) => state.isHydrated);
 
 	if (!isHydrated) {
-		return null; 
+		return null;
 	}
 
 	if (!token) {

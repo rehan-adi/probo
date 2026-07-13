@@ -1,8 +1,7 @@
 import { CheckCircle, Clock, XCircle } from 'lucide-react';
 
 export function VerificationPreview({ data }: { data: any }) {
-
-	console.log(data.data)
+	console.log(data.data);
 
 	return (
 		<div className="w-full bg-white rounded-xl py-4 px-4">
@@ -25,7 +24,7 @@ export function VerificationPreview({ data }: { data: any }) {
 					</span>
 				</div>
 
-				<div className='relative'>
+				<div className="relative">
 					<label className="block text-[#262626] mb-1">PAN card number</label>
 					<input
 						type="text"
@@ -42,7 +41,7 @@ export function VerificationPreview({ data }: { data: any }) {
 					</span>
 				</div>
 
-				<div className='relative'>
+				<div className="relative">
 					<label className="block text-[#262626] mb-1">Date of Birth</label>
 					<input
 						type="text"
@@ -63,7 +62,7 @@ export function VerificationPreview({ data }: { data: any }) {
 			<div className="space-y-8 max-w-[357px]">
 				<h1 className="text-black mt-8 text-lg font-medium">Payment Details</h1>
 				{data.paymentMethod.type === 'UPI' ? (
-					<div className='relative'>
+					<div className="relative">
 						<label className="block text-[#262626] mb-1">UPI ID</label>
 						<input
 							type="text"
@@ -81,7 +80,7 @@ export function VerificationPreview({ data }: { data: any }) {
 					</div>
 				) : (
 					<>
-						<div className='relative'>
+						<div className="relative">
 							<label className="block text-[#262626] mb-1">Bank Account Number</label>
 							<input
 								type="text"
@@ -104,7 +103,7 @@ export function VerificationPreview({ data }: { data: any }) {
 							</span>
 						</div>
 
-						<div className='relative'>
+						<div className="relative">
 							<label className="block text-[#262626] mb-1">IFSC Code</label>
 							<input
 								type="text"

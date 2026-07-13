@@ -5,6 +5,7 @@ This document explains how to set up the Probo project on your local machine for
 ## Prerequisites
 
 Ensure you have the following installed before starting:
+
 - **[Go](https://go.dev/)**
 - **[Bun](https://bun.sh/)**
 - **[Docker](https://www.docker.com/)** & **Docker Compose**
@@ -47,7 +48,7 @@ cp services/matching-engine/.env.example services/matching-engine/.env
 
 **Why it is required:** Services read configuration (like database URLs, Redis connection strings, and Kafka brokers) from `.env` files. Without these, the services will fail to start or connect to the infrastructure.
 
-*(Note: Ensure you update any secrets or keys inside these `.env` files if your local setup differs from the default).*
+_(Note: Ensure you update any secrets or keys inside these `.env` files if your local setup differs from the default)._
 
 ---
 
@@ -72,18 +73,21 @@ docker-compose up -d
 ```bash
 bun run db:generate
 ```
+
 - **What it does:** Generates the Prisma Client from the current Prisma schema located in `packages/database`.
 - **Why it is required:** The services use the generated Prisma Client to interact with the database in a type-safe manner. This must be run whenever the Prisma schema changes.
 
 ```bash
 bun run db:migrate
 ```
+
 - **What it does:** Applies pending Prisma migrations to the local PostgreSQL database using `prisma migrate dev`.
 - **Why it is required:** Ensures the database schema matches the expected application state.
 
 ```bash
 bun run db:seed
 ```
+
 - **What it does:** Seeds the database with initial development data by running `bun run src/seed.ts` inside the database package.
 - **Why it is required:** Provides sample data so you can test features without having to manually insert records.
 
@@ -100,7 +104,7 @@ bun run start:all
 **What it does:** Concurrently starts all Bun-based backend services (`api-service`, `stream-service`, and `processor-service`).
 **Why it is required:** Brings up the core API and worker systems that process orders, stream updates to the frontend, and persist trades to the database.
 
-*(Alternatively, you can start them individually from the Repository Root: `bun run start:api-service`, `bun run start:processor-service`, `bun run start:stream-service`)*
+_(Alternatively, you can start them individually from the Repository Root: `bun run start:api-service`, `bun run start:processor-service`, `bun run start:stream-service`)_
 
 ---
 
@@ -114,6 +118,7 @@ make run
 
 **What it does:** Navigates to `services/matching-engine` and executes `go run ./cmd`.
 **Why it is required:** Starts the Go-based high-performance matching engine which processes trades from Redis and publishes matched trades to Kafka.
+_(Note: You do **not** need to run `make build` before `make run`. The `go run` command automatically compiles the code into a temporary binary and executes it in a single step, similar to `bun src/server.ts`.)_
 
 ---
 

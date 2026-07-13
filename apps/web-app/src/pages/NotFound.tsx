@@ -9,7 +9,10 @@ export default function NotFoundPage() {
 			<p className="mb-6 text-sm text-[#757575]">
 				Sorry, the page you were looking for was not found
 			</p>
-			<Link to="/" className="px-8 py-2.5 text-sm font-semibold bg-[#262626] text-white rounded-xl transition duration-200">
+			<Link
+				to="/"
+				className="px-8 py-2.5 text-sm font-semibold bg-[#262626] text-white rounded-xl transition duration-200"
+			>
 				Go to Home
 			</Link>
 		</div>

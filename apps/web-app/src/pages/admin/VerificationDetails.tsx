@@ -219,7 +219,7 @@ export default function VerificationDetailsPage() {
 							>
 								{isPending ? (
 									<>
-										<Loader2  className='animate-spin w-5 h-5'/>
+										<Loader2 className="animate-spin w-5 h-5" />
 									</>
 								) : (
 									<>Submit</>

@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { ChartConfig } from "@/components/ui/chart";
+import type { ChartConfig } from '@/components/ui/chart';
 import settingIcon from '@/assets/images/settings_gray.svg';
 import { ArrowRightLeft, BarChart as BarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, } from '@/components/ui/chart';
-import { Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
+import {
+	Tooltip,
+	ResponsiveContainer,
+	AreaChart,
+	Area,
+	BarChart,
+	Bar,
+	XAxis,
+	YAxis,
+	CartesianGrid,
+} from 'recharts';
 
 interface TimelineData {
 	YesPrice: string;
@@ -20,12 +29,12 @@ interface TimelineChartProps {
 
 const chartConfig = {
 	desktop: {
-		label: "Desktop",
+		label: 'Desktop',
 	},
 	mobile: {
-		label: "Mobile",
+		label: 'Mobile',
 	},
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export default function TimelineChart({ data }: TimelineChartProps) {
 	const [view, setView] = useState<'yes' | 'no'>('yes');
@@ -55,7 +64,9 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 						onClick={() => setView(view === 'yes' ? 'no' : 'yes')}
 						className={`p-2.5 rounded-md transition ${view === 'yes' ? 'bg-[#ECF4FF]' : 'bg-[#FDF3F2]'}`}
 					>
-						<ArrowRightLeft className={`h-4 w-4 ${view === 'yes' ? 'text-[#0063F5]' : 'text-[#D90429]'}`} />
+						<ArrowRightLeft
+							className={`h-4 w-4 ${view === 'yes' ? 'text-[#0063F5]' : 'text-[#D90429]'}`}
+						/>
 					</button>
 
 					<div className="flex flex-col items-start font-semibold text-xs">
@@ -86,8 +97,9 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 					>
 						<button
 							onClick={() => setShowBar((prev) => !prev)}
-							className={`flex items-center gap-2 px-5 py-2 text-sm cursor-pointer rounded-md transition border ${showBar ? 'bg-gray-50 text-black' : 'bg-white text-black'
-								}`}
+							className={`flex items-center gap-2 px-5 py-2 text-sm cursor-pointer rounded-md transition border ${
+								showBar ? 'bg-gray-50 text-black' : 'bg-white text-black'
+							}`}
 						>
 							<BarIcon className="w-4 text-blue-600 h-4" />
 							Bar View
@@ -152,7 +164,7 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 						exit={{ opacity: 0, y: 10 }}
 					>
 						<Card className="border-none shadow-none">
-							<CardHeader className='px-0'>
+							<CardHeader className="px-0">
 								<div className="flex items-center justify-between">
 									<h3 className="font-semibold">Bar Chart - Timeline</h3>
 								</div>
@@ -165,18 +177,14 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 										barCategoryGap="20%"
 										margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
 									>
-										  <CartesianGrid vertical={false} />
+										<CartesianGrid vertical={false} />
 										<XAxis
 											dataKey="time"
 											tickLine={false}
 											axisLine={false}
 											tickFormatter={formatTime}
 										/>
-										<YAxis
-											tickLine={false}
-											axisLine={false}
-											tickFormatter={() => ''}
-										/>
+										<YAxis tickLine={false} axisLine={false} tickFormatter={() => ''} />
 										<ChartTooltip
 											cursor={false}
 											content={({ active, payload }) => {
@@ -205,7 +213,6 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 								</ChartContainer>
 							</CardContent>
 						</Card>
-
 					</motion.div>
 				)}
 			</CardContent>

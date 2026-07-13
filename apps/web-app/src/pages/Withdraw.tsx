@@ -10,7 +10,7 @@ export default function WithdrawPage() {
 	const { mutate, isPending } = useWithdrawMutation();
 
 	const currentWalletAmount = data?.data.data.amount;
-	console.log(currentWalletAmount)
+	console.log(currentWalletAmount);
 
 	const handleSubmit = () => {
 		if (!amount || amount <= 0) {

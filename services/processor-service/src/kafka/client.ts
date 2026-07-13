@@ -3,7 +3,7 @@ import { Kafka, logLevel, Partitioners } from 'kafkajs';
 
 export const kafkaClient = new Kafka({
 	logLevel: logLevel.ERROR,
-	brokers: ['localhost:9092'],
+	brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
 	clientId: 'processor-service-consumer',
 });
 

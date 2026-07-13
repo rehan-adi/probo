@@ -11,6 +11,14 @@
 		"url": "https://github.com/rehan-adi/probo",
 		"directory": "apps/web-app"
 	},
+	"keywords": [
+		"probo",
+		"react",
+		"vite",
+		"frontend",
+		"fintech",
+		"trading-system"
+	],
 	"scripts": {
 		"dev": "bunx --bun vite",
 		"build": "tsc -b && vite build",

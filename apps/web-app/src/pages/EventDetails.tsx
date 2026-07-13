@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth';
 import { ChevronRight } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import pfpIcon from '@/assets/images/pfp.avif';
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from 'date-fns';
 import PlaceOrder from '@/components/PlaceOrder';
 import TimelineSection from '@/components/Timeline';
 import shareIcon from '@/assets/images/share-icon.svg';
@@ -121,7 +121,7 @@ export default function EventDetails() {
 								act.buyerPhone === newActivity.buyerPhone &&
 								act.sellerPhone === newActivity.sellerPhone &&
 								act.price === newActivity.price &&
-								act.timestamp === newActivity.timestamp
+								act.timestamp === newActivity.timestamp,
 						);
 						if (!exists) {
 							updatedActivities.unshift(newActivity);
@@ -135,7 +135,7 @@ export default function EventDetails() {
 					orderbook: updatedOrderbook,
 					yesPrice: newYesPrice,
 					noPrice: newNoPrice,
-					activities: updatedActivities
+					activities: updatedActivities,
 				};
 			});
 		});
@@ -211,10 +211,11 @@ export default function EventDetails() {
 							<button
 								key={tab}
 								onClick={() => handleTabClick(tab)}
-								className={`pb-2 capitalize cursor-pointer relative w-28 text-[#545454] ${activeTab === tab
-									? 'after:content-[""] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-black'
-									: ''
-									}`}
+								className={`pb-2 capitalize cursor-pointer relative w-28 text-[#545454] ${
+									activeTab === tab
+										? 'after:content-[""] after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-black'
+										: ''
+								}`}
 							>
 								{tab.replace(/^\w/, (c) => c.toUpperCase())}
 							</button>
@@ -228,10 +229,11 @@ export default function EventDetails() {
 									<button
 										key={tab}
 										onClick={() => setInnerTab(tab)}
-										className={`pb-2 capitalize cursor-pointer text-[#545454] relative ${innerTab === tab
-											? 'after:content-[""] text-black after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black font-semibold'
-											: 'text-[#575757]'
-											}`}
+										className={`pb-2 capitalize cursor-pointer text-[#545454] relative ${
+											innerTab === tab
+												? 'after:content-[""] text-black after:absolute after:left-0 after:bottom-[-2px] after:w-full after:h-[2px] after:bg-black font-semibold'
+												: 'text-[#575757]'
+										}`}
 									>
 										{tab}
 									</button>
@@ -352,8 +354,9 @@ export default function EventDetails() {
 									{market?.activities?.slice(0, 5).map((activity: Activity, index: number) => (
 										<div
 											key={activity.id || index}
-											className={`grid grid-cols-3 gap-4 items-center py-3 ${index < 4 ? 'border-b border-gray-100' : ''
-												}`}
+											className={`grid grid-cols-3 gap-4 items-center py-3 ${
+												index < 4 ? 'border-b border-gray-100' : ''
+											}`}
 										>
 											<div className="flex flex-col md:flex-row md:items-center items-start gap-4">
 												<img
@@ -383,19 +386,14 @@ export default function EventDetails() {
 													className="md:w-10 w-9 md:h-10 h-9 rounded-full border order-first md:order-last"
 												/>
 												<div className="md:text-sm text-xs text-right order-last md:order-first">
-													<p className="font-medium">
-														{maskPhoneNumber(activity.sellerPhone)}
-													</p>
+													<p className="font-medium">{maskPhoneNumber(activity.sellerPhone)}</p>
 												</div>
 											</div>
-
 										</div>
 									))}
 
 									{(!market?.activities || market.activities.length === 0) && (
-										<div className="text-center py-8 text-gray-500">
-											No activities yet
-										</div>
+										<div className="text-center py-8 text-gray-500">No activities yet</div>
 									)}
 								</div>
 							)}

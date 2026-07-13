@@ -35,6 +35,8 @@
 		"bun",
 		"postgres",
 		"kafka",
-		"microservices"
+		"microservices",
+		"fintech",
+		"trading-system"
 	]
 }

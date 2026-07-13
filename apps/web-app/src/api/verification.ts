@@ -32,5 +32,11 @@ export const verify = (
 	kycRemark?: string,
 	paymentRemark?: string,
 ) => {
-	return api.post('/verification/verify', { userId, kycStatus, kycRemark, paymentStatus, paymentRemark });
+	return api.post('/verification/verify', {
+		userId,
+		kycStatus,
+		kycRemark,
+		paymentStatus,
+		paymentRemark,
+	});
 };

@@ -1,5 +1,11 @@
 import { DB_EVENTS } from '@/constants/constants';
-import { recordActivity, recordOrderPlaced, updateMarketTimeline, updateStockPrice, updateTradersCount } from '@/controllers/market';
+import {
+	recordActivity,
+	recordOrderPlaced,
+	updateMarketTimeline,
+	updateStockPrice,
+	updateTradersCount,
+} from '@/controllers/market';
 
 export const processToDB = async (eventType: string, data: any) => {
 	switch (eventType) {
