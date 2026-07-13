@@ -40,6 +40,6 @@ func main() {
 
 	redis.Consumer(ctx, client)
 
-	log.Info().Msg("🚀 Matching Engine started successfully")
+	log.Info().Msg("Matching Engine started successfully")
 
 }

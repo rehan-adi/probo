@@ -4,8 +4,8 @@ const checkEnv = (key: string) => {
 	const value = Bun.env[key];
 
 	if (!value) {
-		logger.error(`❌ Missing required environment variable: ${key}`);
-		throw new Error(`❌ Missing required environment variable: ${key}`);
+		logger.error(`Missing required environment variable: ${key}`);
+		throw new Error(`Missing required environment variable: ${key}`);
 	}
 	return value;
 };

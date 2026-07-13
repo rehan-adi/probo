@@ -34,9 +34,9 @@ func InitProducer() {
 				switch ev := e.(type) {
 				case *kafka.Message:
 					if ev.TopicPartition.Error != nil {
-						log.Error().Err(ev.TopicPartition.Error).Msg("🚨 Kafka delivery failed")
+						log.Error().Err(ev.TopicPartition.Error).Msg("Kafka delivery failed")
 					} else {
-						log.Debug().Msgf("✅ Delivered to %v", ev.TopicPartition)
+						log.Debug().Msgf("Delivered to %v", ev.TopicPartition)
 					}
 				}
 			}

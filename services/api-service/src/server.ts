@@ -7,4 +7,4 @@ Bun.serve({
 	port: ENV.PORT,
 });
 
-logger.info(`🚀 API service running → http://localhost:${ENV.PORT}`);
+logger.info(`API service is running at http://localhost:${ENV.PORT}`);

@@ -136,7 +136,7 @@ export const login = async (c: Context) => {
 							userId: user.id,
 							attempt,
 						},
-						'✅ User synced to engine successfully',
+						'User synced to engine successfully',
 					);
 					engineSynced = true;
 					break;
@@ -150,7 +150,7 @@ export const login = async (c: Context) => {
 							userId: user.id,
 							message: response.message,
 						},
-						'❌ Engine sync failed and not retryable',
+						'Engine sync failed and not retryable',
 					);
 					break;
 				}
@@ -162,7 +162,7 @@ export const login = async (c: Context) => {
 						attempt,
 						message: response.message,
 					},
-					'⚠️ Engine sync failed but retryable. Retrying...',
+					'Engine sync failed but retryable. Retrying...',
 				);
 
 				await new Promise((res) => setTimeout(res, retryDelay));
@@ -175,10 +175,10 @@ export const login = async (c: Context) => {
 						context: 'ENGINE_SYNC_MAX_RETRIES_EXCEEDED',
 						userId: user.id,
 					},
-					'❌ Engine sync failed after all retries',
+					'Engine sync failed after all retries',
 				);
 			} else {
-				logger.info({ userId: user.id }, '✅ Engine sync done successfully after retries');
+				logger.info({ userId: user.id }, 'Engine sync done successfully after retries');
 			}
 		}
 

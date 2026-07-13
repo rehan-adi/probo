@@ -35,7 +35,7 @@ export const pushToQueue = async (eventType: string, data: any): Promise<EngineR
 
 		const messageHandler = async (channel: string, message: string) => {
 			if (channel === responseChannel) {
-				logger.info({ responseId, message }, '✅ Received engine response');
+				logger.info({ responseId, message }, 'Received engine response');
 
 				handled = true;
 				clearTimeout(timeout);
