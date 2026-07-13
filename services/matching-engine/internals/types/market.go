@@ -8,10 +8,11 @@ import (
 type MarketMessageType string
 
 const (
-	MarketPlaceOrder   MarketMessageType = "PLACE_ORDER"
-	MarketSellOrder    MarketMessageType = "SELL_ORDER"
-	MarketCancelOrder  MarketMessageType = "CANCEL_ORDER"
-	MarketGetOrderBook MarketMessageType = "GET_ORDERBOOK"
+	MarketPlaceOrder    MarketMessageType = "PLACE_ORDER"
+	MarketSellOrder     MarketMessageType = "SELL_ORDER"
+	MarketCancelOrder   MarketMessageType = "CANCEL_ORDER"
+	MarketGetOrderBook  MarketMessageType = "GET_ORDERBOOK"
+	MarketResolveMarket MarketMessageType = "RESOLVE_MARKET"
 )
 
 type MarketMessage struct {
@@ -62,11 +63,4 @@ type PricePoint struct {
 	NoPrice   float64
 }
 
-type Activity struct {
-	Buyerphone  string    `json:"buyerPhone"`
-	SellerPhone string    `json:"sellerPhone"`
-	Outcome     string    `json:"outcome"`
-	Price       float64   `json:"price"`
-	Quantity    int       `json:"quantity"`
-	Timestamp   time.Time `json:"timestamp"`
-}
+

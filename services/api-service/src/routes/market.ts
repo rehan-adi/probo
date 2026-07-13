@@ -6,6 +6,7 @@ import {
 	getAllMarket,
 	getMarketDetails,
 	getMarketsByCategory,
+	resolveMarket,
 } from '@/controllers/market';
 
 export const marketRoutes = new Hono();
@@ -14,5 +15,6 @@ marketRoutes.get('/', getAllMarket);
 marketRoutes.get('/category/:categoryId', getMarketsByCategory);
 marketRoutes.post('/create', authorization, createMarket);
 marketRoutes.post('/liquidity-add', authorization, addLiquidity);
+marketRoutes.post('/resolve', authorization, resolveMarket);
 
 marketRoutes.get('/:symbol', getMarketDetails);

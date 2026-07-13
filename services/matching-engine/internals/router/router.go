@@ -41,6 +41,9 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "GET_MARKET_WITH_SYMBOL":
 		return handlers.GetMarketDetails(payload)
 
+	case "RESOLVE_MARKET":
+		return handlers.ResolveMarket(payload)
+
 	case "PLACE_ORDER":
 		return handlers.BuyOrder(payload)
 

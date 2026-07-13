@@ -342,3 +342,54 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 	}
 
 }
+
+type ResolveMarketDataRequest struct {
+	MarketId string `mapstructure:"marketId"`
+	Result   string `mapstructure:"result"`
+}
+
+func ResolveMarket(payload types.QueuePayload) types.QueueResponse {
+	var data ResolveMarketDataRequest
+
+	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Invalid format",
+		}
+	}
+
+	engine.EngineInstance.MM.RLock()
+	market, ok := engine.EngineInstance.GetMarket(data.MarketId)
+	engine.EngineInstance.MM.RUnlock()
+
+	if !ok {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Market not found",
+		}
+	}
+
+	replyChan := make(chan interface{})
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketResolveMarket,
+		Payload:   data.Result,
+		ReplyChan: replyChan,
+	}
+
+	resp := <-replyChan
+	if respBool, ok := resp.(bool); ok && respBool {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Success,
+			Message:    "Market resolved",
+		}
+	}
+
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     types.Error,
+		Message:    "Failed to resolve market",
+	}
+}

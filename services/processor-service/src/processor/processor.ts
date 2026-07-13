@@ -5,6 +5,8 @@ import {
 	updateMarketTimeline,
 	updateStockPrice,
 	updateTradersCount,
+	handleOrderCancelled,
+	handleMarketResolved,
 } from '@/controllers/market';
 
 export const processToDB = async (eventType: string, data: any) => {
@@ -27,6 +29,14 @@ export const processToDB = async (eventType: string, data: any) => {
 
 		case DB_EVENTS.ORDER_PLACED:
 			await recordOrderPlaced(data);
+			break;
+
+		case DB_EVENTS.ORDER_CANCELLED:
+			await handleOrderCancelled(data);
+			break;
+
+		case DB_EVENTS.MARKET_RESOLVED:
+			await handleMarketResolved(data);
 			break;
 
 		default:

@@ -438,6 +438,40 @@ export const getMarketsByCategory = async (c: Context) => {
  * @returns Json response with market details
  */
 
+export const resolveMarket = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		
+		if (!user || user.role !== 'ADMIN') {
+			return c.json({ success: false, error: 'Unauthorized: Admin only' }, 401);
+		}
+
+		const body = await c.req.json<{ marketId: string; result: string }>();
+
+		// Update DB
+		const market = await prisma.market.update({
+			where: { id: body.marketId },
+			data: { status: 'CLOSED', result: body.result },
+		});
+
+		// Push to Engine to halt trading and settle
+		const response = await pushToQueue(EVENTS.RESOLVE_MARKET, {
+			marketId: body.marketId,
+			result: body.result,
+		});
+
+		if (!response.success) {
+			return c.json({ success: false, message: response.message }, 502);
+		}
+
+		return c.json({ success: true, message: 'Market resolved successfully', data: market }, 200);
+	} catch (error) {
+		logger.error({ error }, 'Failed to resolve market');
+		return c.json({ success: false, error: 'Internal server error' }, 500);
+	}
+};
+
 export const getMarketDetails = async (c: Context) => {
 	try {
 		const symbol = c.req.param('symbol');

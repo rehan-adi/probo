@@ -142,12 +142,15 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 		buyerPhone, sellerPhone := getPhonesForActivity(e, order, matchOrder, matchType)
 
 		activities = append(activities, types.Activity{
+			BuyerId:     u1.ID, // Or the correct buyer id
+			SellerId:    u2.ID,
 			Buyerphone:  buyerPhone,
 			SellerPhone: sellerPhone,
 			Outcome:     string(order.Side),
 			Price:       matchPrice,
 			Quantity:    tradeQty,
 			Timestamp:   time.Now(),
+			MatchType:   matchType,
 		})
 
 		if matchOrder.Filled == matchOrder.Quantity {

@@ -75,6 +75,22 @@ enum TransactionStatus {
   FAILED
 }
 
+enum SystemAccount {
+  PLATFORM_FEES
+  EXCHANGE_ESCROW
+  REWARD_POOL
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  fromAccount String   // Can be a User UUID or a SystemAccount enum string
+  toAccount   String   // Can be a User UUID or a SystemAccount enum string
+  amount      Decimal  @db.Decimal(14,2)
+  type        TransactionType
+  referenceId String?  // Optional: OrderId, MarketId, etc
+  createdAt   DateTime @default(now())
+}
+
 model User {
   id                        String        @id @default(uuid())
   phone                     String        @unique

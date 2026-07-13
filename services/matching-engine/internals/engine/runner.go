@@ -14,6 +14,10 @@ func (e *Engine) runMarket(market *types.Market) {
 		switch msg.Type {
 
 		case types.MarketPlaceOrder:
+			if market.Status == types.Close {
+				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "market is closed"}
+				continue
+			}
 			e.handleOrder(msg, market)
 
 		case types.MarketGetOrderBook:
@@ -24,7 +28,14 @@ func (e *Engine) runMarket(market *types.Market) {
 			msg.ReplyChan <- aggOrderBook
 
 		case types.MarketSellOrder:
+			if market.Status == types.Close {
+				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "market is closed"}
+				continue
+			}
 			e.handleOrder(msg, market)
+
+		case types.MarketResolveMarket:
+			e.handleResolveMarket(msg, market)
 
 		default:
 			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")
