@@ -140,10 +140,20 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 		e.settleTradeBalances(order, matchOrder, tradeQty, matchPrice, matchType)
 
 		buyerPhone, sellerPhone := getPhonesForActivity(e, order, matchOrder, matchType)
+		var buyerId, sellerId string
+		if matchType == "STANDARD" {
+			if order.Action == types.BUY {
+				buyerId, sellerId = order.UserId, matchOrder.UserId
+			} else {
+				buyerId, sellerId = matchOrder.UserId, order.UserId
+			}
+		} else {
+			buyerId, sellerId = "System", "System"
+		}
 
 		activities = append(activities, types.Activity{
-			BuyerId:     u1.ID, // Or the correct buyer id
-			SellerId:    u2.ID,
+			BuyerId:     buyerId,
+			SellerId:    sellerId,
 			Buyerphone:  buyerPhone,
 			SellerPhone: sellerPhone,
 			Outcome:     string(order.Side),
