@@ -10,6 +10,7 @@ import TimelineSection from '@/components/Timeline';
 import shareIcon from '@/assets/images/share-icon.svg';
 import PlusIcon from '@/assets/images/plus_circled.svg';
 import downloadIcon from '@/assets/images/download.avif';
+import defaultThumbnail from '@/assets/images/logo.avif';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface Activity {
@@ -59,10 +60,6 @@ export default function EventDetails() {
 		const last4 = phone.slice(-4);
 		const masked = '*'.repeat(phone.length - 4);
 		return masked + last4;
-	};
-
-	const getOppositeActivityColor = (outcome: string) => {
-		return outcome === 'YES' ? 'text-[#DC2804]' : 'text-[#197BFF]';
 	};
 
 	useEffect(() => {
@@ -193,7 +190,7 @@ export default function EventDetails() {
 					<div className="flex justify-between items-center mb-10 md:gap-4 gap-3">
 						<div className="flex gap-6 items-center">
 							<img
-								src={market.thumbnail}
+								src={market.thumbnail || defaultThumbnail}
 								alt={market.title}
 								className="md:w-24 w-20 md:h-24 h-20 object-cover rounded"
 							/>

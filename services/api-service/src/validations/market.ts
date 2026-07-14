@@ -8,7 +8,7 @@ export const createMarketSchema = z
 			.max(100, { message: 'Title must be under 100 characters' }),
 		startTime: z.coerce.date(),
 		endTime: z.coerce.date(),
-		thumbnail: z.union([z.url(), z.literal('')]).optional(),
+		thumbnail: z.union([z.string().url(), z.literal(''), z.null()]).optional(),
 		categoryId: z.string().min(1, { message: 'Category ID is required' }),
 		sourceOfTruth: z
 			.string()
