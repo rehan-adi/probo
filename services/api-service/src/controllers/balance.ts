@@ -31,7 +31,35 @@ export const getBalance = async (c: Context) => {
 			);
 		}
 
-		const response = await pushToQueue(EVENTS.GET_BALANCE, { userId });
+		let response = await pushToQueue(EVENTS.GET_BALANCE, { userId });
+
+		if (!response.success && response.message.includes('User not found')) {
+			logger.warn({ userId }, 'User not found in engine, attempting to sync from DB');
+			const dbUser = await prisma.user.findUnique({
+				where: { id: userId },
+				include: { inrBalance: true }
+			});
+
+			if (dbUser) {
+				// Sync user to engine
+				await pushToQueue(EVENTS.CREATE_USER, {
+					id: dbUser.id,
+					phone: dbUser.phone,
+					kycVerificationStatus: dbUser.kycVerificationStatus,
+					paymentVerificationStatus: dbUser.paymentVerificationStatus,
+				});
+
+				// Sync balance to engine
+				await pushToQueue(EVENTS.INIT_BALANCE, {
+					userId: dbUser.id,
+					amount: Number(dbUser.inrBalance?.balance || 0),
+					locked: Number(dbUser.inrBalance?.locked || 0),
+				});
+
+				// Retry fetching balance
+				response = await pushToQueue(EVENTS.GET_BALANCE, { userId });
+			}
+		}
 
 		if (!response.success) {
 			logger.error(

@@ -59,7 +59,7 @@ export const login = async (c: Context) => {
 
 		if (existingUser) {
 			try {
-				await sendOtp(phone, otp);
+				// await sendOtp(phone, otp);
 				logger.info('OTP sent for existing user');
 			} catch (err) {
 				logger.error(
@@ -183,7 +183,7 @@ export const login = async (c: Context) => {
 		}
 
 		try {
-			await sendOtp(phone, otp);
+			// await sendOtp(phone, otp);
 			logger.info('OTP sent for new user');
 		} catch (err) {
 			logger.error(

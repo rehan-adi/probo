@@ -41,6 +41,14 @@ export default function TimelineChart({ data }: TimelineChartProps) {
 	const [showSettings, setShowSettings] = useState(false);
 	const [showBar, setShowBar] = useState(false);
 
+	if (!data || data.length === 0) {
+		return (
+			<Card className="bg-white rounded-2xl border shadow-none p-8 text-center text-gray-500 text-sm">
+				No timeline data available yet.
+			</Card>
+		);
+	}
+
 	const chartData = data.map((d) => ({
 		yes: Number(d.YesPrice),
 		no: Number(d.NoPrice),

@@ -58,6 +58,12 @@ export const recordActivity = async (data: any) => {
 	try {
 		logger.info({ data }, 'RECORD_ACTIVITY received');
 		const { buyerId, sellerId, outcome, price, quantity, matchType } = data;
+
+		// Skip malformed legacy messages in the queue to clear the backlog
+		if (buyerId === 'System' || !data.marketId) {
+			logger.info('Skipping malformed System message');
+			return;
+		}
 		
 		const qty = Number(quantity);
 		const executionPrice = Number(price);
@@ -69,7 +75,7 @@ export const recordActivity = async (data: any) => {
 		await prisma.$transaction(async (tx) => {
 			if (matchType === 'STANDARD') {
 				// Buyer: -Locked INR, +Shares
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: buyerId },
 					data: { locked: { decrement: executionPrice * qty } }
 				});
@@ -91,7 +97,7 @@ export const recordActivity = async (data: any) => {
 					where: { userId: sellerId, marketId: data.marketId },
 					data: { [`${field}Locked`]: { decrement: qty } }
 				});
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: sellerId },
 					data: { balance: { increment: executionPrice * qty } }
 				});
@@ -108,7 +114,7 @@ export const recordActivity = async (data: any) => {
 				const noPrice = 10.0 - executionPrice;
 
 				// Yes Buyer
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: buyerId },
 					data: { locked: { decrement: yesPrice * qty } }
 				});
@@ -120,7 +126,7 @@ export const recordActivity = async (data: any) => {
 				}
 
 				// No Buyer
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: sellerId },
 					data: { locked: { decrement: noPrice * qty } }
 				});
@@ -141,7 +147,7 @@ export const recordActivity = async (data: any) => {
 					where: { userId: buyerId, marketId: data.marketId },
 					data: { yesLocked: { decrement: qty } }
 				});
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: buyerId },
 					data: { balance: { increment: yesPrice * qty } }
 				});
@@ -151,7 +157,7 @@ export const recordActivity = async (data: any) => {
 					where: { userId: sellerId, marketId: data.marketId },
 					data: { noLocked: { decrement: qty } }
 				});
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: sellerId },
 					data: { balance: { increment: noPrice * qty } }
 				});
@@ -194,7 +200,7 @@ export const recordOrderPlaced = async (data: any) => {
 		await prisma.$transaction(async (tx) => {
 			if (action === 'BUY') {
 				// Lock INR
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId },
 					data: {
 						balance: { decrement: totalCost },
@@ -238,7 +244,7 @@ export const handleOrderCancelled = async (data: any) => {
 
 		await prisma.$transaction(async (tx) => {
 			if (type === 'INR') {
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId },
 					data: {
 						locked: { decrement: qty },
@@ -284,7 +290,7 @@ export const handleMarketResolved = async (data: any) => {
 				const payout = Number(holder[field]) * 10.0;
 				
 				// Add INR
-				await tx.inrBalance.update({
+				await tx.inrBalance.updateMany({
 					where: { userId: holder.userId },
 					data: { balance: { increment: payout } }
 				});

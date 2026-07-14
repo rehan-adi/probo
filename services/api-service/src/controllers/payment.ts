@@ -97,7 +97,7 @@ export const paymentWebhook = async (c: Context) => {
 
 			await prisma.$transaction(async (tx) => {
 				const existing = await tx.ledgerEntry.findFirst({
-					where: { referenceId: payment.cf_payment_id }
+					where: { referenceId: String(payment.cf_payment_id) }
 				});
 
 				if (existing) {
@@ -119,7 +119,7 @@ export const paymentWebhook = async (c: Context) => {
 						toAccount: customerId,
 						amount: amount,
 						type: 'DEPOSIT',
-						referenceId: payment.cf_payment_id
+						referenceId: String(payment.cf_payment_id)
 					}
 				});
 

@@ -147,11 +147,18 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 			} else {
 				buyerId, sellerId = matchOrder.UserId, order.UserId
 			}
-		} else {
-			buyerId, sellerId = "System", "System"
+		} else if matchType == "MINT" || matchType == "MERGE" {
+			// For MINT (two buyers) or MERGE (two sellers):
+			// We assign buyerId = Yes user, sellerId = No user
+			if order.Side == types.Yes {
+				buyerId, sellerId = order.UserId, matchOrder.UserId
+			} else {
+				buyerId, sellerId = matchOrder.UserId, order.UserId
+			}
 		}
 
 		activities = append(activities, types.Activity{
+			MarketId:    market.MarketId,
 			BuyerId:     buyerId,
 			SellerId:    sellerId,
 			Buyerphone:  buyerPhone,

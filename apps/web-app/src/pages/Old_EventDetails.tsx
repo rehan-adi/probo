@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import pfpIcon from '@/assets/images/pfp.avif';
 import { formatDistanceToNow } from 'date-fns';
-import PlaceOrder from '@/components/PlaceOrder';
+import PlaceOrder from '@/components/Old_PlaceOrder';
 import TimelineSection from '@/components/Timeline';
 import shareIcon from '@/assets/images/share-icon.svg';
 import PlusIcon from '@/assets/images/plus_circled.svg';
@@ -76,7 +76,7 @@ export default function EventDetails() {
 
 		socket.on('MESSAGE', (data) => {
 			setMarket((prev: Market | null) => {
-				if (!prev) return prev;
+				if (!prev) return data;
 
 				console.log('socket data is ', data);
 
@@ -398,7 +398,7 @@ export default function EventDetails() {
 					)}
 
 					<div ref={timelineRef} className="mb-12">
-						<TimelineSection data={market.timeline || []} />
+						<TimelineSection data={market.timeline} />
 					</div>
 
 					<div ref={overviewRef} className="sm:bg-white sm:p-8 rounded-lg sm:border">

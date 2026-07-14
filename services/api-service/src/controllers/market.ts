@@ -164,6 +164,20 @@ export const createMarket = async (c: Context) => {
 				},
 				'Market created and enqueued successfully',
 			);
+
+			// Automated Liquidity Provision (AMM Bot)
+			// Seed the market with 100 YES and 100 NO at 5.0 to establish initial depth
+			await pushToQueue(EVENTS.ADD_LIQUIDITY, {
+				userId: user?.id,
+				phone: user?.phone, // phone could be undefined but matching engine doesn't strictly require it
+				role: user?.role,
+				marketId: newMarket.id,
+				symbol: newMarket.symbol,
+				priceYes: '5.0',
+				priceNo: '5.0',
+				quantityYes: 100,
+				quantityNo: 100,
+			});
 		}
 
 		return c.json(
@@ -492,16 +506,16 @@ export const getMarketDetails = async (c: Context) => {
 
 		const response = await pushToQueue(EVENTS.GET_MARKET_WITH_SYMBOL, { symbol });
 
-		if (response.error) {
-			logger.error(
+		if (!response.success) {
+			logger.warn(
 				{
-					alert: true,
-					context: 'GET_MARKET_DETAILS_ENGINE_ERROR',
+					alert: false,
+					context: 'GET_MARKET_DETAILS_ENGINE_MISS',
 					symbol,
 					engineMessage: response.message || 'No message from engine',
-					engineData: response.data || null,
+					engineError: response.error || null,
 				},
-				'Engine failed to return market details',
+				'Engine failed or timed out, falling back to database',
 			);
 
 			// if engine fails or down to send back response then i just call db for fallback.
@@ -534,7 +548,7 @@ export const getMarketDetails = async (c: Context) => {
 					data: marketDetails,
 					source: 'db',
 				},
-				502,
+				200,
 			);
 		}
 
