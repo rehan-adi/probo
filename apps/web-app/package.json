@@ -26,6 +26,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@cashfreepayments/cashfree-js": "^1.0.7",
 		"@radix-ui/react-popover": "^1.1.14",
 		"@radix-ui/react-select": "^2.2.5",
 		"@radix-ui/react-slot": "^1.2.3",

@@ -1,25 +1,42 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useDepositMutation } from '@/hooks/mutations/balance';
+import { useInitPaymentMutation } from '@/hooks/mutations/payment';
+// @ts-ignore
+import { load } from '@cashfreepayments/cashfree-js';
 
 export default function RechargePage() {
 	const [amount, setAmount] = useState<number | null>(null);
 
-	const { mutate, isPending } = useDepositMutation();
+	const { mutate, isPending } = useInitPaymentMutation();
 
 	const handleQuickSelect = (value: number) => {
 		setAmount(value);
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		if (!amount || amount <= 0) {
 			alert('Please enter a valid amount greater than 0');
 			return;
 		}
-		mutate(amount.toString(), {
-			onSuccess: () => {
-				setAmount(null);
+		mutate(amount, {
+			onSuccess: async (res) => {
+				if (res.success && res.data?.payment_session_id) {
+					try {
+						const cashfree = await load({ mode: 'sandbox' });
+						cashfree.checkout({
+							paymentSessionId: res.data.payment_session_id,
+							redirectTarget: '_self'
+						});
+					} catch (err) {
+						console.error('Failed to load Cashfree SDK', err);
+						alert('Failed to initialize payment gateway.');
+					}
+				}
 			},
+			onError: (err) => {
+				console.error(err);
+				alert('Failed to create payment order');
+			}
 		});
 	};
 

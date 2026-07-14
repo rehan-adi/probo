@@ -25,7 +25,7 @@ export const authorization: MiddlewareHandler = async (c: Context, next) => {
 
 		await next();
 	} catch (error) {
-		logger.error('JWT verification failed:', error);
+		logger.error({ error }, 'JWT verification failed');
 		return c.json({ success: false, message: 'Invalid or expired token' }, 401);
 	}
 };

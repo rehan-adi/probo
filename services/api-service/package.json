@@ -26,6 +26,7 @@
 		"@aws-sdk/s3-request-presigner": "^3.862.0",
 		"@probo/database": "workspace:*",
 		"@probo/logger": "workspace:*",
+		"cashfree-pg": "^6.0.4",
 		"hono": "^4.8.5",
 		"ioredis": "^5.6.1",
 		"rate-limiter-flexible": "^7.1.1",

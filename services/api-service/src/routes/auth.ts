@@ -12,6 +12,6 @@ import { rateLimiter } from '@/middlewares/limiter';
 
 export const authRoutes = new Hono();
 
-authRoutes.post('/login', rateLimiter({ points: 3, duration: 300 }), login);
+authRoutes.post('/login', rateLimiter({ points: 30, duration: 300 }), login);
 authRoutes.post('/logout', logout);
-authRoutes.post('/verify-otp', rateLimiter({ points: 3, duration: 300 }), verify);
+authRoutes.post('/verify-otp', rateLimiter({ points: 30, duration: 300 }), verify);

@@ -17,7 +17,7 @@ export const sendOtp = async (phone: string, otp: string) => {
 			to: phone,
 		});
 	} catch (error) {
-		logger.error(`Twilio failed for ${phone}`, error);
+		logger.error({ error }, `Twilio failed for ${phone}`);
 		throw new Error('Failed to send OTP');
 	}
 };
