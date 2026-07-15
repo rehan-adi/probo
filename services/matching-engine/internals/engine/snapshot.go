@@ -25,8 +25,8 @@ type SnapshotData struct {
 }
 
 func (e *Engine) StartSnapshotRoutine() {
-	// Runs every 30 minutes
-	ticker := time.NewTicker(30 * time.Minute)
+	// Runs every 10 minutes as requested
+	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
 		for {
 			<-ticker.C
@@ -68,7 +68,28 @@ func (e *Engine) PerformSnapshot() {
 		return
 	}
 
-	// 3. Compress
+	snapshotEnabled := os.Getenv("SNAPSHOT_ENABLED")
+	if snapshotEnabled != "true" {
+		log.Warn().Msg("SNAPSHOT_ENABLED is not true, skipping snapshot generation.")
+		return
+	}
+
+	snapshotStore := os.Getenv("SNAPSHOT_STORE")
+
+	if snapshotStore == "redis" {
+		log.Info().Msg("SNAPSHOT_STORE is redis, saving to Redis...")
+		ctx := context.Background()
+		// Save to Redis with 7 days TTL (7 * 24 * 60 * 60 seconds)
+		err := e.RedisClient.Set(ctx, "engine_snapshot:latest", jsonData, 7*24*time.Hour).Err()
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to save snapshot to Redis")
+		} else {
+			log.Info().Msg("Engine state snapshot successfully saved to Redis")
+		}
+		return
+	}
+
+	// 3. Compress for S3
 	var b bytes.Buffer
 	gz := gzip.NewWriter(&b)
 	if _, err := gz.Write(jsonData); err != nil {
@@ -83,7 +104,6 @@ func (e *Engine) PerformSnapshot() {
 	compressedData := b.Bytes()
 
 	// 4. Upload to S3/R2
-	// We check if AWS credentials are provided. If not, we just log and skip to prevent crashing.
 	bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
 	if bucketName == "" {
 		log.Warn().Msg("S3_SNAPSHOT_BUCKET env var not set, skipping S3 upload. Snapshot generated in memory.")
@@ -113,19 +133,44 @@ func (e *Engine) PerformSnapshot() {
 	log.Info().Str("filename", filename).Msg("Engine state snapshot successfully uploaded to S3")
 }
 
-// LoadLatestSnapshot fetches the latest snapshot from S3 and populates the engine.
+// LoadLatestSnapshot fetches the latest snapshot and populates the engine.
 func (e *Engine) LoadLatestSnapshot() {
-	bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
-	if bucketName == "" {
-		log.Info().Msg("S3_SNAPSHOT_BUCKET not set, skipping snapshot restore on startup")
+	snapshotEnabled := os.Getenv("SNAPSHOT_ENABLED")
+	if snapshotEnabled != "true" {
+		log.Info().Msg("SNAPSHOT_ENABLED not true, skipping snapshot restore on startup")
 		return
 	}
-	// In a complete implementation, this would:
-	// 1. List objects in the bucket
-	// 2. Sort by timestamp/filename to get the latest
-	// 3. Download the .json.gz file
-	// 4. gzip.NewReader -> json.Unmarshal
-	// 5. e.User = decodedData.Users
-	// 6. Return the timestamp so Kafka knows where to start streaming from.
+
+	snapshotStore := os.Getenv("SNAPSHOT_STORE")
+
+	if snapshotStore == "redis" {
+		log.Info().Msg("Attempting to load snapshot from Redis...")
+		ctx := context.Background()
+		jsonData, err := e.RedisClient.Get(ctx, "engine_snapshot:latest").Bytes()
+		if err != nil {
+			log.Info().Err(err).Msg("No snapshot found in Redis or failed to read")
+			return
+		}
+
+		var data SnapshotData
+		if err := json.Unmarshal(jsonData, &data); err != nil {
+			log.Error().Err(err).Msg("Failed to unmarshal snapshot from Redis")
+			return
+		}
+
+		e.UM.Lock()
+		e.User = data.Users
+		e.UM.Unlock()
+
+		log.Info().Time("snapshot_timestamp", data.Timestamp).Int("users_loaded", len(data.Users)).Msg("Successfully restored snapshot from Redis")
+		return
+	}
+
+	bucketName := os.Getenv("S3_SNAPSHOT_BUCKET")
+	if bucketName == "" {
+		log.Info().Msg("S3_SNAPSHOT_BUCKET not set, skipping S3 snapshot restore on startup")
+		return
+	}
+	
 	log.Info().Msg("Snapshot restoration logic initialized (ready for S3 sync)")
 }
