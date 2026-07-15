@@ -189,16 +189,18 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 	}
 }
 
+type LiquidityLevel struct {
+	Price    float64 `mapstructure:"price"`
+	Quantity int     `mapstructure:"quantity"`
+}
+
 type AddLiquidityDataRequest struct {
-	UserId      string  `mapstructure:"userId"`
-	Phone       string  `mapstructure:"phone"`
-	MarketId    string  `mapstructure:"marketId"`
-	Symbol      string  `mapstructure:"symbol"`
-	Role        string  `mapstructure:"role"`
-	PriceYes    float64 `mapstructure:"priceYes"`
-	PriceNo     float64 `mapstructure:"priceNo"`
-	QuantityYes int     `mapstructure:"quantityYes"`
-	QuantityNo  int     `mapstructure:"quantityNo"`
+	UserId   string           `mapstructure:"userId"`
+	Phone    string           `mapstructure:"phone"`
+	MarketId string           `mapstructure:"marketId"`
+	Symbol   string           `mapstructure:"symbol"`
+	Role     string           `mapstructure:"role"`
+	Levels   []LiquidityLevel `mapstructure:"levels"`
 }
 
 func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
@@ -227,7 +229,7 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 			ResponseId: payload.ResponseId,
 			Status:     types.Error,
 			Retryable:  false,
-			Message:    "Market not found fuck you",
+			Message:    "Market not found for liquidity seeding",
 		}
 	}
 
@@ -240,105 +242,81 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 		}
 	}
 
-	replyBuyYes := make(chan interface{}, 1)
-	replySellYes := make(chan interface{}, 1)
-	replyBuyNo := make(chan interface{}, 1)
-	replySellNo := make(chan interface{}, 1)
-
-	yesOrderBuy := types.Order{
-		OrderId:   utils.GenerateOrderID(),
-		UserId:    data.UserId,
-		MarketId:  data.MarketId,
-		Symbol:    data.Symbol,
-		Side:      types.Yes,
-		Price:     data.PriceYes,
-		Role:      types.Role(data.Role),
-		Quantity:  data.QuantityYes,
-		Action:    types.BUY,
-		OrderType: types.LIMIT,
-		Timestamp: time.Now().UTC(),
+	// Default levels if none provided
+	levels := data.Levels
+	if len(levels) == 0 {
+		levels = []LiquidityLevel{
+			{Price: 3.0, Quantity: 10},
+			{Price: 4.0, Quantity: 25},
+			{Price: 5.0, Quantity: 50},
+			{Price: 6.0, Quantity: 25},
+			{Price: 7.0, Quantity: 10},
+		}
 	}
 
-	noOrderBuy := types.Order{
-		OrderId:   utils.GenerateOrderID(),
-		UserId:    data.UserId,
-		MarketId:  data.MarketId,
-		Symbol:    data.Symbol,
-		Side:      types.No,
-		Price:     data.PriceNo,
-		Role:      types.Role(data.Role),
-		Quantity:  data.QuantityNo,
-		Action:    types.BUY,
-		OrderType: types.LIMIT,
-		Timestamp: time.Now().UTC(),
+	// Place BUY YES and BUY NO at each price level.
+	// When a real user buys YES at price P, it can MINT-match with a BUY NO at (10-P).
+	// This creates proper two-sided liquidity without needing SELL orders.
+	totalOrders := 0
+	for _, level := range levels {
+		replyYes := make(chan interface{}, 1)
+		replyNo := make(chan interface{}, 1)
+
+		yesOrder := types.Order{
+			OrderId:   utils.GenerateOrderID(),
+			UserId:    data.UserId,
+			MarketId:  data.MarketId,
+			Symbol:    data.Symbol,
+			Side:      types.Yes,
+			Price:     level.Price,
+			Role:      types.ADMIN,
+			Quantity:  level.Quantity,
+			Action:    types.BUY,
+			OrderType: types.LIMIT,
+			Timestamp: time.Now().UTC(),
+		}
+
+		noOrder := types.Order{
+			OrderId:   utils.GenerateOrderID(),
+			UserId:    data.UserId,
+			MarketId:  data.MarketId,
+			Symbol:    data.Symbol,
+			Side:      types.No,
+			Price:     level.Price,
+			Role:      types.ADMIN,
+			Quantity:  level.Quantity,
+			Action:    types.BUY,
+			OrderType: types.LIMIT,
+			Timestamp: time.Now().UTC(),
+		}
+
+		market.Inbox <- types.MarketMessage{
+			Type:      types.MarketPlaceOrder,
+			Payload:   yesOrder,
+			ReplyChan: replyYes,
+		}
+		<-replyYes
+
+		market.Inbox <- types.MarketMessage{
+			Type:      types.MarketPlaceOrder,
+			Payload:   noOrder,
+			ReplyChan: replyNo,
+		}
+		<-replyNo
+
+		totalOrders += 2
 	}
 
-	yesOrderSell := types.Order{
-		OrderId:   utils.GenerateOrderID(),
-		UserId:    data.UserId,
-		MarketId:  data.MarketId,
-		Symbol:    data.Symbol,
-		Side:      types.Yes,
-		Price:     data.PriceYes,
-		Role:      types.Role(data.Role),
-		Quantity:  data.QuantityYes,
-		Action:    types.SELL,
-		OrderType: types.LIMIT,
-		Timestamp: time.Now().UTC(),
-	}
-
-	noOrderSell := types.Order{
-		OrderId:   utils.GenerateOrderID(),
-		UserId:    data.UserId,
-		MarketId:  data.MarketId,
-		Symbol:    data.Symbol,
-		Side:      types.No,
-		Price:     data.PriceNo,
-		Role:      types.Role(data.Role),
-		Quantity:  data.QuantityNo,
-		Action:    types.SELL,
-		OrderType: types.LIMIT,
-		Timestamp: time.Now().UTC(),
-	}
-
-	market.Inbox <- types.MarketMessage{
-		Type:      types.MarketPlaceOrder,
-		Payload:   yesOrderBuy,
-		ReplyChan: replyBuyYes,
-	}
-	market.Inbox <- types.MarketMessage{
-		Type:      types.MarketPlaceOrder,
-		Payload:   noOrderBuy,
-		ReplyChan: replyBuyNo,
-	}
-
-	market.Inbox <- types.MarketMessage{
-		Type:      types.MarketSellOrder,
-		Payload:   yesOrderSell,
-		ReplyChan: replySellYes,
-	}
-
-	market.Inbox <- types.MarketMessage{
-		Type:      types.MarketSellOrder,
-		Payload:   noOrderSell,
-		ReplyChan: replySellNo,
-	}
-
-	respBuyYes, _ := (<-replyBuyYes).(types.OrderResponse)
-	respSellYes, _ := (<-replySellYes).(types.OrderResponse)
-	respBuyNo, _ := (<-replyBuyNo).(types.OrderResponse)
-	respSellNo, _ := (<-replySellNo).(types.OrderResponse)
+	log.Info().
+		Str("symbol", data.Symbol).
+		Int("totalOrders", totalOrders).
+		Int("levels", len(levels)).
+		Msg("Multi-level liquidity seeded successfully")
 
 	return types.QueueResponse{
 		ResponseId: payload.ResponseId,
 		Status:     types.Success,
-		Message:    "Liquidity added successfully",
-		Data: map[string]interface{}{
-			"yesBuy":  respBuyYes,
-			"yesSell": respSellYes,
-			"noBuy":   respBuyNo,
-			"noSell":  respSellNo,
-		},
+		Message:    fmt.Sprintf("Liquidity seeded: %d orders across %d levels", totalOrders, len(levels)),
 	}
 
 }

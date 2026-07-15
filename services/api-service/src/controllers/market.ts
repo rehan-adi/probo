@@ -166,17 +166,21 @@ export const createMarket = async (c: Context) => {
 			);
 
 			// Automated Liquidity Provision (AMM Bot)
-			// Seed the market with 100 YES and 100 NO at 5.0 to establish initial depth
+			// Seed the market with multi-level BUY orders on both YES and NO sides
+			// This creates proper orderbook depth via MINT matching
 			await pushToQueue(EVENTS.ADD_LIQUIDITY, {
 				userId: user?.id,
-				phone: user?.phone, // phone could be undefined but matching engine doesn't strictly require it
-				role: user?.role,
+				phone: user?.phone,
+				role: 'ADMIN',
 				marketId: newMarket.id,
 				symbol: newMarket.symbol,
-				priceYes: '5.0',
-				priceNo: '5.0',
-				quantityYes: 100,
-				quantityNo: 100,
+				levels: [
+					{ price: 3.0, quantity: 10 },
+					{ price: 4.0, quantity: 25 },
+					{ price: 5.0, quantity: 50 },
+					{ price: 6.0, quantity: 25 },
+					{ price: 7.0, quantity: 10 },
+				],
 			});
 		}
 
@@ -237,22 +241,16 @@ export const addLiquidity = async (c: Context) => {
 		const body = await c.req.json<{
 			marketId: string;
 			symbol: string;
-			priceYes: string;
-			priceNo: string;
-			quantityYes: number;
-			quantityNo: number;
+			levels?: { price: number; quantity: number }[];
 		}>();
 
 		const response = await pushToQueue(EVENTS.ADD_LIQUIDITY, {
 			userId: user.id,
 			phone: user.phone,
-			role: user.role,
+			role: 'ADMIN',
 			marketId: body.marketId,
 			symbol: body.symbol,
-			priceYes: body.priceYes,
-			priceNo: body.priceNo,
-			quantityYes: body.quantityYes,
-			quantityNo: body.quantityNo,
+			levels: body.levels || [],
 		});
 
 		if (!response.success) {

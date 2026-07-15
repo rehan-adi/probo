@@ -12,6 +12,7 @@ import PlusIcon from '@/assets/images/plus_circled.svg';
 import downloadIcon from '@/assets/images/download.avif';
 import defaultThumbnail from '@/assets/images/logo.avif';
 import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Activity {
 	id?: string;
@@ -76,64 +77,81 @@ export default function EventDetails() {
 
 		socket.on('MESSAGE', (data) => {
 			setMarket((prev: Market | null) => {
-				if (!prev) return prev;
+				try {
+					if (!prev) return prev;
+					if (!data) return prev;
 
-				console.log('socket data is ', data);
+					// Deep-clone orderbook arrays to avoid mutating React state
+					const updatedOrderbook = {
+						yes: [...(prev.orderbook?.yes || [])],
+						no: [...(prev.orderbook?.no || [])],
+					};
 
-				const updatedOrderbook = { ...prev.orderbook };
+					const incomingOrderbook = data.orderbook || data.Orderbook;
+					if (incomingOrderbook) {
+						['yes', 'no'].forEach((side) => {
+							const sideKey = side as keyof typeof updatedOrderbook;
+							const capitalized = side.charAt(0).toUpperCase() + side.slice(1);
+							const updates = incomingOrderbook[side] || incomingOrderbook[capitalized];
+							if (!Array.isArray(updates)) return;
 
-				['yes', 'no'].forEach((side) => {
-					const sideKey = side as keyof typeof updatedOrderbook;
-					const updates =
-						data.orderbook[side] || data.orderbook[side.charAt(0).toUpperCase() + side.slice(1)];
-					updates?.forEach((update: any) => {
-						const idx = updatedOrderbook[sideKey].findIndex((o: any) => o.price === update.price);
+							updates.forEach((update: any) => {
+								const idx = updatedOrderbook[sideKey].findIndex(
+									(o: any) => o.price === update.price,
+								);
 
-						if (idx > -1) {
-							if (update.quantity > 0) {
-								updatedOrderbook[sideKey][idx] = update;
-							} else {
-								updatedOrderbook[sideKey].splice(idx, 1);
+								if (idx > -1) {
+									if (update.quantity > 0) {
+										updatedOrderbook[sideKey][idx] = update;
+									} else {
+										updatedOrderbook[sideKey].splice(idx, 1);
+									}
+								} else {
+									if (update.quantity > 0) {
+										updatedOrderbook[sideKey].push(update);
+									}
+								}
+							});
+
+							updatedOrderbook[sideKey].sort((a: any, b: any) =>
+								side === 'yes' ? b.price - a.price : a.price - b.price,
+							);
+						});
+					}
+
+					const newYesPrice =
+						typeof data.yesPrice === 'number' ? data.yesPrice : prev.yesPrice;
+					const newNoPrice =
+						typeof data.noPrice === 'number' ? data.noPrice : prev.noPrice;
+
+					let updatedActivities = [...(prev.activities || [])];
+					if (data.activities && Array.isArray(data.activities)) {
+						data.activities.forEach((newActivity: Activity) => {
+							const exists = updatedActivities.some(
+								(act: Activity) =>
+									act.buyerPhone === newActivity.buyerPhone &&
+									act.sellerPhone === newActivity.sellerPhone &&
+									act.price === newActivity.price &&
+									act.timestamp === newActivity.timestamp,
+							);
+							if (!exists) {
+								updatedActivities.unshift(newActivity);
 							}
-						} else {
-							if (update.quantity > 0) {
-								updatedOrderbook[sideKey].push(update);
-							}
-						}
+						});
+						updatedActivities = updatedActivities.slice(0, 50);
+					}
 
-						updatedOrderbook[sideKey].sort((a: any, b: any) =>
-							side === 'yes' ? b.price - a.price : a.price - b.price,
-						);
-					});
-				});
-
-				const newYesPrice = data.yesPrice;
-				const newNoPrice = data.noPrice;
-
-				let updatedActivities = [...prev.activities];
-				if (data.activities && Array.isArray(data.activities)) {
-					data.activities.forEach((newActivity: Activity) => {
-						const exists = updatedActivities.some(
-							(act: Activity) =>
-								act.buyerPhone === newActivity.buyerPhone &&
-								act.sellerPhone === newActivity.sellerPhone &&
-								act.price === newActivity.price &&
-								act.timestamp === newActivity.timestamp,
-						);
-						if (!exists) {
-							updatedActivities.unshift(newActivity);
-						}
-					});
-					updatedActivities = updatedActivities.slice(0, 50);
+					return {
+						...prev,
+						orderbook: updatedOrderbook,
+						yesPrice: newYesPrice,
+						noPrice: newNoPrice,
+						activities: updatedActivities,
+					};
+				} catch (err) {
+					console.error('Error processing socket MESSAGE:', err);
+					return prev;
 				}
-
-				return {
-					...prev,
-					orderbook: updatedOrderbook,
-					yesPrice: newYesPrice,
-					noPrice: newNoPrice,
-					activities: updatedActivities,
-				};
 			});
 		});
 
@@ -270,17 +288,26 @@ export default function EventDetails() {
 													const widthPercent = maxQty > 0 ? (yes.quantity / maxQty) * 100 : 0;
 
 													return (
-														<div key={idx} className="grid grid-cols-2 border-t">
-															<span className="px-1 py-1.5">{yes.price}</span>
+														<motion.div 
+															layout
+															initial={{ opacity: 0, y: 5 }}
+															animate={{ opacity: 1, y: 0 }}
+															key={yes.price || `empty-yes-${idx}`} 
+															className="grid grid-cols-2 border-t"
+														>
+															<span className="px-1 py-1.5">{yes.price > 0 ? yes.price : '-'}</span>
 															<span
-																className="text-right relative py-1.5 px-1 block"
-																style={{
-																	background: `linear-gradient(to left, #BCD8FE ${widthPercent}%, transparent ${widthPercent}%)`,
-																}}
+																className="text-right relative py-1.5 px-1 block overflow-hidden"
 															>
-																{yes.quantity}
+																<motion.div 
+																	className="absolute top-0 bottom-0 right-0 bg-[#BCD8FE]"
+																	initial={{ width: 0 }}
+																	animate={{ width: `${widthPercent}%` }}
+																	transition={{ duration: 0.3 }}
+																/>
+																<span className="relative z-10">{yes.quantity > 0 ? yes.quantity : '-'}</span>
 															</span>
-														</div>
+														</motion.div>
 													);
 												},
 											);
@@ -318,17 +345,26 @@ export default function EventDetails() {
 													const widthPercent = maxQty > 0 ? (no.quantity / maxQty) * 100 : 0;
 
 													return (
-														<div key={idx} className="grid grid-cols-2 border-t">
-															<span className="px-1 py-1.5">{no.price}</span>
+														<motion.div 
+															layout
+															initial={{ opacity: 0, y: 5 }}
+															animate={{ opacity: 1, y: 0 }}
+															key={no.price || `empty-no-${idx}`} 
+															className="grid grid-cols-2 border-t"
+														>
+															<span className="px-1 py-1.5">{no.price > 0 ? no.price : '-'}</span>
 															<span
-																className="text-right relative py-1.5 px-1 block"
-																style={{
-																	background: `linear-gradient(to left, #FFDCDB ${widthPercent}%, transparent ${widthPercent}%)`,
-																}}
+																className="text-right relative py-1.5 px-1 block overflow-hidden"
 															>
-																{no.quantity}
+																<motion.div 
+																	className="absolute top-0 bottom-0 right-0 bg-[#FFDCDB]"
+																	initial={{ width: 0 }}
+																	animate={{ width: `${widthPercent}%` }}
+																	transition={{ duration: 0.3 }}
+																/>
+																<span className="relative z-10">{no.quantity > 0 ? no.quantity : '-'}</span>
 															</span>
-														</div>
+														</motion.div>
 													);
 												},
 											);
