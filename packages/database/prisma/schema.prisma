@@ -95,6 +95,8 @@ model User {
   id                        String        @id @default(uuid())
   phone                     String        @unique
   email                     String?       @unique
+  name                      String        @default("Prober")
+  profilePic                String?       
   isNewUser                 Boolean       @default(true)
   role                      Role          @default(USER)
   kycVerificationStatus     KycStatus     @default(NOT_VERIFIED)

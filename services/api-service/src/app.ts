@@ -7,8 +7,10 @@ import { orderRoutes } from './routes/order';
 import { healthRoutes } from '@/routes/health';
 import { marketRoutes } from './routes/market';
 import { paymentRoutes } from './routes/payment';
+import { profileRoutes } from './routes/profile';
 import { balanceRoutes } from './routes/balance';
 import { referralRoutes } from './routes/referral';
+import { portfolioRoutes } from './routes/portfolio';
 import { categoriesRoutes } from './routes/categories';
 import { generatePresignedUrl } from './lib/aws/presign';
 import { transactionRoutes } from './routes/transaction';
@@ -38,10 +40,12 @@ app.use('*', async (c, next) => {
 
 // routes
 app.route('/api/v1/auth', authRoutes);
+app.route('/api/v1/profile', profileRoutes);
 app.route('/api/v1/order', orderRoutes);
 app.route('/api/v1/health', healthRoutes);
 app.route('/api/v1/market', marketRoutes);
 app.route('/api/v1/balance', balanceRoutes);
+app.route('/api/v1/portfolio', portfolioRoutes);
 app.route('/api/v1/payments', paymentRoutes);
 app.route('/api/v1/referral', referralRoutes);
 app.route('/api/v1/categories', categoriesRoutes);

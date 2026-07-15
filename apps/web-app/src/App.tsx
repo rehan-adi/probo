@@ -17,6 +17,8 @@ import TransactionHistoryPage from '@/pages/TransactionHistory';
 import VerificationListsPage from '@/pages/admin/VerificationLists';
 import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import Portfolio from '@/pages/Portfolio';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
@@ -36,6 +38,7 @@ function App() {
 
 	return (
 		<BrowserRouter>
+			<Toaster position="bottom-center" richColors />
 			<Navbar />
 			<OnboardModal />
 			<Routes>
@@ -52,6 +55,7 @@ function App() {
 						<Route path="recharge" element={<RechargePage />} />
 						<Route path="withdraw" element={<WithdrawPage />} />
 					</Route>
+					<Route path="/portfolio" element={<Portfolio />} />
 					<Route path="/verification" element={<VerificationgePage />} />
 					<Route path="/transaction-history" element={<TransactionHistoryPage />} />
 
