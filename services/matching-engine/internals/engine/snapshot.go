@@ -80,7 +80,7 @@ func (e *Engine) PerformSnapshot() {
 		log.Info().Msg("SNAPSHOT_STORE is redis, saving to Redis...")
 		ctx := context.Background()
 		// Save to Redis with 7 days TTL (7 * 24 * 60 * 60 seconds)
-		err := e.RedisClient.Set(ctx, "engine_snapshot:latest", jsonData, 7*24*time.Hour).Err()
+		err := e.Redis.Set(ctx, "engine_snapshot:latest", jsonData, 7*24*time.Hour).Err()
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to save snapshot to Redis")
 		} else {
@@ -146,7 +146,7 @@ func (e *Engine) LoadLatestSnapshot() {
 	if snapshotStore == "redis" {
 		log.Info().Msg("Attempting to load snapshot from Redis...")
 		ctx := context.Background()
-		jsonData, err := e.RedisClient.Get(ctx, "engine_snapshot:latest").Bytes()
+		jsonData, err := e.Redis.Get(ctx, "engine_snapshot:latest").Bytes()
 		if err != nil {
 			log.Info().Err(err).Msg("No snapshot found in Redis or failed to read")
 			return
