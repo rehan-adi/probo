@@ -1,8 +1,6 @@
 import { Context } from 'hono';
-import { db } from '@/lib/db';
+import { prisma } from '@probo/database';
 import { logger } from '@/utils/logger';
-import { getCookie } from 'hono/cookie';
-import { verifyToken } from '@/utils/token';
 
 export const getProfile = async (c: Context) => {
 	try {
@@ -11,7 +9,7 @@ export const getProfile = async (c: Context) => {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
 
-		const dbUser = await db.user.findUnique({
+		const dbUser = await prisma.user.findUnique({
 			where: { id: user.id },
 			select: {
 				id: true,
@@ -50,7 +48,7 @@ export const updateProfile = async (c: Context) => {
 		if (name !== undefined) updateData.name = name;
 		if (profilePic !== undefined) updateData.profilePic = profilePic;
 
-		const updatedUser = await db.user.update({
+		const updatedUser = await prisma.user.update({
 			where: { id: user.id },
 			data: updateData,
 			select: {
@@ -68,6 +66,79 @@ export const updateProfile = async (c: Context) => {
 		});
 	} catch (error: any) {
 		logger.error({ context: 'UPDATE_PROFILE', message: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
+
+export const addToWatchlist = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+		const body = await c.req.json();
+		const { marketId } = body;
+
+		if (!marketId) {
+			return c.json({ success: false, message: 'marketId is required' }, 400);
+		}
+
+		await prisma.watchlist.upsert({
+			where: { userId_marketId: { userId: user.id, marketId } },
+			update: {},
+			create: { userId: user.id, marketId },
+		});
+
+		return c.json({ success: true, message: 'Added to watchlist' });
+	} catch (error: any) {
+		logger.error({ context: 'ADD_WATCHLIST', message: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
+
+export const removeFromWatchlist = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+		const { marketId } = c.req.param();
+
+		await prisma.watchlist.delete({
+			where: { userId_marketId: { userId: user.id, marketId } },
+		});
+
+		return c.json({ success: true, message: 'Removed from watchlist' });
+	} catch (error: any) {
+		logger.error({ context: 'REMOVE_WATCHLIST', message: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
+
+export const getWatchlist = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+		const watchlist = await prisma.watchlist.findMany({
+			where: { userId: user.id },
+			include: {
+				market: {
+					select: {
+						id: true,
+						title: true,
+						yesPrice: true,
+						NoPrice: true,
+						thumbnail: true,
+						symbol: true,
+						status: true,
+					},
+				},
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
+		return c.json({ success: true, data: watchlist.map((w) => w.market) });
+	} catch (error: any) {
+		logger.error({ context: 'GET_WATCHLIST', message: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };

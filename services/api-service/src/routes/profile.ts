@@ -1,8 +1,12 @@
 import { Hono } from 'hono';
-import { getProfile, updateProfile } from '@/controllers/profile';
-import { isAuth } from '@/middlewares/authorization';
+import { getProfile, updateProfile, addToWatchlist, removeFromWatchlist, getWatchlist } from '@/controllers/profile';
+import { authorization } from '@/middlewares/authorization';
 
 export const profileRoutes = new Hono();
 
-profileRoutes.get('/get', isAuth, getProfile);
-profileRoutes.patch('/update', isAuth, updateProfile);
+profileRoutes.get('/get', authorization, getProfile);
+profileRoutes.patch('/update', authorization, updateProfile);
+
+profileRoutes.post('/watchlist', authorization, addToWatchlist);
+profileRoutes.delete('/watchlist/:marketId', authorization, removeFromWatchlist);
+profileRoutes.get('/watchlist', authorization, getWatchlist);

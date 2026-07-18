@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { db } from '@/lib/db';
+import { prisma } from '@probo/database';
 import { logger } from '@/utils/logger';
 
 export const getPortfolio = async (c: Context) => {
@@ -10,7 +10,7 @@ export const getPortfolio = async (c: Context) => {
 		}
 
 		// Fetch stock balances
-		const stockBalances = await db.stockBalance.findMany({
+		const stockBalances = await prisma.stockBalance.findMany({
 			where: { userId: user.id },
 			include: {
 				market: {
@@ -27,7 +27,7 @@ export const getPortfolio = async (c: Context) => {
 		});
 
 		// Fetch active orders (PENDING or PARTIAL)
-		const activeOrders = await db.order.findMany({
+		const activeOrders = await prisma.order.findMany({
 			where: { 
 				userId: user.id,
 				status: { in: ['PENDING', 'PARTIAL'] },

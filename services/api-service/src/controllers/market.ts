@@ -589,3 +589,61 @@ export const getMarketDetails = async (c: Context) => {
 		);
 	}
 };
+
+export const searchMarkets = async (c: Context) => {
+	try {
+		const q = c.req.query('q') || '';
+		const page = parseInt(c.req.query('page') || '1', 10);
+		const limit = parseInt(c.req.query('limit') || '10', 10);
+		const skip = (page - 1) * limit;
+
+		if (!q.trim()) {
+			return c.json({ success: true, data: [], total: 0 }, 200);
+		}
+
+		const [markets, total] = await Promise.all([
+			prisma.market.findMany({
+				where: {
+					status: 'OPEN',
+					OR: [
+						{ title: { contains: q, mode: 'insensitive' } },
+						{ symbol: { contains: q, mode: 'insensitive' } },
+					],
+				},
+				select: {
+					id: true,
+					title: true,
+					symbol: true,
+					yesPrice: true,
+					NoPrice: true,
+					thumbnail: true,
+					status: true,
+				},
+				skip,
+				take: limit,
+				orderBy: { createdAt: 'desc' },
+			}),
+			prisma.market.count({
+				where: {
+					status: 'OPEN',
+					OR: [
+						{ title: { contains: q, mode: 'insensitive' } },
+						{ symbol: { contains: q, mode: 'insensitive' } },
+					],
+				},
+			}),
+		]);
+
+		return c.json({
+			success: true,
+			data: markets,
+			total,
+			page,
+			limit,
+			hasMore: skip + markets.length < total,
+		}, 200);
+	} catch (error: any) {
+		logger.error({ context: 'SEARCH_MARKETS', error: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
