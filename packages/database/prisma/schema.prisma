@@ -118,6 +118,7 @@ model User {
   inrBalance    InrBalance?
   stockBalances StockBalance[]
   transactions  TransactionHistory[]
+  watchlists    Watchlist[]
 
   orders Order[]
 
@@ -236,6 +237,7 @@ model Market {
   stockBalances   StockBalance[]
   orders          Order[]
   transactions    TransactionHistory[]
+  watchlists      Watchlist[]
   CompanyEarning  CompanyEarning[]
   status          MarketStatus         @default(OPEN)
   createdAt       DateTime             @default(now())
@@ -259,4 +261,15 @@ model CompanyEarning {
   type      FeeType
   remarks   String?
   createdAt DateTime @default(now())
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  marketId  String
+  user      User     @relation(fields: [userId], references: [id])
+  market    Market   @relation(fields: [marketId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, marketId])
 }
