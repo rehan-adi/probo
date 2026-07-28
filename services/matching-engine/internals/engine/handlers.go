@@ -107,6 +107,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	if len(activities) > 0 {
 		market.Activities = append(market.Activities, activities...)
 		for _, act := range activities {
+			market.Volume += float64(act.Quantity * 10)
 			kafka.ProduceEventToDBProcessor("process_db", string(types.RECORD_ACTIVITY), act)
 		}
 	}
@@ -136,6 +137,8 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 		"symbol": order.Symbol, "orderbook": aggOrderBook,
 		"yesPrice": yesPrice, "noPrice": noPrice,
 		"timeline": market.Timeline, "activities": activities,
+		"volume": market.Volume,
+		"numberOfTraders": market.NumberOfTraders,
 	}
 	data, err := json.Marshal(payload)
 	if err != nil {

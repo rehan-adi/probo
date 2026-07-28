@@ -141,28 +141,33 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 
 		buyerPhone, sellerPhone := getPhonesForActivity(e, order, matchOrder, matchType)
 		var buyerId, sellerId string
+		var buyerOrderId, sellerOrderId string
 		if matchType == "STANDARD" {
 			if order.Action == types.BUY {
 				buyerId, sellerId = order.UserId, matchOrder.UserId
+				buyerOrderId, sellerOrderId = order.OrderId, matchOrder.OrderId
 			} else {
 				buyerId, sellerId = matchOrder.UserId, order.UserId
+				buyerOrderId, sellerOrderId = matchOrder.OrderId, order.OrderId
 			}
 		} else if matchType == "MINT" || matchType == "MERGE" {
-			// For MINT (two buyers) or MERGE (two sellers):
-			// We assign buyerId = Yes user, sellerId = No user
 			if order.Side == types.Yes {
 				buyerId, sellerId = order.UserId, matchOrder.UserId
+				buyerOrderId, sellerOrderId = order.OrderId, matchOrder.OrderId
 			} else {
 				buyerId, sellerId = matchOrder.UserId, order.UserId
+				buyerOrderId, sellerOrderId = matchOrder.OrderId, order.OrderId
 			}
 		}
 
 		activities = append(activities, types.Activity{
-			MarketId:    market.MarketId,
-			BuyerId:     buyerId,
-			SellerId:    sellerId,
-			Buyerphone:  buyerPhone,
-			SellerPhone: sellerPhone,
+			MarketId:      market.MarketId,
+			BuyerId:       buyerId,
+			BuyerOrderId:  buyerOrderId,
+			SellerId:      sellerId,
+			SellerOrderId: sellerOrderId,
+			Buyerphone:    buyerPhone,
+			SellerPhone:   sellerPhone,
 			Outcome:     string(order.Side),
 			Price:       matchPrice,
 			Quantity:    tradeQty,
@@ -222,6 +227,14 @@ func (e *Engine) settleTradeBalances(order, matchOrder *types.Order, qty int, ex
 
 	u1 := e.User[order.UserId]
 	u2 := e.User[matchOrder.UserId]
+
+	// Safeguard against nil StockBalance maps (e.g. AMM Bot loaded from snapshot or fresh)
+	if u1.Balance.StockBalance == nil {
+		u1.Balance.StockBalance = make(map[string]types.StockBalance)
+	}
+	if u2.Balance.StockBalance == nil {
+		u2.Balance.StockBalance = make(map[string]types.StockBalance)
+	}
 
 	switch matchType {
 	case "STANDARD":

@@ -21,9 +21,11 @@ type AggregatedOrderBook struct {
 
 type Activity struct {
 	MarketId    string    `json:"marketId"`
-	BuyerId     string    `json:"buyerId"`
-	SellerId    string    `json:"sellerId"`
-	Buyerphone  string    `json:"buyerPhone"`
+	BuyerId        string    `json:"buyerId"`
+	BuyerOrderId   string    `json:"buyerOrderId"`
+	SellerId       string    `json:"sellerId"`
+	SellerOrderId  string    `json:"sellerOrderId"`
+	Buyerphone     string    `json:"buyerPhone"`
 	SellerPhone string    `json:"sellerPhone"`
 	Outcome     string    `json:"outcome"`
 	Price       float64   `json:"price"`

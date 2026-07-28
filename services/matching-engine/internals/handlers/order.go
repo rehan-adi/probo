@@ -11,6 +11,7 @@ import (
 
 type BuyOrderDataRequest struct {
 	UserId    string  `mapstructure:"userId"`
+	OrderId   string  `mapstructure:"orderId"`
 	MarketId  string  `mapstructure:"marketId"`
 	Side      string  `mapstructure:"side"`
 	Symbol    string  `mapstructure:"symbol"`
@@ -38,9 +39,7 @@ func BuyOrder(payload types.QueuePayload) types.QueueResponse {
 		}
 	}
 
-	engine.EngineInstance.MM.RLock()
 	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
-	engine.EngineInstance.MM.RUnlock()
 
 	if !ok {
 		return types.QueueResponse{
@@ -60,7 +59,10 @@ func BuyOrder(payload types.QueuePayload) types.QueueResponse {
 
 	replyChannel := make(chan interface{})
 
-	orderId := utils.GenerateOrderID()
+	orderId := data.OrderId
+	if orderId == "" {
+		orderId = utils.GenerateOrderID()
+	}
 
 	order := types.Order{
 		UserId:    data.UserId,
@@ -132,9 +134,7 @@ func SellOrder(payload types.QueuePayload) types.QueueResponse {
 		}
 	}
 
-	engine.EngineInstance.MM.RLock()
 	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
-	engine.EngineInstance.MM.RUnlock()
 
 	if !ok {
 		return types.QueueResponse{

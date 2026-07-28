@@ -220,9 +220,7 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 		}
 	}
 
-	engine.EngineInstance.MM.RLock()
 	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
-	engine.EngineInstance.MM.RUnlock()
 
 	if !ok {
 		return types.QueueResponse{

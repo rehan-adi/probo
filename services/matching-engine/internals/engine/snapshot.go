@@ -18,10 +18,9 @@ import (
 )
 
 type SnapshotData struct {
-	Timestamp time.Time              `json:"timestamp"`
-	Users     map[string]*types.User `json:"users"`
-	// In a real system, you would also serialize Markets.
-	// For this prototype we will focus on purging inactive users and saving user state.
+	Timestamp time.Time                `json:"timestamp"`
+	Users     map[string]*types.User   `json:"users"`
+	Markets   map[string]*types.Market `json:"markets"`
 }
 
 func (e *Engine) StartSnapshotRoutine() {
@@ -54,10 +53,25 @@ func (e *Engine) PerformSnapshot() {
 	
 	log.Info().Int("evicted_users", evictedCount).Msg("Purged inactive users from engine RAM")
 
+	e.MM.RLock()
+	marketsRaw := make(map[string]json.RawMessage)
+	for k, m := range e.Market {
+		m.Mu.RLock()
+		mBytes, _ := json.Marshal(m)
+		m.Mu.RUnlock()
+		marketsRaw[k] = mBytes
+	}
+	e.MM.RUnlock()
+
 	// 2. Serialize State
-	data := SnapshotData{
+	data := struct {
+		Timestamp time.Time                `json:"timestamp"`
+		Users     map[string]*types.User   `json:"users"`
+		Markets   map[string]json.RawMessage `json:"markets"`
+	}{
 		Timestamp: time.Now(),
 		Users:     e.User,
+		Markets:   marketsRaw,
 	}
 	
 	jsonData, err := json.Marshal(data)
@@ -162,7 +176,19 @@ func (e *Engine) LoadLatestSnapshot() {
 		e.User = data.Users
 		e.UM.Unlock()
 
-		log.Info().Time("snapshot_timestamp", data.Timestamp).Int("users_loaded", len(data.Users)).Msg("Successfully restored snapshot from Redis")
+		e.MM.Lock()
+		e.Market = data.Markets
+		if e.Market == nil {
+			e.Market = make(map[string]*types.Market)
+		}
+		// Re-initialize channels and start goroutines for each market
+		for _, market := range e.Market {
+			market.Inbox = make(chan types.MarketMessage, 100)
+			go e.runMarket(market)
+		}
+		e.MM.Unlock()
+
+		log.Info().Time("snapshot_timestamp", data.Timestamp).Int("users_loaded", len(data.Users)).Int("markets_loaded", len(e.Market)).Msg("Successfully restored snapshot from Redis")
 		return
 	}
 
