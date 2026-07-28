@@ -6,10 +6,17 @@ import { Context, MiddlewareHandler } from 'hono';
 
 export const authorization: MiddlewareHandler = async (c: Context, next) => {
 	try {
-		const token = getCookie(c, 'token');
+		let token = getCookie(c, 'token');
+		
+		if (!token) {
+			const authHeader = c.req.header('Authorization');
+			if (authHeader && authHeader.startsWith('Bearer ')) {
+				token = authHeader.substring(7);
+			}
+		}
 
 		if (!token) {
-			logger.warn('No token found in cookies');
+			logger.warn('No token found in cookies or Authorization header');
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
 

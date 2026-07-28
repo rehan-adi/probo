@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { logger } from '@/utils/logger';
 import { EVENTS } from '@/constants/constants';
 import { pushToQueue } from '@/lib/redis/queue';
+import { prisma } from '@probo/database';
 
 /**
  * Buy order controller which push event to engine for Buy a yes or no stock
@@ -38,7 +39,22 @@ export const buy = async (c: Context) => {
 			marketId: string;
 		}>();
 
+		const order = await prisma.order.create({
+			data: {
+				userId: userId,
+				marketId: body.marketId,
+				stockSymbol: body.symbol,
+				stockType: body.side === 'Yes' ? 'YES' : 'NO',
+				quantity: Number(body.quantity),
+				price: Number(body.price),
+				orderType: 'BUY',
+				totalPrice: Number(body.price) * Number(body.quantity),
+				status: 'PENDING',
+			}
+		});
+
 		const response = await pushToQueue(EVENTS.PLACE_ORDER, {
+			orderId: order.id,
 			userId: userId,
 			marketId: body.marketId,
 			side: body.side,
@@ -132,7 +148,22 @@ export const sell = async (c: Context) => {
 			marketId: string;
 		}>();
 
+		const order = await prisma.order.create({
+			data: {
+				userId: userId,
+				marketId: body.marketId,
+				stockSymbol: body.symbol,
+				stockType: body.side === 'Yes' ? 'YES' : 'NO',
+				quantity: Number(body.quantity),
+				price: Number(body.price),
+				orderType: 'SELL',
+				totalPrice: Number(body.price) * Number(body.quantity),
+				status: 'PENDING',
+			}
+		});
+
 		const response = await pushToQueue(EVENTS.SELL_ORDER, {
+			orderId: order.id,
 			userId: userId,
 			marketId: body.marketId,
 			side: body.side,

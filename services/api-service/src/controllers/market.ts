@@ -536,14 +536,42 @@ export const getMarketDetails = async (c: Context) => {
 					startTime: true,
 					sourceOfTruth: true,
 					status: true,
+					category: {
+						select: { categoryName: true }
+					}
 				},
 			});
+
+			// Calculate dynamic volume and traders for DB fallback
+			let volume = 0;
+			let tradersCount = marketDetails?.numberOfTraders || 0;
+
+			if (marketDetails) {
+				const orders = await prisma.order.findMany({
+					where: { marketId: marketDetails.id },
+					select: { price: true, tradedQuantity: true, userId: true },
+				});
+				
+				const uniqueTraders = new Set<string>();
+				for (const o of orders) {
+					volume += Number(o.price) * o.tradedQuantity;
+					uniqueTraders.add(o.userId);
+				}
+				if (uniqueTraders.size > 0) {
+					tradersCount = uniqueTraders.size;
+				}
+			}
 
 			return c.json(
 				{
 					success: true,
 					message: 'Market details retrieved successfully',
-					data: marketDetails,
+					data: {
+						...marketDetails,
+						category: marketDetails?.category?.categoryName || 'Unknown',
+						volume: volume,
+						traders: tradersCount,
+					},
 					source: 'db',
 				},
 				200,
@@ -559,6 +587,42 @@ export const getMarketDetails = async (c: Context) => {
 			},
 			'Successfully retrieved market details from engine',
 		);
+
+		// Calculate dynamic volume and traders
+		const marketId = response.data?.marketId;
+		let volume = 0;
+		let tradersCount = response.data?.numberOftraders || 0;
+
+		if (marketId) {
+			const orders = await prisma.order.findMany({
+				where: { marketId },
+				select: { price: true, tradedQuantity: true, userId: true },
+			});
+			
+			const uniqueTraders = new Set<string>();
+			for (const o of orders) {
+				volume += Number(o.price) * o.tradedQuantity;
+				uniqueTraders.add(o.userId);
+			}
+			tradersCount = uniqueTraders.size;
+			
+			// Fetch category name
+			let categoryName = 'Unknown';
+			if (response.data?.categoryId) {
+				const cat = await prisma.category.findUnique({
+					where: { id: response.data.categoryId },
+					select: { categoryName: true }
+				});
+				if (cat) categoryName = cat.categoryName;
+			}
+
+			// If engine data exists, attach it
+			if (response.data) {
+				response.data.volume = volume;
+				response.data.traders = tradersCount;
+				response.data.category = categoryName;
+			}
+		}
 
 		return c.json(
 			{

@@ -57,7 +57,7 @@ export const updateStockPrice = async (data: any) => {
 export const recordActivity = async (data: any) => {
 	try {
 		logger.info({ data }, 'RECORD_ACTIVITY received');
-		const { buyerId, sellerId, outcome, price, quantity, matchType } = data;
+		const { buyerId, buyerOrderId, sellerId, sellerOrderId, outcome, price, quantity, matchType } = data;
 
 		// Skip malformed legacy messages in the queue to clear the backlog
 		if (buyerId === 'System' || !data.marketId) {
@@ -73,6 +73,12 @@ export const recordActivity = async (data: any) => {
 		const field = outcome === 'Yes' ? 'yes' : 'no';
 
 		await prisma.$transaction(async (tx) => {
+			// Update Market Volume
+			await tx.market.update({
+				where: { id: data.marketId },
+				data: { volume: { increment: Number(qty) * 10 } }
+			});
+
 			if (matchType === 'STANDARD') {
 				// Buyer: -Locked INR, +Shares
 				await tx.inrBalance.updateMany({
@@ -170,6 +176,24 @@ export const recordActivity = async (data: any) => {
 					]
 				});
 			}
+
+			// Helper to update Order table
+			const updateOrder = async (orderId: string, tradeQty: number) => {
+				if (!orderId) return;
+				const order = await tx.order.findUnique({ where: { id: orderId } });
+				if (order) {
+					const newTraded = order.tradedQuantity + tradeQty;
+					const newStatus = newTraded >= order.quantity ? 'COMPLETED' : 'PARTIAL';
+					await tx.order.update({
+						where: { id: orderId },
+						data: { tradedQuantity: newTraded, status: newStatus }
+					});
+				}
+			};
+
+			await updateOrder(buyerOrderId, qty);
+			await updateOrder(sellerOrderId, qty);
+
 		});
 	} catch (error) {
 		logger.error({ error, data, context: 'RECORD_ACTIVITY_FAIL' }, 'Failed to record activity');
