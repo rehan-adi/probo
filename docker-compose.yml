@@ -16,6 +16,7 @@ services:
     image: redis:7.2
     container_name: probo-redis-cache
     restart: always
+    command: redis-server --save 60 1 --loglevel warning
     ports:
       - '6379:6379'
     volumes:
@@ -25,6 +26,7 @@ services:
     image: redis:7.2
     container_name: probo-redis-pubsub
     restart: always
+    command: redis-server --save 60 1 --loglevel warning
     ports:
       - '6380:6379'
     volumes:

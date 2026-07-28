@@ -216,6 +216,7 @@ model Order {
   tradedQuantity Int         @default(0)
   marketId       String
   market         Market      @relation(fields: [marketId], references: [id])
+  updatedAt      DateTime    @updatedAt
 }
 
 model Market {
@@ -240,6 +241,7 @@ model Market {
   watchlists      Watchlist[]
   CompanyEarning  CompanyEarning[]
   status          MarketStatus         @default(OPEN)
+  volume          Decimal              @default(0.00) @db.Decimal(14, 2)
   createdAt       DateTime             @default(now())
 }
 
