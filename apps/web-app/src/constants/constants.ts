@@ -5,3 +5,5 @@ export const LINKS = {
 	careers: 'https://probo.in/careers',
 	about: 'https://probo.in/about-us',
 };
+
+export const PROBO_API = import.meta.env.VITE_API_BASE_URL;

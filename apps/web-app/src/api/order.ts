@@ -9,5 +9,6 @@ export const placeOrder = (
 	quantity: number,
 	marketId: string,
 ) => {
-	return api.post('/order/buy', { side, symbol, action, price, orderType, quantity, marketId });
+	const endpoint = action.toLowerCase() === 'sell' ? '/order/sell' : '/order/buy';
+	return api.post(endpoint, { side, symbol, action, price, orderType, quantity, marketId });
 };
