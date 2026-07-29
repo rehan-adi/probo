@@ -1,8 +1,10 @@
 import { logout } from '@/api/auth';
+import SearchInput from './SearchInput';
 import BottomNavbar from './BottomNavbar';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
+import { useThemeStore } from '@/store/theme';
 import logo from '@/assets/images/logo.avif';
 import { LINKS } from '@/constants/constants';
 import pfpIcon from '@/assets/images/pfp.avif';
@@ -14,7 +16,6 @@ import homeIcon from '@/assets/images/home-active.svg';
 import portfolioIcon from '@/assets/images/portfolio.svg';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
-import translationIcon from '@/assets/images/translation.avif';
 import portfolioAtiveIcon from '@/assets/images/portfolio-active.svg';
 import { ChevronDown, ClipboardCheck, LogOut, Menu, Store, X } from 'lucide-react';
 
@@ -63,10 +64,12 @@ export default function Navbar() {
 	return (
 		<nav className="w-full bg-[#f4f4f5] fixed px-4 lg:px-12 z-50 custom-px">
 			<div className="md:h-16 h-12 border-b border-gray-300/50 flex items-center justify-between">
-				<div className="flex items-center gap-14 lg:gap-14">
-					<Link to="/events">
+				<div className="flex items-center gap-6 lg:gap-14 flex-1">
+					<Link to="/events" className="shrink-0">
 						<img src={logo} className="md:w-[120px] w-[67px] md:h-8 h-[18px]" alt="Logo" />
 					</Link>
+					
+					<SearchInput />
 
 					{!user && (
 						<div className="hidden md:flex items-center gap-9 lg:gap-9 custom-gap text-sm">
@@ -172,14 +175,27 @@ export default function Navbar() {
 									alt="Profile icon"
 									className="lg:w-10 w-8 lg:h-10 h-8 rounded-full"
 								/>
-								<ChevronDown size={22} />
+								<ChevronDown size={22} className="text-foreground" />
 							</div>
 
 							{menuOpen && (
-								<div className="absolute right-6 top-12 bg-[#f4f4f5] shadow-md rounded-md py-2 px-4 text-sm border border-gray-400/25 flex flex-col z-50">
+								<div className="absolute right-6 top-12 bg-background shadow-md rounded-md py-2 px-4 text-sm border border-border flex flex-col z-50">
+									<button
+										onClick={() => {
+											useThemeStore.getState().toggleTheme();
+										}}
+										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
+									>
+										{useThemeStore.getState().theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+									</button>
+									<button
+										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
+									>
+										English
+									</button>
 									<button
 										onClick={() => setShowLogoutModal(true)}
-										className="flex items-center cursor-pointer justify-start px-1 pr-24 py-1.5 gap-2 text-left w-full text-sm font-medium text-gray-700"
+										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-destructive hover:bg-muted rounded"
 									>
 										<LogOut size={22} /> Logout
 									</button>
@@ -211,7 +227,7 @@ export default function Navbar() {
 									<div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-6 mt-4 mb-2 sm:mb-0">
 										<button
 											onClick={() => setShowLogoutModal(false)}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-white text-black rounded-xl text-sm font-semibold border border-gray-400/30 cursor-pointer"
+											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-card text-foreground rounded-xl text-sm font-semibold border border-border cursor-pointer hover:bg-muted"
 										>
 											Cancel
 										</button>
@@ -234,29 +250,50 @@ export default function Navbar() {
 					<>
 						<div className="hidden lg:flex items-center gap-4">
 							<div className="whitespace-nowrap text-xs text-right">
-								<span className="block">
+								<span className="block text-foreground">
 									For 18 years and <br />
 									<span>above only</span>
 								</span>
 							</div>
 
-							<button className="bg-white text-black font-semibold text-sm px-4 lg:px-8 py-2 border border-gray-400/30 cursor-pointer rounded">
+							<button className="bg-background text-foreground font-semibold text-sm px-4 lg:px-8 py-2 border border-border cursor-pointer rounded hover:bg-muted">
 								Download App
 							</button>
 
 							<button
 								onClick={openOnboardModal}
-								className="bg-[#262626] cursor-pointer text-white font-semibold text-sm px-5 lg:px-8 py-2 border border-gray-500/10 rounded"
+								className="bg-primary cursor-pointer text-primary-foreground font-semibold text-sm px-5 lg:px-8 py-2 border border-border rounded hover:opacity-90"
 							>
 								Login/Signup
 							</button>
-
-							<img src={translationIcon} alt="Translate" className="w-5 cursor-pointer h-5" />
+							
+							<div ref={menuRef} className="relative">
+								<button className="cursor-pointer flex items-center justify-center p-2 rounded hover:bg-muted text-foreground" onClick={toggleMenu}>
+									<Menu size={25} className="w-6 h-6" />
+								</button>
+								{menuOpen && (
+									<div className="absolute right-0 top-12 bg-background shadow-md rounded-md py-2 px-4 text-sm border border-border flex flex-col z-50 min-w-[150px]">
+										<button
+											onClick={() => {
+												useThemeStore.getState().toggleTheme();
+											}}
+											className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
+										>
+											{useThemeStore.getState().theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+										</button>
+										<button className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded">
+											Leaderboard
+										</button>
+										<button className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded">
+											English
+										</button>
+									</div>
+								)}
+							</div>
 						</div>
 
 						<div className="flex lg:hidden items-center gap-3">
-							<img src={translationIcon} alt="Translate" className="w-5 cursor-pointer h-5" />
-							<button className="cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+							<button className="cursor-pointer text-foreground" onClick={() => setIsOpen(!isOpen)}>
 								<Menu size={25} className="w-5 h-7" />
 							</button>
 						</div>
@@ -322,7 +359,7 @@ export default function Navbar() {
 									<div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-6 mt-4 mb-2 sm:mb-0">
 										<button
 											onClick={() => setShowLogoutModal(false)}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-white text-black rounded-xl text-sm font-semibold border border-gray-400/30 cursor-pointer"
+											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-card text-foreground rounded-xl text-sm font-semibold border border-border cursor-pointer hover:bg-muted"
 										>
 											Cancel
 										</button>
@@ -387,7 +424,7 @@ export default function Navbar() {
 								Careers
 							</a>
 
-							<button className="bg-white text-black font-semibold text-sm px-4 py-2 border border-gray-500/30 cursor-pointer rounded">
+							<button className="bg-background text-foreground font-semibold text-sm px-4 py-2 border border-border cursor-pointer rounded hover:bg-muted">
 								Download App
 							</button>
 
