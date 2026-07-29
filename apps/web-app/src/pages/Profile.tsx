@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import axios from 'axios';
-import { PROBO_API } from '@/utils/constants';
+import { PROBO_API } from '@/constants/constants';
 import { useAuthStore } from '@/store/auth';
 import { toast } from 'sonner';
 

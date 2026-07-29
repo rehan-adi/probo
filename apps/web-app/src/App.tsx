@@ -4,6 +4,7 @@ import EventsPage from '@/pages/Events';
 import WalletPage from '@/pages/Wallet';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SearchPage from '@/pages/Search';
 import PrivateRoute from './PrivateRoute';
 import RechargePage from '@/pages/Recharge';
 import WithdrawPage from '@/pages/Withdraw';
@@ -19,14 +20,26 @@ import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Portfolio from '@/pages/Portfolio';
+import AdminDashboard from '@/pages/Admin';
+
+import { useThemeStore } from '@/store/theme';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
 	const isHydrated = useAuthStore((state) => state.isHydrated);
+	
+	const theme = useThemeStore((state) => state.theme);
 
 	useEffect(() => {
 		hydrate();
-	}, []);
+		
+		// Initialize theme class
+		if (theme === 'dark') {
+			document.documentElement.classList.add('dark');
+		} else {
+			document.documentElement.classList.remove('dark');
+		}
+	}, [theme, hydrate]);
 
 	if (!isHydrated) {
 		return (
@@ -46,6 +59,7 @@ function App() {
 				<Route path="/" element={<Navigate to="/events" replace />} />
 				<Route path="/events" element={<EventsPage />} />
 				<Route path="/events/:symbol" element={<EventDetails />} />
+				<Route path="/search" element={<SearchPage />} />
 
 				{/* all private routes */}
 				<Route element={<PrivateRoute />}>
@@ -60,6 +74,7 @@ function App() {
 					<Route path="/transaction-history" element={<TransactionHistoryPage />} />
 
 					{/* admin specific routes  */}
+					<Route path="/admin" element={<AdminDashboard />} />
 					<Route path="/events/create" element={<CreateEvent />} />
 					<Route path="/verifications" element={<VerificationListsPage />} />
 					<Route path="/verifications/:id" element={<VerificationDetailsPage />} />
