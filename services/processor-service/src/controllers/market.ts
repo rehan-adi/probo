@@ -54,126 +54,191 @@ export const updateStockPrice = async (data: any) => {
 	}
 };
 
-export const recordActivity = async (data: any) => {
+export const recordTradeExecution = async (data: any) => {
 	try {
-		logger.info({ data }, 'RECORD_ACTIVITY received');
-		const { buyerId, buyerOrderId, sellerId, sellerOrderId, outcome, price, quantity, matchType } = data;
+		logger.info({ data }, 'TRADE_EXECUTED received');
+		const {
+			marketId,
+			makerId,
+			takerId,
+			makerOrderId,
+			takerOrderId,
+			stockType,
+			takerAction,
+			price,
+			quantity,
+			matchType,
+		} = data;
 
 		// Skip malformed legacy messages in the queue to clear the backlog
-		if (buyerId === 'System' || !data.marketId) {
+		if (makerId === 'System' || !marketId) {
 			logger.info('Skipping malformed System message');
 			return;
 		}
-		
+
 		const qty = Number(quantity);
 		const executionPrice = Number(price);
-		
-		// If outcome is Yes, buyer is buying Yes, seller is selling Yes
-		// If outcome is No, buyer is buying No, seller is selling No
-		const field = outcome === 'Yes' ? 'yes' : 'no';
 
 		await prisma.$transaction(async (tx) => {
+			// Insert immutable Trade record
+			await tx.trade.create({
+				data: {
+					marketId,
+					makerId,
+					takerId,
+					makerOrderId,
+					takerOrderId,
+					stockType,
+					takerAction,
+					price: executionPrice,
+					quantity: qty,
+					matchType,
+				},
+			});
+
 			// Update Market Volume
 			await tx.market.update({
-				where: { id: data.marketId },
-				data: { volume: { increment: Number(qty) * 10 } }
+				where: { id: marketId },
+				data: { volume: { increment: qty * 10 } },
 			});
 
 			if (matchType === 'STANDARD') {
-				// Buyer: -Locked INR, +Shares
-				await tx.inrBalance.updateMany({
-					where: { userId: buyerId },
-					data: { locked: { decrement: executionPrice * qty } }
-				});
-				// Upsert buyer stock
-				const buyerStock = await tx.stockBalance.findFirst({ where: { userId: buyerId, marketId: data.marketId } });
-				if (buyerStock) {
-					await tx.stockBalance.update({
-						where: { id: buyerStock.id },
-						data: { [`${field}Quantity`]: { increment: qty } }
+				if (takerAction === 'BUY') {
+					// Taker buys stockType from Maker
+					const field = stockType.toLowerCase();
+					
+					// Taker: -Locked INR, +Shares
+					await tx.inrBalance.updateMany({
+						where: { userId: takerId },
+						data: { locked: { decrement: executionPrice * qty } },
+					});
+					const takerStock = await tx.stockBalance.findFirst({ where: { userId: takerId, marketId } });
+					if (takerStock) {
+						await tx.stockBalance.update({
+							where: { id: takerStock.id },
+							data: { [`${field}Quantity`]: { increment: qty } },
+						});
+					} else {
+						await tx.stockBalance.create({
+							data: { userId: takerId, marketId, [`${field}Quantity`]: qty },
+						});
+					}
+
+					// Maker: -Locked Shares, +Wallet INR
+					await tx.stockBalance.updateMany({
+						where: { userId: makerId, marketId },
+						data: { [`${field}Locked`]: { decrement: qty } },
+					});
+					await tx.inrBalance.updateMany({
+						where: { userId: makerId },
+						data: { balance: { increment: executionPrice * qty } },
+					});
+
+					// Ledger entries
+					await tx.ledgerEntry.create({
+						data: { fromAccount: 'EXCHANGE_ESCROW', toAccount: makerId, amount: executionPrice * qty, type: 'BET', referenceId: marketId },
 					});
 				} else {
-					await tx.stockBalance.create({
-						data: { userId: buyerId, marketId: data.marketId, [`${field}Quantity`]: qty }
+					// Taker sells stockType to Maker
+					const field = stockType.toLowerCase();
+
+					// Taker: -Locked Shares, +Wallet INR
+					await tx.stockBalance.updateMany({
+						where: { userId: takerId, marketId },
+						data: { [`${field}Locked`]: { decrement: qty } },
+					});
+					await tx.inrBalance.updateMany({
+						where: { userId: takerId },
+						data: { balance: { increment: executionPrice * qty } },
+					});
+
+					// Maker: -Locked INR, +Shares
+					await tx.inrBalance.updateMany({
+						where: { userId: makerId },
+						data: { locked: { decrement: executionPrice * qty } },
+					});
+					const makerStock = await tx.stockBalance.findFirst({ where: { userId: makerId, marketId } });
+					if (makerStock) {
+						await tx.stockBalance.update({
+							where: { id: makerStock.id },
+							data: { [`${field}Quantity`]: { increment: qty } },
+						});
+					} else {
+						await tx.stockBalance.create({
+							data: { userId: makerId, marketId, [`${field}Quantity`]: qty },
+						});
+					}
+
+					// Ledger entries
+					await tx.ledgerEntry.create({
+						data: { fromAccount: 'EXCHANGE_ESCROW', toAccount: takerId, amount: executionPrice * qty, type: 'BET', referenceId: marketId },
 					});
 				}
-
-				// Seller: -Locked Shares, +Wallet INR
-				await tx.stockBalance.updateMany({
-					where: { userId: sellerId, marketId: data.marketId },
-					data: { [`${field}Locked`]: { decrement: qty } }
-				});
-				await tx.inrBalance.updateMany({
-					where: { userId: sellerId },
-					data: { balance: { increment: executionPrice * qty } }
-				});
-
-				// Ledger entries
-				await tx.ledgerEntry.create({
-					data: { fromAccount: 'EXCHANGE_ESCROW', toAccount: sellerId, amount: executionPrice * qty, type: 'BET', referenceId: data.marketId }
-				});
-				
 			} else if (matchType === 'MINT') {
-				// Two buyers. buyerId = YesBuyer, sellerId = NoBuyer
-				// Both lose Locked INR, both gain shares.
-				const yesPrice = executionPrice;
-				const noPrice = 10.0 - executionPrice;
+				// Both are BUYERS.
+				const yesPrice = stockType === 'YES' ? executionPrice : 10.0 - executionPrice;
+				const noPrice = stockType === 'YES' ? 10.0 - executionPrice : executionPrice;
+				
+				const yesBuyerId = stockType === 'YES' ? takerId : makerId;
+				const noBuyerId = stockType === 'YES' ? makerId : takerId;
 
 				// Yes Buyer
 				await tx.inrBalance.updateMany({
-					where: { userId: buyerId },
-					data: { locked: { decrement: yesPrice * qty } }
+					where: { userId: yesBuyerId },
+					data: { locked: { decrement: yesPrice * qty } },
 				});
-				const yesStock = await tx.stockBalance.findFirst({ where: { userId: buyerId, marketId: data.marketId } });
+				const yesStock = await tx.stockBalance.findFirst({ where: { userId: yesBuyerId, marketId } });
 				if (yesStock) {
 					await tx.stockBalance.update({ where: { id: yesStock.id }, data: { yesQuantity: { increment: qty } } });
 				} else {
-					await tx.stockBalance.create({ data: { userId: buyerId, marketId: data.marketId, yesQuantity: qty } });
+					await tx.stockBalance.create({ data: { userId: yesBuyerId, marketId, yesQuantity: qty } });
 				}
 
 				// No Buyer
 				await tx.inrBalance.updateMany({
-					where: { userId: sellerId },
-					data: { locked: { decrement: noPrice * qty } }
+					where: { userId: noBuyerId },
+					data: { locked: { decrement: noPrice * qty } },
 				});
-				const noStock = await tx.stockBalance.findFirst({ where: { userId: sellerId, marketId: data.marketId } });
+				const noStock = await tx.stockBalance.findFirst({ where: { userId: noBuyerId, marketId } });
 				if (noStock) {
 					await tx.stockBalance.update({ where: { id: noStock.id }, data: { noQuantity: { increment: qty } } });
 				} else {
-					await tx.stockBalance.create({ data: { userId: sellerId, marketId: data.marketId, noQuantity: qty } });
+					await tx.stockBalance.create({ data: { userId: noBuyerId, marketId, noQuantity: qty } });
 				}
-				
 			} else if (matchType === 'MERGE') {
-				// Two sellers. Both lose Locked Shares, both gain Wallet INR.
-				const yesPrice = executionPrice;
-				const noPrice = 10.0 - executionPrice;
+				// Both are SELLERS.
+				const yesPrice = stockType === 'YES' ? executionPrice : 10.0 - executionPrice;
+				const noPrice = stockType === 'YES' ? 10.0 - executionPrice : executionPrice;
+
+				const yesSellerId = stockType === 'YES' ? takerId : makerId;
+				const noSellerId = stockType === 'YES' ? makerId : takerId;
 
 				// Yes Seller
 				await tx.stockBalance.updateMany({
-					where: { userId: buyerId, marketId: data.marketId },
-					data: { yesLocked: { decrement: qty } }
+					where: { userId: yesSellerId, marketId },
+					data: { yesLocked: { decrement: qty } },
 				});
 				await tx.inrBalance.updateMany({
-					where: { userId: buyerId },
-					data: { balance: { increment: yesPrice * qty } }
+					where: { userId: yesSellerId },
+					data: { balance: { increment: yesPrice * qty } },
 				});
 
 				// No Seller
 				await tx.stockBalance.updateMany({
-					where: { userId: sellerId, marketId: data.marketId },
-					data: { noLocked: { decrement: qty } }
+					where: { userId: noSellerId, marketId },
+					data: { noLocked: { decrement: qty } },
 				});
 				await tx.inrBalance.updateMany({
-					where: { userId: sellerId },
-					data: { balance: { increment: noPrice * qty } }
+					where: { userId: noSellerId },
+					data: { balance: { increment: noPrice * qty } },
 				});
 
 				// Ledger entries
 				await tx.ledgerEntry.createMany({
 					data: [
-						{ fromAccount: 'EXCHANGE_ESCROW', toAccount: buyerId, amount: yesPrice * qty, type: 'BET', referenceId: data.marketId },
-						{ fromAccount: 'EXCHANGE_ESCROW', toAccount: sellerId, amount: noPrice * qty, type: 'BET', referenceId: data.marketId }
-					]
+						{ fromAccount: 'EXCHANGE_ESCROW', toAccount: yesSellerId, amount: yesPrice * qty, type: 'BET', referenceId: marketId },
+						{ fromAccount: 'EXCHANGE_ESCROW', toAccount: noSellerId, amount: noPrice * qty, type: 'BET', referenceId: marketId },
+					],
 				});
 			}
 
@@ -182,36 +247,24 @@ export const recordActivity = async (data: any) => {
 				if (!orderId) return;
 				const order = await tx.order.findUnique({ where: { id: orderId } });
 				if (order) {
-					const newTraded = order.tradedQuantity + tradeQty;
+					const newTraded = order.filledQuantity + tradeQty;
 					const newStatus = newTraded >= order.quantity ? 'COMPLETED' : 'PARTIAL';
 					await tx.order.update({
 						where: { id: orderId },
-						data: { tradedQuantity: newTraded, status: newStatus }
+						data: { filledQuantity: newTraded, status: newStatus },
 					});
 				}
 			};
 
-			await updateOrder(buyerOrderId, qty);
-			await updateOrder(sellerOrderId, qty);
-
+			await updateOrder(makerOrderId, qty);
+			await updateOrder(takerOrderId, qty);
 		});
 	} catch (error) {
-		logger.error({ error, data, context: 'RECORD_ACTIVITY_FAIL' }, 'Failed to record activity');
+		logger.error({ error, data, context: 'TRADE_EXECUTED_FAIL' }, 'Failed to record trade execution');
 		throw error;
 	}
 };
 
-export const updateMarketTimeline = async (data: any) => {
-	try {
-		logger.info({ data }, 'UPDATE_MARKET_TIMELINE received');
-	} catch (error) {
-		logger.error(
-			{ error, data, context: 'UPDATE_MARKET_TIMELINE_FAIL' },
-			'Failed to update timeline',
-		);
-		throw error;
-	}
-};
 
 export const recordOrderPlaced = async (data: any) => {
 	try {

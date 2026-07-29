@@ -1,8 +1,7 @@
 import { DB_EVENTS } from '@/constants/constants';
 import {
-	recordActivity,
+	recordTradeExecution,
 	recordOrderPlaced,
-	updateMarketTimeline,
 	updateStockPrice,
 	updateTradersCount,
 	handleOrderCancelled,
@@ -19,12 +18,9 @@ export const processToDB = async (eventType: string, data: any) => {
 			await updateStockPrice(data);
 			break;
 
-		case DB_EVENTS.UPDATE_MARKET_TIMELINE:
-			await updateMarketTimeline(data);
-			break;
 
-		case DB_EVENTS.RECORD_ACTIVITY:
-			await recordActivity(data);
+		case DB_EVENTS.TRADE_EXECUTED:
+			await recordTradeExecution(data);
 			break;
 
 		case DB_EVENTS.ORDER_PLACED:
