@@ -43,6 +43,12 @@ enum OrderStatus {
   COMPLETED
 }
 
+enum MatchType {
+  STANDARD
+  MINT
+  MERGE
+}
+
 enum StockType {
   YES
   NO
@@ -82,13 +88,13 @@ enum SystemAccount {
 }
 
 model LedgerEntry {
-  id          String   @id @default(uuid())
-  fromAccount String   // Can be a User UUID or a SystemAccount enum string
-  toAccount   String   // Can be a User UUID or a SystemAccount enum string
-  amount      Decimal  @db.Decimal(14,2)
+  id          String          @id @default(uuid())
+  fromAccount String // Can be a User UUID or a SystemAccount enum string
+  toAccount   String // Can be a User UUID or a SystemAccount enum string
+  amount      Decimal         @db.Decimal(14, 2)
   type        TransactionType
-  referenceId String?  // Optional: OrderId, MarketId, etc
-  createdAt   DateTime @default(now())
+  referenceId String? // Optional: OrderId, MarketId, etc
+  createdAt   DateTime        @default(now())
 }
 
 model User {
@@ -96,7 +102,7 @@ model User {
   phone                     String        @unique
   email                     String?       @unique
   name                      String        @default("Prober")
-  profilePic                String?       
+  profilePic                String?
   isNewUser                 Boolean       @default(true)
   role                      Role          @default(USER)
   kycVerificationStatus     KycStatus     @default(NOT_VERIFIED)
@@ -120,7 +126,9 @@ model User {
   transactions  TransactionHistory[]
   watchlists    Watchlist[]
 
-  orders Order[]
+  orders      Order[]
+  makerTrades Trade[] @relation("MakerUser")
+  takerTrades Trade[] @relation("TakerUser")
 
   companyEarnings CompanyEarning[]
 
@@ -213,10 +221,40 @@ model Order {
   orderType      OrderType
   totalPrice     Decimal     @db.Decimal(14, 2)
   status         OrderStatus @default(PENDING)
-  tradedQuantity Int         @default(0)
+  filledQuantity Int         @default(0)
+  makerTrades    Trade[]     @relation("MakerTrades")
+  takerTrades    Trade[]     @relation("TakerTrades")
   marketId       String
   market         Market      @relation(fields: [marketId], references: [id])
   updatedAt      DateTime    @updatedAt
+}
+
+model Trade {
+  id           String    @default(uuid())
+  marketId     String
+  makerOrderId String
+  takerOrderId String
+  makerId      String
+  takerId      String
+  stockType    StockType
+  takerAction  OrderType
+  price        Decimal   @db.Decimal(14, 2)
+  quantity     Int
+  matchType    MatchType
+  createdAt    DateTime  @default(now())
+
+  market     Market @relation(fields: [marketId], references: [id])
+  makerOrder Order  @relation("MakerTrades", fields: [makerOrderId], references: [id])
+  takerOrder Order  @relation("TakerTrades", fields: [takerOrderId], references: [id])
+  maker      User   @relation("MakerUser", fields: [makerId], references: [id])
+  taker      User   @relation("TakerUser", fields: [takerId], references: [id])
+
+  @@id([id, createdAt])
+  @@index([marketId, createdAt(sort: Desc)])
+  @@index([makerId, createdAt(sort: Desc)])
+  @@index([takerId, createdAt(sort: Desc)])
+  @@index([makerOrderId])
+  @@index([takerOrderId])
 }
 
 model Market {
@@ -238,6 +276,7 @@ model Market {
   stockBalances   StockBalance[]
   orders          Order[]
   transactions    TransactionHistory[]
+  trades          Trade[]
   watchlists      Watchlist[]
   CompanyEarning  CompanyEarning[]
   status          MarketStatus         @default(OPEN)
