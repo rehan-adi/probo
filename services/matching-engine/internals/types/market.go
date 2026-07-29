@@ -36,8 +36,7 @@ type Market struct {
 	OrderBook       *OrderBook
 
 	Overview   Overview
-	Activities []Activity
-	Timeline   []PricePoint
+	Trades     []TradeExecutedEvent
 	Inbox      chan MarketMessage
 	Mu         sync.RWMutex
 }
@@ -56,11 +55,3 @@ type Overview struct {
 	Rules         string
 	EOS           string
 }
-
-type PricePoint struct {
-	Timestamp time.Time
-	YesPrice  float64
-	NoPrice   float64
-}
-
-

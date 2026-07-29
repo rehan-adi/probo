@@ -9,9 +9,9 @@ import (
 )
 
 type InitBalanceDataRequest struct {
-	UserId string  `json:"userId"`
-	Amount float64 `json:"amount"`
-	Locked float64 `json:"locked"`
+	UserId string  `mapstructure:"userId" json:"userId"`
+	Amount float64 `mapstructure:"amount" json:"amount"`
+	Locked float64 `mapstructure:"locked" json:"locked"`
 }
 
 func InitBalance(payload types.QueuePayload) types.QueueResponse {
@@ -67,7 +67,7 @@ func InitBalance(payload types.QueuePayload) types.QueueResponse {
 }
 
 type GetBalanceDataRequest struct {
-	UserId string `json:"userId"`
+	UserId string `mapstructure:"userId" json:"userId"`
 }
 
 func GetBalance(payload types.QueuePayload) types.QueueResponse {
@@ -119,8 +119,8 @@ func GetBalance(payload types.QueuePayload) types.QueueResponse {
 // Deposit handles user Deposit requests and updates balance safely.
 
 type DepositDataRequest struct {
-	UserId string  `json:"userId"`
-	Amount float64 `json:"amount"`
+	UserId string  `mapstructure:"userId" json:"userId"`
+	Amount float64 `mapstructure:"amount" json:"amount"`
 }
 
 func Deposit(payload types.QueuePayload) types.QueueResponse {
@@ -193,8 +193,8 @@ func Deposit(payload types.QueuePayload) types.QueueResponse {
 // if Kyc and Payment method is verified only then user can verify.
 
 type WithdrawDataRequest struct {
-	UserId string  `json:"userId"`
-	Amount float64 `json:"amount"`
+	UserId string  `mapstructure:"userId" json:"userId"`
+	Amount float64 `mapstructure:"amount" json:"amount"`
 }
 
 func Withdraw(payload types.QueuePayload) types.QueueResponse {

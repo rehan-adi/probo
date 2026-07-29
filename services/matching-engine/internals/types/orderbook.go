@@ -19,17 +19,16 @@ type AggregatedOrderBook struct {
 	No  []PriceQuantity `json:"no"`
 }
 
-type Activity struct {
-	MarketId    string    `json:"marketId"`
-	BuyerId        string    `json:"buyerId"`
-	BuyerOrderId   string    `json:"buyerOrderId"`
-	SellerId       string    `json:"sellerId"`
-	SellerOrderId  string    `json:"sellerOrderId"`
-	Buyerphone     string    `json:"buyerPhone"`
-	SellerPhone string    `json:"sellerPhone"`
-	Outcome     string    `json:"outcome"`
-	Price       float64   `json:"price"`
-	Quantity    int       `json:"quantity"`
-	Timestamp   time.Time `json:"timestamp"`
-	MatchType   string    `json:"matchType"`
+type TradeExecutedEvent struct {
+	MarketId      string    `json:"marketId"`
+	MakerId       string    `json:"makerId"`
+	TakerId       string    `json:"takerId"`
+	MakerOrderId  string    `json:"makerOrderId"`
+	TakerOrderId  string    `json:"takerOrderId"`
+	StockType     string    `json:"stockType"`
+	TakerAction   string    `json:"takerAction"`
+	Price         float64   `json:"price"`
+	Quantity      int       `json:"quantity"`
+	Timestamp     time.Time `json:"timestamp"`
+	MatchType     string    `json:"matchType"`
 }

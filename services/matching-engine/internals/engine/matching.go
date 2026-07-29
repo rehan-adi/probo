@@ -7,8 +7,8 @@ import (
 )
 
 // ProcessLimitOrder matches a LIMIT or MARKET order against the orderbook using synthetic matching.
-func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isMarketOrder bool) []types.Activity {
-	var activities []types.Activity
+func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isMarketOrder bool) []types.TradeExecutedEvent {
+	var trades []types.TradeExecutedEvent
 
 	market.Mu.Lock()
 	defer market.Mu.Unlock()
@@ -139,40 +139,24 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 
 		e.settleTradeBalances(order, matchOrder, tradeQty, matchPrice, matchType)
 
-		buyerPhone, sellerPhone := getPhonesForActivity(e, order, matchOrder, matchType)
-		var buyerId, sellerId string
-		var buyerOrderId, sellerOrderId string
-		if matchType == "STANDARD" {
-			if order.Action == types.BUY {
-				buyerId, sellerId = order.UserId, matchOrder.UserId
-				buyerOrderId, sellerOrderId = order.OrderId, matchOrder.OrderId
-			} else {
-				buyerId, sellerId = matchOrder.UserId, order.UserId
-				buyerOrderId, sellerOrderId = matchOrder.OrderId, order.OrderId
-			}
-		} else if matchType == "MINT" || matchType == "MERGE" {
-			if order.Side == types.Yes {
-				buyerId, sellerId = order.UserId, matchOrder.UserId
-				buyerOrderId, sellerOrderId = order.OrderId, matchOrder.OrderId
-			} else {
-				buyerId, sellerId = matchOrder.UserId, order.UserId
-				buyerOrderId, sellerOrderId = matchOrder.OrderId, order.OrderId
-			}
-		}
+		var makerId, takerId, makerOrderId, takerOrderId string
+		takerId = order.UserId
+		takerOrderId = order.OrderId
+		makerId = matchOrder.UserId
+		makerOrderId = matchOrder.OrderId
 
-		activities = append(activities, types.Activity{
+		trades = append(trades, types.TradeExecutedEvent{
 			MarketId:      market.MarketId,
-			BuyerId:       buyerId,
-			BuyerOrderId:  buyerOrderId,
-			SellerId:      sellerId,
-			SellerOrderId: sellerOrderId,
-			Buyerphone:    buyerPhone,
-			SellerPhone:   sellerPhone,
-			Outcome:     string(order.Side),
-			Price:       matchPrice,
-			Quantity:    tradeQty,
-			Timestamp:   time.Now(),
-			MatchType:   matchType,
+			MakerId:       makerId,
+			TakerId:       takerId,
+			MakerOrderId:  makerOrderId,
+			TakerOrderId:  takerOrderId,
+			StockType:     string(order.Side),
+			TakerAction:   string(order.Action),
+			Price:         matchPrice,
+			Quantity:      tradeQty,
+			Timestamp:     time.Now(),
+			MatchType:     matchType,
 		})
 
 		if matchOrder.Filled == matchOrder.Quantity {
@@ -194,7 +178,7 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 		e.UM.Unlock()
 	}
 
-	return activities
+	return trades
 }
 
 func popOrderFromHeap(market *types.Market, order *types.Order) {
@@ -303,18 +287,4 @@ func (e *Engine) settleTradeBalances(order, matchOrder *types.Order, qty int, ex
 	}
 }
 
-func getPhonesForActivity(e *Engine, order, matchOrder *types.Order, matchType string) (string, string) {
-	e.UM.RLock()
-	defer e.UM.RUnlock()
-	
-	u1 := e.User[order.UserId]
-	u2 := e.User[matchOrder.UserId]
 
-	if matchType == "STANDARD" {
-		if order.Action == types.BUY {
-			return u1.Phone, u2.Phone
-		}
-		return u2.Phone, u1.Phone
-	}
-	return "System", "System"
-}

@@ -166,8 +166,7 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 			Status          string                    `json:"status"`
 			OrderBook       types.AggregatedOrderBook `json:"orderbook"`
 			Overview        types.Overview            `json:"overview"`
-			Activities      []types.Activity          `json:"activities"`
-			Timeline        []types.PricePoint        `json:"timeline"`
+			Trades          []types.TradeExecutedEvent `json:"trades"`
 			NumberOfTraders int16                     `json:"numberOfTraders"`
 		}{
 			MarketId:        market.MarketId,
@@ -182,8 +181,7 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 			Status:          string(market.Status),
 			OrderBook:       orderBook,
 			Overview:        market.Overview,
-			Activities:      market.Activities,
-			Timeline:        market.Timeline,
+			Trades:          market.Trades,
 			NumberOfTraders: market.NumberOfTraders,
 		},
 	}

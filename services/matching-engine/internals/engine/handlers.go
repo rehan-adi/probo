@@ -105,10 +105,13 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	})
 
 	if len(activities) > 0 {
-		market.Activities = append(market.Activities, activities...)
+		market.Trades = append(market.Trades, activities...)
+		if len(market.Trades) > 50 {
+			market.Trades = market.Trades[len(market.Trades)-50:]
+		}
 		for _, act := range activities {
 			market.Volume += float64(act.Quantity * 10)
-			kafka.ProduceEventToDBProcessor("process_db", string(types.RECORD_ACTIVITY), act)
+			kafka.ProduceEventToDBProcessor("process_db", string(types.TRADE_EXECUTED), act)
 		}
 	}
 
@@ -123,11 +126,6 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	if yesPrice != float64(market.YesPrice) || noPrice != float64(market.NoPrice) {
 		market.YesPrice = float32(yesPrice)
 		market.NoPrice = float32(noPrice)
-		timeline := types.PricePoint{Timestamp: time.Now(), YesPrice: yesPrice, NoPrice: noPrice}
-		market.Timeline = append(market.Timeline, timeline)
-		kafka.ProduceEventToDBProcessor("process_db", string(types.UPDATE_MARKET_TIMELINE), map[string]interface{}{
-			"marketId": order.MarketId, "timeline": timeline,
-		})
 		kafka.ProduceEventToDBProcessor("process_db", string(types.UPDATE_STOCK_PRICE), map[string]interface{}{
 			"marketId": order.MarketId, "yesPrice": yesPrice, "noPrice": noPrice,
 		})
@@ -136,7 +134,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	payload := map[string]interface{}{
 		"symbol": order.Symbol, "orderbook": aggOrderBook,
 		"yesPrice": yesPrice, "noPrice": noPrice,
-		"timeline": market.Timeline, "activities": activities,
+		"trades": activities,
 		"volume": market.Volume,
 		"numberOfTraders": market.NumberOfTraders,
 	}
