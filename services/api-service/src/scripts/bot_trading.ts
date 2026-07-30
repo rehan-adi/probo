@@ -49,12 +49,12 @@ async function loginUser(phone: string, name: string) {
 async function createMarket(token: string) {
 	const randomSuffix = Math.random().toString(36).substring(7);
 	const body = {
-		title: `India vs Australia: Who will win the T20 World Cup Match? (${randomSuffix})`,
-		thumbnail: "https://probo-market-thumbnails-bucket.s3.ap-south-1.amazonaws.com/icc.png",
+		title: `Will Tesla (TSLA) stock price reach $300 by end of the year? (${randomSuffix})`,
+		thumbnail: "https://s3.coinmarketcap.com/static-gravity/image/34d989f64bf44f84bf3dfd398f6d2b67.png",
 		categoryId: "11111111-1111-1111-1111-111111111111",
-		sourceOfTruth: "Official ICC Announcement and match results from icc-cricket.com.",
-		eos: "The market will resolve to YES if India wins the match within regular time or super over. If Australia wins, the market resolves to NO. In the unlikely event of a cancellation without a winner, the market will be voided and refunded.",
-		rules: "1. Market resolves based on the official final outcome of the match.\n2. Super overs are included.\n3. Settlement will occur within 24 hours of the match concluding.",
+		sourceOfTruth: "Official NASDAQ closing price.",
+		eos: "The market will resolve to YES if Tesla (TSLA) reaches $300 before the end of the year.",
+		rules: "1. Market resolves based on official market data.\n2. Settlement will occur within 24 hours.",
 		startTime: new Date().toISOString(),
 		endTime: new Date(Date.now() + 86400000 * 14).toISOString() // 14 days future
 	};
@@ -195,8 +195,8 @@ async function runBotTrading() {
 		update: {},
 		create: {
 			id: catId,
-			categoryName: 'Football',
-			icon: '⚽'
+			categoryName: 'Finance',
+			icon: '📈'
 		}
 	});
 
