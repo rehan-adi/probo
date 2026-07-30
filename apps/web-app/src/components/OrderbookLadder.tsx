@@ -63,7 +63,7 @@ const OrderRow = React.memo(({
 		: 'border-t border-b border-transparent';
 
 	const highlightBg = isHighlighted
-		? (isAsk ? 'bg-red-500/5' : 'bg-green-500/5')
+		? 'bg-zinc-200/80 dark:bg-zinc-800'
 		: 'bg-transparent';
 
 	const highlightDepth = isHighlighted
@@ -80,7 +80,7 @@ const OrderRow = React.memo(({
 			onMouseEnter={onHover}
 			onMouseLeave={onLeave}
 			onClick={onClick}
-			className={`relative grid grid-cols-3 items-center h-[30px] px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} -my-[1px] z-10 hover:z-20 hover:bg-muted`}
+			className={`relative grid grid-cols-3 items-center h-[30px] px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} z-10 hover:z-20 ${!isHighlighted ? 'hover:bg-muted/50' : ''}`}
 		>
 			{/* Cumulative Depth Bar */}
 			<div
@@ -111,7 +111,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, o
 
 	// ROW_HEIGHT must match the h-[30px] on OrderRow
 	const ROW_HEIGHT = 30;
-	const VISIBLE_ROWS = 5;
+	const VISIBLE_ROWS = 7;
 
 	// Scroll ask section to bottom (so best asks are visible near spread)
 	const scrollAsksToBottom = (smooth = false) => {

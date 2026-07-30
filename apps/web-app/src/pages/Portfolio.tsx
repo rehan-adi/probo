@@ -181,7 +181,7 @@ export default function Portfolio() {
 										<div className="flex items-center gap-6 shrink-0 w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t border-border/50 md:border-0">
 											<div className="flex flex-col">
 												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Filled</span>
-												<span className="font-bold text-foreground text-sm">{order.tradedQuantity} <span className="text-muted-foreground text-xs font-medium">/ {order.quantity}</span></span>
+												<span className="font-bold text-foreground text-sm">{order.filledQuantity} <span className="text-muted-foreground text-xs font-medium">/ {order.quantity}</span></span>
 											</div>
 											<div className="flex flex-col items-end min-w-[80px]">
 												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Status</span>

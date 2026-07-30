@@ -14,16 +14,18 @@ import { motion } from 'framer-motion';
 import ShareModal from '@/components/modals/ShareModal';
 import OrderbookLadder from '@/components/OrderbookLadder';
 
-interface Activity {
-	id?: string;
-	buyerPhone: string;
-	sellerPhone: string;
-	outcome: string;
+interface TradeExecutedEvent {
+	marketId: string;
+	makerId: string;
+	takerId: string;
+	makerOrderId: string;
+	takerOrderId: string;
+	stockType: string;
+	takerAction: string;
 	price: number;
 	quantity: number;
 	timestamp: string;
-	buyPrice?: number;
-	sellPrice?: number;
+	matchType: string;
 }
 
 interface Market {
@@ -37,14 +39,17 @@ interface Market {
 		yes: any[];
 		no: any[];
 	};
-	activities: Activity[];
 	timeline: any[];
+	trades: TradeExecutedEvent[];
 	volume: number;
 	traders: number;
 	endTime: string;
 	category?: string;
 	overview: {
-		EndDate: string
+		EndDate: string;
+		startDate?: string;
+		eos?: string;
+		Rules?: string;
 	}
 }
 
@@ -132,46 +137,24 @@ export default function EventDetails() {
 
 					let newVolume = prev.volume || 0;
 					let newTraders = prev.traders || 0;
-					const newTraderPhones = new Set<string>();
+					let updatedTrades = [...(prev.trades || [])];
+					let newTimeline = [...(prev.timeline || [])];
 
-					if (data.activities && Array.isArray(data.activities)) {
-						data.activities.forEach((newActivity: Activity) => {
-							const exists = updatedActivities.some(
-								(act: Activity) =>
-									act.buyerPhone === newActivity.buyerPhone &&
-									act.sellerPhone === newActivity.sellerPhone &&
-									act.price === newActivity.price &&
-									act.timestamp === newActivity.timestamp,
+					if (data.trades && Array.isArray(data.trades)) {
+						data.trades.forEach((newTrade: TradeExecutedEvent) => {
+							const exists = updatedTrades.some(
+								(trade: TradeExecutedEvent) =>
+									trade.makerOrderId === newTrade.makerOrderId &&
+									trade.takerOrderId === newTrade.takerOrderId &&
+									trade.price === newTrade.price &&
+									trade.timestamp === newTrade.timestamp,
 							);
 							if (!exists) {
-								updatedActivities.unshift(newActivity);
-								newVolume += (newActivity.price * newActivity.quantity) / 10;
-
-								// Approximate unique traders increment
-								if (!newTraderPhones.has(newActivity.buyerPhone)) {
-									newTraderPhones.add(newActivity.buyerPhone);
-								}
-								if (!newTraderPhones.has(newActivity.sellerPhone)) {
-									newTraderPhones.add(newActivity.sellerPhone);
-								}
+								updatedTrades.unshift(newTrade);
+								newVolume += (newTrade.price * newTrade.quantity) / 10;
 							}
 						});
-						updatedActivities = updatedActivities.slice(0, 50);
-
-						// Very basic heuristic for new traders (in real app, engine sends exactly)
-						if (newTraderPhones.size > 0 && newVolume > (prev.volume || 0)) {
-							// If there's new volume, assume there might be new traders occasionally
-							// To avoid fake inflation, just add 1 if it's a completely new phone we haven't seen in recent activities
-							const existingPhones = new Set([
-								...(prev.activities || []).map(a => a.buyerPhone),
-								...(prev.activities || []).map(a => a.sellerPhone)
-							]);
-							let trulyNew = 0;
-							newTraderPhones.forEach(p => {
-								if (!existingPhones.has(p)) trulyNew++;
-							});
-							newTraders += trulyNew;
-						}
+						updatedTrades = updatedTrades.slice(0, 50);
 					}
 
 					return {
@@ -179,7 +162,8 @@ export default function EventDetails() {
 						orderbook: updatedOrderbook,
 						yesPrice: newYesPrice,
 						noPrice: newNoPrice,
-						activities: updatedActivities,
+						timeline: newTimeline,
+						trades: updatedTrades,
 						volume: newVolume,
 						traders: newTraders,
 					};
@@ -242,7 +226,6 @@ export default function EventDetails() {
 	if (loading) return <p className="p-4 text-foreground">Loading...</p>;
 	if (!market) return <p className="p-4 text-foreground">Market not found.</p>;
 
-	// Calculate Bids and Asks
 	const calculateOrderbookDisplay = (outcome: 'Yes' | 'No') => {
 		let bids: any[] = [];
 		let asks: any[] = [];
@@ -253,7 +236,6 @@ export default function EventDetails() {
 				.sort((a, b) => b.price - a.price)
 				.slice(0, 15);
 
-			// Asks for Yes are market.orderbook.no reversed (10 - price)
 			asks = (market.orderbook?.no || [])
 				.filter((o) => o.price > 0 && o.quantity > 0 && o.price < 10)
 				.map((o) => ({ price: 10 - o.price, quantity: o.quantity }))
@@ -265,7 +247,6 @@ export default function EventDetails() {
 				.sort((a, b) => b.price - a.price)
 				.slice(0, 15);
 
-			// Asks for No are market.orderbook.yes reversed
 			asks = (market.orderbook?.yes || [])
 				.filter((o) => o.price > 0 && o.quantity > 0 && o.price < 10)
 				.map((o) => ({ price: 10 - o.price, quantity: o.quantity }))
@@ -278,13 +259,10 @@ export default function EventDetails() {
 
 	const { bids, asks } = calculateOrderbookDisplay(innerTab);
 
-
-
 	return (
 		<div className="w-full bg-background min-h-screen py-4 flex items-start justify-center text-foreground transition-colors">
 			<div className="flex gap-12 w-full px-[128px] pt-20 max-[1220px]:px-[40px] max-[640px]:px-[20px]">
 				<div className="w-[70%] max-[1160px]:w-[65%] max-[970px]:w-full">
-					{/* Header UI Restructure */}
 					<div className="flex justify-between items-start mb-8 gap-4">
 						<div className="flex items-start gap-4">
 							<div className="w-16 h-16 md:w-[72px] md:h-[72px] shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
@@ -316,17 +294,17 @@ export default function EventDetails() {
 						</div>
 					</div>
 
-					{/* Timeline Section */}
 					<div className="mb-6">
 						<TimelineSection
-							data={market.timeline || []}
+							symbol={market.symbol}
+							yesPrice={market.yesPrice}
+							noPrice={market.noPrice}
 							volume={market.volume || 0}
 							overview={market.overview}
 							traders={market.traders || 0}
 						/>
 					</div>
 
-					{/* Orderbook & Activity Box */}
 					<div className="mb-8 border border-border rounded-xl shadow-sm bg-card overflow-hidden">
 						<div className="flex border-b border-border bg-muted/30">
 							{['Orderbook', 'Activity'].map((tab) => (
@@ -346,7 +324,7 @@ export default function EventDetails() {
 							))}
 						</div>
 
-						<div className="p-5 md:p-6 h-[530px] flex flex-col">
+						<div className="p-5 md:p-6 h-[650px] flex flex-col">
 							{activeBoxTab === 'orderbook' && (
 								<div className="flex flex-col h-full min-h-0">
 									<div className="flex justify-between items-center mb-4 border-b border-border w-full shrink-0">
@@ -356,7 +334,6 @@ export default function EventDetails() {
 													key={tab}
 													onClick={() => {
 												setInnerTab(tab as any);
-												// Re-center orderbook when switching sides
 												setTimeout(() => setResetScrollToken(prev => prev + 1), 60);
 											}}
 													className={`py-2 text-sm font-bold relative transition-colors ${innerTab === tab
@@ -405,50 +382,45 @@ export default function EventDetails() {
 
 							{activeBoxTab === 'activity' && (
 								<div className="flex flex-col h-full min-h-0 relative">
-									{/* Gradient mask for smooth scroll fade */}
 									<div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-card to-transparent z-10 pointer-events-none"></div>
 
 									<div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40 space-y-1">
-										{market?.activities?.slice(0, 50).map((activity: Activity, index: number) => {
-											const isBuyYes = activity.outcome === 'YES';
-											const badgeClass = isBuyYes
-												? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-												: "bg-rose-500/10 text-rose-500 border-rose-500/20";
-											const badgeText = isBuyYes ? "BUY YES" : "BUY NO";
-											const priceColor = isBuyYes ? "text-emerald-500" : "text-rose-500";
-
-											return (
-												<motion.div
-													initial={{ opacity: 0, y: -5 }}
-													animate={{ opacity: 1, y: 0 }}
-													key={activity.id || `${activity.timestamp}-${index}`}
-													className={`grid grid-cols-4 gap-3 items-center py-2.5 px-3 rounded-md transition-colors hover:bg-muted/30 border border-transparent hover:border-border/50`}
-												>
-													<div className="col-span-1 flex items-center">
-														<span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeClass}`}>
-															{badgeText}
-														</span>
-													</div>
-
-													<div className="col-span-2 flex flex-col justify-center items-center">
-														<div className="flex items-center gap-2">
-															<span className="text-sm font-bold text-foreground">{activity.quantity}</span>
-															<span className="text-muted-foreground">@</span>
-															<span className={`text-sm font-bold ${priceColor}`}>₹{Number(activity.price).toFixed(1)}</span>
+										{market.trades && market.trades.length > 0 ? (
+											<div className="space-y-4">
+												{market.trades.map((trade, idx) => (
+													<div
+														key={idx}
+														className="flex items-center justify-between p-3 bg-white/50 border border-border/40 rounded-xl"
+													>
+														<div className="flex items-center gap-3">
+															<div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
+																T
+															</div>
+															<div className="flex flex-col">
+																<span className="font-semibold text-sm">Trade Executed</span>
+																<span className="text-xs text-muted-foreground">
+																	{new Date(trade.timestamp).toLocaleTimeString()}
+																</span>
+															</div>
 														</div>
-														<span className="text-[10px] text-muted-foreground/70 font-semibold uppercase tracking-wider mt-0.5">
-															{formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
-														</span>
+														<div className="flex flex-col items-end">
+															<span className="font-bold text-sm">
+																{trade.quantity} shares
+															</span>
+															<span
+																className={`text-xs font-semibold ${
+																	trade.stockType.toLowerCase() === 'yes'
+																		? 'text-[#00c853]'
+																		: 'text-[#ff3d00]'
+																}`}
+															>
+																{trade.stockType} @ ₹{trade.price}
+															</span>
+														</div>
 													</div>
-
-													<div className="col-span-1 flex items-center gap-2 justify-end">
-														<p className="font-medium text-xs text-foreground truncate">{maskPhoneNumber(activity.buyerPhone)}</p>
-														<img src={pfpIcon} alt="Trader" className="w-5 h-5 rounded-full border border-border opacity-80" />
-													</div>
-												</motion.div>
-											);
-										})}
-										{(!market?.activities || market.activities.length === 0) && (
+												))}
+											</div>
+										) : (
 											<div className="flex flex-col items-center justify-center h-full text-center py-12">
 												<span className="text-muted-foreground/50 text-4xl mb-3">⚬</span>
 												<div className="text-sm font-medium text-muted-foreground">No activities yet</div>
@@ -462,7 +434,6 @@ export default function EventDetails() {
 						</div>
 					</div>
 
-					{/* Rules Section */}
 					<div className="mb-8 bg-card p-6 border border-border rounded-xl shadow-sm">
 						<h2 className="text-lg font-bold mb-5 text-foreground">About the Event</h2>
 						<div className="flex flex-col md:flex-row md:items-start justify-between gap-6 md:gap-4 mb-8 text-sm">
@@ -476,7 +447,7 @@ export default function EventDetails() {
 							<div className="flex-1 flex flex-col gap-1.5 min-w-0">
 								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Event started</span>
 								<span className="text-foreground font-medium">
-									{market.overview?.StartDate ? new Date(market.overview.StartDate).toLocaleDateString(undefined, {
+									{market.overview?.startDate ? new Date(market.overview.startDate).toLocaleDateString(undefined, {
 										day: '2-digit', month: 'short', year: 'numeric',
 									}) : '--'}
 								</span>
@@ -494,7 +465,7 @@ export default function EventDetails() {
 						<div className="space-y-6">
 							<div>
 								<h3 className="text-foreground mb-2 text-sm font-bold">Event Overview</h3>
-								<p className="text-sm leading-relaxed text-muted-foreground">{market.overview?.EOS}</p>
+								<p className="text-sm font-semibold text-black">{market.overview.eos}</p>
 							</div>
 							<div>
 								<h3 className="text-foreground mb-2 text-sm font-bold">Rules</h3>

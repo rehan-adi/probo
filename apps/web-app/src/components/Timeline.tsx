@@ -1,104 +1,205 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRightLeft, Settings, TrendingUp, Clock, Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { createChart, ColorType, AreaSeries } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
+import { ArrowRightLeft, Clock, Users, TrendingUp, Settings2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-	Tooltip,
-	ResponsiveContainer,
-	AreaChart,
-	Area,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-} from 'recharts';
-import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { api } from '@/lib/axios';
 
-interface TimelineData {
-	YesPrice: string;
-	NoPrice: string;
-	Timestamp: string;
-}
-
-interface TimelineChartProps {
-	data: TimelineData[];
+interface TimelineProps {
+	symbol: string;
+	yesPrice: number;
+	noPrice: number;
 	volume?: number;
-	EndDate?: string;
 	traders?: number;
 	overview?: { EndDate: string };
 }
 
-type Timeframe = '1H' | '6H' | '1D' | '1W' | '1M' | 'ALL';
+type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
-export default function TimelineChart({ data, volume = 0, traders = 0, overview }: TimelineChartProps) {
+export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, traders = 0, overview }: TimelineProps) {
+	const chartContainerRef = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<'yes' | 'no'>('yes');
-	const [timeframe, setTimeframe] = useState<Timeframe>('ALL');
+	const [timeframe, setTimeframe] = useState<Timeframe>('1m');
 	
-	// Settings State
-	const [showSettings, setShowSettings] = useState(false);
-	const [autoScale, setAutoScale] = useState(true);
-	const [showXAxis, setShowXAxis] = useState(true);
-	const [showYAxis, setShowYAxis] = useState(false);
-	const [showGridHorizontal, setShowGridHorizontal] = useState(false);
-	const [showGridVertical, setShowGridVertical] = useState(false);
-	const [displayFormat, setDisplayFormat] = useState<'price' | 'probability' | 'both'>('probability');
-	
-	const settingsRef = useRef<HTMLDivElement>(null);
+	const [showGridX, setShowGridX] = useState(false);
+	const [showGridY, setShowGridY] = useState(true);
+	const [showCrosshair, setShowCrosshair] = useState(true);
+	const [isLogScale, setIsLogScale] = useState(false);
+	const [fillArea, setFillArea] = useState(true);
+
+	const chartRef = useRef<IChartApi | null>(null);
+	const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+	const [loading, setLoading] = useState(true);
+
+	const fetchKlines = async (tf: string) => {
+		try {
+			setLoading(true);
+			const res = await api.get(`/market/${symbol}/klines?resolution=${tf}`);
+			if (res.data?.success) {
+				const rawData = res.data.data || [];
+				
+				const data = rawData.map((d: any) => ({
+					time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
+					value: view === 'yes' ? Number(d.close) : 10 - Number(d.close),
+				})).sort((a: any, b: any) => (a.time as number) - (b.time as number));
+
+				// If there's only 1 data point, an AreaSeries won't render properly. We duplicate it slightly in the past.
+				if (data.length === 1) {
+					data.unshift({
+						time: ((data[0].time as number) - 60) as Time,
+						value: data[0].value
+					});
+				}
+
+				if (seriesRef.current) {
+					seriesRef.current.setData(data);
+					// Important: Fit content so it scales properly to view
+					chartRef.current?.timeScale().fitContent();
+				}
+			}
+		} catch (error) {
+			console.error('Failed to fetch klines', error);
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-				setShowSettings(false);
-			}
+		if (!chartContainerRef.current) return;
+
+		const handleResize = () => {
+			chartRef.current?.applyOptions({
+				width: chartContainerRef.current?.clientWidth,
+			});
 		};
-		if (showSettings) {
-			document.addEventListener('mousedown', handleClickOutside);
-		}
+
+		// Check if dark mode is active to dynamically adapt colors
+		const isDark = document.documentElement.classList.contains('dark');
+		const textColor = isDark ? '#a1a1aa' : '#71717a';
+		const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+
+		const chart = createChart(chartContainerRef.current, {
+			layout: {
+				background: { type: ColorType.Solid, color: 'transparent' },
+				textColor: textColor,
+			},
+			grid: {
+				vertLines: { visible: false },
+				horzLines: { color: gridColor },
+			},
+			rightPriceScale: {
+				borderVisible: false,
+			},
+			timeScale: {
+				borderVisible: false,
+				timeVisible: true,
+				secondsVisible: false,
+			},
+			crosshair: {
+				vertLine: {
+					color: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+					width: 1,
+					style: 1,
+					labelBackgroundColor: isDark ? '#27272a' : '#18181b',
+				},
+				horzLine: {
+					color: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+					width: 1,
+					style: 1,
+					labelBackgroundColor: isDark ? '#27272a' : '#18181b',
+				},
+			},
+			handleScroll: {
+				mouseWheel: true,
+				pressedMouseMove: true,
+			},
+			handleScale: {
+				axisPressedMouseMove: true,
+				mouseWheel: true,
+				pinch: true,
+			},
+			width: chartContainerRef.current.clientWidth,
+			height: 288,
+		});
+		
+		chartRef.current = chart;
+
+		const series = chart.addSeries(AreaSeries, {
+			lineColor: view === 'yes' ? '#3b82f6' : '#ef4444',
+			topColor: view === 'yes' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+			bottomColor: 'rgba(0, 0, 0, 0)',
+			lineWidth: 2,
+			priceFormat: {
+				type: 'price',
+				precision: 1,
+				minMove: 0.1,
+			},
+		});
+		seriesRef.current = series;
+
+		window.addEventListener('resize', handleResize);
+
 		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
+			window.removeEventListener('resize', handleResize);
+			chart.remove();
 		};
-	}, [showSettings]);
+	}, [view]);
 
-	if (!data || data.length === 0) {
-		return (
-			<Card className="bg-background rounded-2xl border shadow-none p-8 text-center text-muted-foreground text-sm">
-				No timeline data available yet.
-			</Card>
-		);
-	}
-
-	const allChartData = data.map((d) => ({
-		yes: Number(d.YesPrice),
-		no: Number(d.NoPrice),
-		time: new Date(d.Timestamp).getTime(),
-	}));
-
-	// Client-side timeframe filtering
-	const getTimeframeMs = (tf: Timeframe): number => {
-		switch (tf) {
-			case '1H': return 60 * 60 * 1000;
-			case '6H': return 6 * 60 * 60 * 1000;
-			case '1D': return 24 * 60 * 60 * 1000;
-			case '1W': return 7 * 24 * 60 * 60 * 1000;
-			case '1M': return 30 * 24 * 60 * 60 * 1000;
-			case 'ALL': default: return Infinity;
+	// Dynamically update grid when toggles change
+	useEffect(() => {
+		if (chartRef.current) {
+			const isDark = document.documentElement.classList.contains('dark');
+			const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+			chartRef.current.applyOptions({
+				grid: {
+					vertLines: { visible: showGridX, color: gridColor },
+					horzLines: { visible: showGridY, color: gridColor },
+				},
+				crosshair: {
+					vertLine: { visible: showCrosshair },
+					horzLine: { visible: showCrosshair },
+				},
+				rightPriceScale: {
+					mode: isLogScale ? 1 : 0, // 1 for Logarithmic, 0 for Normal
+				}
+			});
 		}
-	};
+	}, [showGridX, showGridY, showCrosshair, isLogScale]);
 
-	const chartData = timeframe === 'ALL'
-		? allChartData
-		: allChartData.filter(d => d.time >= Date.now() - getTimeframeMs(timeframe));
+	useEffect(() => {
+		if (seriesRef.current) {
+			const topColor = view === 'yes' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+			seriesRef.current.applyOptions({
+				topColor: fillArea ? topColor : 'rgba(0, 0, 0, 0)',
+			});
+		}
+	}, [fillArea, view]);
 
-	const formatTime = (timestamp: number) => {
-		if (timeframe === '1H') return format(timestamp, 'HH:mm');
-		if (timeframe === '6H' || timeframe === '1D') return format(timestamp, 'ha');
-		if (timeframe === '1W') return format(timestamp, 'MMM d');
-		if (timeframe === '1M') return format(timestamp, 'MMM d');
-		return format(timestamp, 'MMM yyyy'); // ALL
-	};
+	useEffect(() => {
+		fetchKlines(timeframe);
+	}, [symbol, timeframe, view]);
 
-	const last = data[data.length - 1];
-	const yesProb = (Number(last.YesPrice) / (Number(last.YesPrice) + Number(last.NoPrice))) * 100;
-	const noProb = (Number(last.NoPrice) / (Number(last.YesPrice) + Number(last.NoPrice))) * 100;
+	useEffect(() => {
+		// Real-time update
+		if (seriesRef.current) {
+			const value = view === 'yes' ? yesPrice : noPrice;
+			const currentTime = Math.floor(Date.now() / 1000) as Time;
+			
+			// We try to update, if lightweight charts throws an error because of time being older, we catch it
+			try {
+				seriesRef.current.update({
+					time: currentTime,
+					value: value,
+				});
+			} catch (e) {
+				console.log('Skipping real-time update due to time constraint');
+			}
+		}
+	}, [yesPrice, noPrice, view]);
+
+	const yesProb = yesPrice * 10;
+	const noProb = noPrice * 10;
 
 	const getRemainingTime = (endDateStr?: string) => {
 		if (!endDateStr) return '--';
@@ -113,106 +214,46 @@ export default function TimelineChart({ data, volume = 0, traders = 0, overview 
 		return `${minutes}m`;
 	};
 
-	// Calculate Y-domain for auto scaling
-	const yDomain = autoScale ? ['dataMin - 1', 'dataMax + 1'] : [0, 10];
-
 	return (
-		<Card className="bg-background rounded-2xl border shadow-none">
-			<div className="flex items-center justify-between p-4 pb-0">
+		<Card className="bg-background rounded-2xl border shadow-none relative overflow-hidden group">
+			<div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-border to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+			
+			<div className="flex items-center justify-between p-4 pb-2">
 				<div className="flex items-center gap-3">
 					<button
 						onClick={() => setView(view === 'yes' ? 'no' : 'yes')}
-						className={`p-2.5 rounded-md transition ${view === 'yes' ? 'bg-blue-500/10' : 'bg-red-500/10'}`}
+						className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm ${view === 'yes' ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
 					>
 						<ArrowRightLeft
 							className={`h-4 w-4 ${view === 'yes' ? 'text-blue-500' : 'text-red-500'}`}
 						/>
 					</button>
 
-					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground">
+					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground tracking-wide">
 						{view.toUpperCase()} PROBABILITY
-						<span className={`text-base font-bold ${view === 'yes' ? 'text-blue-500' : 'text-red-500'}`}>
+						<span className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-blue-500' : 'text-red-500'}`}>
 							{view === 'yes' ? Math.round(yesProb) : Math.round(noProb)}%
 						</span>
 					</div>
 				</div>
 			</div>
 
-			<CardContent className="grid gap-4 pt-4 relative">
-				<div className="relative h-72 w-full flex">
-					<div className="flex-1">
-						<ResponsiveContainer width="100%" height="100%">
-							<AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-								<defs>
-									<linearGradient id="colorYes" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-										<stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-									</linearGradient>
-									<linearGradient id="colorNo" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-										<stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-									</linearGradient>
-								</defs>
-								{showGridHorizontal || showGridVertical ? (
-									<CartesianGrid 
-										strokeDasharray="3 3" 
-										horizontal={showGridHorizontal} 
-										vertical={showGridVertical} 
-										stroke="currentColor" 
-										className="opacity-10" 
-									/>
-								) : null}
-								{showXAxis && (
-									<XAxis 
-										dataKey="time" 
-										tickFormatter={formatTime} 
-										tickLine={false} 
-										axisLine={false} 
-										minTickGap={30}
-										className="text-[10px] fill-muted-foreground"
-									/>
-								)}
-								{showYAxis && (
-									<YAxis 
-										domain={yDomain} 
-										tickLine={false} 
-										axisLine={false} 
-										width={35}
-										className="text-[10px] fill-muted-foreground"
-										tickFormatter={(val) => displayFormat === 'probability' ? `${val}%` : `₹${Number(val).toFixed(1)}`}
-									/>
-								)}
-								<Tooltip
-									formatter={(value: any, name: any) => [
-										displayFormat === 'probability' 
-											? `${value}%` 
-											: displayFormat === 'price' 
-												? `₹${Number(value).toFixed(1)}` 
-												: `₹${Number(value).toFixed(1)} (${value}%)`, 
-										name.toUpperCase()
-									]}
-									labelFormatter={(label) => format(label, 'MMM d, yyyy HH:mm')}
-									contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--foreground)', fontSize: '12px' }}
-									cursor={{ strokeDasharray: '4 4', stroke: '#9ca3af' }}
-								/>
-								<Area
-									type="stepAfter"
-									dataKey={view}
-									stroke={view === 'yes' ? '#3b82f6' : '#ef4444'}
-									fill={view === 'yes' ? 'url(#colorYes)' : 'url(#colorNo)'}
-									strokeWidth={2}
-									dot={false}
-									isAnimationActive
-									animationDuration={700}
-								/>
-							</AreaChart>
-						</ResponsiveContainer>
-					</div>
+			<CardContent className="grid gap-2 pt-2 relative">
+				<div className="relative h-72 w-full flex rounded-lg overflow-hidden">
+					{loading && (
+						<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 transition-all duration-300">
+							<div className="flex flex-col items-center gap-2">
+								<div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+								<span className="text-muted-foreground text-xs font-medium">Loading historical data...</span>
+							</div>
+						</div>
+					)}
+					<div className="flex-1" ref={chartContainerRef} />
 				</div>
 
 				{/* Bottom Header: Stats & Timeframes */}
-				<div className="flex flex-col md:flex-row items-center justify-between mt-2 pt-4 border-t border-border/50 gap-4">
-					<div className="flex items-center gap-5 text-xs font-bold w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+				<div className="flex flex-col md:flex-row items-center justify-between mt-2 pt-4 border-t border-border/40 gap-4">
+					<div className="flex items-center gap-5 text-xs font-medium w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
 							<TrendingUp className="w-3.5 h-3.5 text-muted-foreground" /> 
 							<span className="text-foreground">₹{(volume || 0).toLocaleString()}</span>
@@ -228,82 +269,86 @@ export default function TimelineChart({ data, volume = 0, traders = 0, overview 
 					</div>
 
 					<div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-						<div className="flex items-center gap-1 p-1">
-							{(['1H', '6H', '1D', '1W', '1M', 'ALL'] as Timeframe[]).map((tf) => (
+						<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
+							{(['1m', '5m', '15m', '1h', '4h', '1d'] as Timeframe[]).map((tf) => (
 								<button 
 									key={tf} 
 									onClick={() => setTimeframe(tf)}
-									className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${timeframe === tf ? 'text-foreground bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+									className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all duration-200 ${timeframe === tf ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
 								>
-									{tf}
+									{tf.toUpperCase()}
 								</button>
 							))}
-						</div>
-						<div className="relative" ref={settingsRef}>
-							<button 
-								onClick={() => setShowSettings((prev) => !prev)}
-								className={`p-1.5 rounded-lg transition-colors ${showSettings ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-							>
-								<Settings className="w-4 h-4" />
-							</button>
-
-							<AnimatePresence>
-								{showSettings && (
-									<motion.div
-										initial={{ opacity: 0, scale: 0.95, y: 5 }}
-										animate={{ opacity: 1, scale: 1, y: 0 }}
-										exit={{ opacity: 0, scale: 0.95, y: 5 }}
-										transition={{ duration: 0.15 }}
-										className="absolute right-0 bottom-full mb-2 z-50 w-56 bg-card border border-border rounded-xl shadow-xl p-4 space-y-4"
-									>
-										<div>
-											<h4 className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-3">Chart Settings</h4>
-											<div className="space-y-3">
-												<ToggleSwitch label="Auto Scale" checked={autoScale} onChange={setAutoScale} />
-												<ToggleSwitch label="Show X-Axis" checked={showXAxis} onChange={setShowXAxis} />
-												<ToggleSwitch label="Show Y-Axis" checked={showYAxis} onChange={setShowYAxis} />
-												<ToggleSwitch label="Horizontal Grid" checked={showGridHorizontal} onChange={setShowGridHorizontal} />
-												<ToggleSwitch label="Vertical Grid" checked={showGridVertical} onChange={setShowGridVertical} />
+							<Popover>
+								<PopoverTrigger asChild>
+									<button className="px-2 py-1.5 ml-1 text-muted-foreground hover:text-foreground transition-colors border-l border-border/50 pl-3">
+										<Settings2 className="w-4 h-4" />
+									</button>
+								</PopoverTrigger>
+								<PopoverContent className="w-56 p-3" align="end">
+									<div className="space-y-3">
+										<h4 className="font-medium text-sm leading-none mb-3">Chart Settings</h4>
+										
+										<div className="space-y-2">
+											<div className="flex items-center justify-between">
+												<label htmlFor="fill-area" className="text-xs text-muted-foreground font-medium">Fill Area</label>
+												<input 
+													id="fill-area"
+													type="checkbox" 
+													checked={fillArea}
+													onChange={(e) => setFillArea(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
+											</div>
+											<div className="flex items-center justify-between">
+												<label htmlFor="crosshair" className="text-xs text-muted-foreground font-medium">Crosshair</label>
+												<input 
+													id="crosshair"
+													type="checkbox" 
+													checked={showCrosshair}
+													onChange={(e) => setShowCrosshair(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
+											</div>
+											<div className="flex items-center justify-between">
+												<label htmlFor="log-scale" className="text-xs text-muted-foreground font-medium">Logarithmic Scale</label>
+												<input 
+													id="log-scale"
+													type="checkbox" 
+													checked={isLogScale}
+													onChange={(e) => setIsLogScale(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
+											</div>
+											<div className="h-px bg-border/50 w-full my-2"></div>
+											<div className="flex items-center justify-between">
+												<label htmlFor="grid-x" className="text-xs text-muted-foreground font-medium">Vertical Grid</label>
+												<input 
+													id="grid-x"
+													type="checkbox" 
+													checked={showGridX}
+													onChange={(e) => setShowGridX(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
+											</div>
+											<div className="flex items-center justify-between">
+												<label htmlFor="grid-y" className="text-xs text-muted-foreground font-medium">Horizontal Grid</label>
+												<input 
+													id="grid-y"
+													type="checkbox" 
+													checked={showGridY}
+													onChange={(e) => setShowGridY(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
 											</div>
 										</div>
-										<div className="pt-3 border-t border-border">
-											<h4 className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-3">Display Mode</h4>
-											<div className="flex bg-muted/50 p-1 rounded-lg border border-border/50">
-												{(['price', 'probability', 'both'] as const).map((mode) => (
-													<button
-														key={mode}
-														onClick={() => setDisplayFormat(mode)}
-														className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-md transition-colors ${displayFormat === mode ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-													>
-														{mode}
-													</button>
-												))}
-											</div>
-										</div>
-									</motion.div>
-								)}
-							</AnimatePresence>
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 					</div>
 				</div>
 			</CardContent>
 		</Card>
-	);
-}
-
-function ToggleSwitch({ label, checked, onChange }: { label: string, checked: boolean, onChange: (v: boolean) => void }) {
-	return (
-		<label 
-			className="flex items-center justify-between cursor-pointer group"
-			onClick={(e) => {
-				e.preventDefault();
-				onChange(!checked);
-			}}
-		>
-			<span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{label}</span>
-			<div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? 'bg-blue-500' : 'bg-muted-foreground/30'}`}>
-				<span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-4.5' : 'translate-x-1'}`} style={{ transform: checked ? 'translateX(18px)' : 'translateX(2px)' }} />
-			</div>
-		</label>
 	);
 }

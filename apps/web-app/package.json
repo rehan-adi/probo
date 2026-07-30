@@ -40,6 +40,7 @@
 		"date-fns": "^4.4.0",
 		"framer-motion": "^12.23.12",
 		"jwt-decode": "^4.0.0",
+		"lightweight-charts": "^5.2.0",
 		"lucide-react": "^0.542.0",
 		"react": "^19.1.0",
 		"react-datepicker": "^8.4.0",
