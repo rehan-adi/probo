@@ -142,3 +142,40 @@ export const getWatchlist = async (c: Context) => {
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };
+
+export const getUserTrades = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+		const limit = Number(c.req.query('limit') || 50);
+
+		const trades = await prisma.trade.findMany({
+			where: { 
+				OR: [
+					{ makerId: user.id },
+					{ takerId: user.id }
+				]
+			},
+			orderBy: { createdAt: 'desc' },
+			take: limit > 100 ? 100 : limit,
+			select: {
+				id: true,
+				marketId: true,
+				makerId: true,
+				takerId: true,
+				stockType: true,
+				takerAction: true,
+				price: true,
+				quantity: true,
+				matchType: true,
+				createdAt: true,
+			}
+		});
+
+		return c.json({ success: true, data: trades });
+	} catch (error: any) {
+		logger.error({ context: 'GET_USER_TRADES', message: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};

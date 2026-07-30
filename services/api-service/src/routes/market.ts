@@ -8,6 +8,9 @@ import {
 	getMarketsByCategory,
 	resolveMarket,
 	searchMarkets,
+	getMarketKlines,
+	getMarketTrades,
+	getMarketStats,
 } from '@/controllers/market';
 
 export const marketRoutes = new Hono();
@@ -20,3 +23,6 @@ marketRoutes.post('/resolve', authorization, resolveMarket);
 
 marketRoutes.get('/search', searchMarkets);
 marketRoutes.get('/:symbol', getMarketDetails);
+marketRoutes.get('/:symbol/klines', getMarketKlines);
+marketRoutes.get('/:symbol/trades', getMarketTrades);
+marketRoutes.get('/:symbol/stats', getMarketStats);

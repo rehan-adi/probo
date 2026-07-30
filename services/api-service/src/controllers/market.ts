@@ -536,6 +536,7 @@ export const getMarketDetails = async (c: Context) => {
 					startTime: true,
 					sourceOfTruth: true,
 					status: true,
+					numberOfTraders: true,
 					category: {
 						select: { categoryName: true }
 					}
@@ -549,12 +550,12 @@ export const getMarketDetails = async (c: Context) => {
 			if (marketDetails) {
 				const orders = await prisma.order.findMany({
 					where: { marketId: marketDetails.id },
-					select: { price: true, tradedQuantity: true, userId: true },
+					select: { price: true, filledQuantity: true, userId: true },
 				});
 				
 				const uniqueTraders = new Set<string>();
 				for (const o of orders) {
-					volume += Number(o.price) * o.tradedQuantity;
+					volume += Number(o.price) * o.filledQuantity;
 					uniqueTraders.add(o.userId);
 				}
 				if (uniqueTraders.size > 0) {
@@ -596,12 +597,12 @@ export const getMarketDetails = async (c: Context) => {
 		if (marketId) {
 			const orders = await prisma.order.findMany({
 				where: { marketId },
-				select: { price: true, tradedQuantity: true, userId: true },
+				select: { price: true, filledQuantity: true, userId: true },
 			});
 			
 			const uniqueTraders = new Set<string>();
 			for (const o of orders) {
-				volume += Number(o.price) * o.tradedQuantity;
+				volume += Number(o.price) * o.filledQuantity;
 				uniqueTraders.add(o.userId);
 			}
 			tradersCount = uniqueTraders.size;
@@ -709,5 +710,160 @@ export const searchMarkets = async (c: Context) => {
 	} catch (error: any) {
 		logger.error({ context: 'SEARCH_MARKETS', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
+
+export const getMarketKlines = async (c: Context) => {
+	const symbol = c.req.param('symbol');
+	const resolution = c.req.query('resolution') || '1m';
+	const from = c.req.query('from');
+	const to = c.req.query('to');
+
+	try {
+		const market = await prisma.market.findUnique({
+			where: { symbol },
+			select: { id: true },
+		});
+
+		if (!market) {
+			return c.json({ success: false, message: 'Market not found' }, 404);
+		}
+
+		let timeBucket = '1 minute';
+		switch (resolution) {
+			case '1m': timeBucket = '1 minute'; break;
+			case '5m': timeBucket = '5 minutes'; break;
+			case '15m': timeBucket = '15 minutes'; break;
+			case '1h': timeBucket = '1 hour'; break;
+			case '4h': timeBucket = '4 hours'; break;
+			case '1d': timeBucket = '1 day'; break;
+			default: timeBucket = '1 minute';
+		}
+
+		let timeFilter = '';
+		const params: any[] = [market.id];
+		let paramIndex = 2;
+
+		if (from) {
+			timeFilter += ` AND bucket >= $${paramIndex}`;
+			params.push(new Date(Number(from) * 1000));
+			paramIndex++;
+		}
+		if (to) {
+			timeFilter += ` AND bucket <= $${paramIndex}`;
+			params.push(new Date(Number(to) * 1000));
+			paramIndex++;
+		}
+
+		const query = `
+			SELECT 
+				time_bucket('${timeBucket}', bucket) AS time,
+				first(open, bucket) AS open,
+				max(high) AS high,
+				min(low) AS low,
+				last(close, bucket) AS close,
+				sum(volume) AS volume
+			FROM trade_candles_1m
+			WHERE "marketId" = $1 ${timeFilter}
+			GROUP BY time
+			ORDER BY time ASC
+		`;
+
+		const klines = await prisma.$queryRawUnsafe(query, ...params);
+
+		return c.json({
+			success: true,
+			data: klines,
+		});
+	} catch (error) {
+		console.error(error);
+		return c.json({ success: false, message: 'Failed to fetch klines' }, 500);
+	}
+};
+
+export const getMarketTrades = async (c: Context) => {
+	const symbol = c.req.param('symbol');
+	const limit = Number(c.req.query('limit') || 50);
+
+	try {
+		const market = await prisma.market.findUnique({
+			where: { symbol },
+			select: { id: true },
+		});
+
+		if (!market) {
+			return c.json({ success: false, message: 'Market not found' }, 404);
+		}
+
+		const trades = await prisma.trade.findMany({
+			where: { marketId: market.id },
+			orderBy: { createdAt: 'desc' },
+			take: limit > 100 ? 100 : limit,
+			select: {
+				id: true,
+				makerId: true,
+				takerId: true,
+				stockType: true,
+				takerAction: true,
+				price: true,
+				quantity: true,
+				matchType: true,
+				createdAt: true,
+			}
+		});
+
+		return c.json({
+			success: true,
+			data: trades,
+		});
+	} catch (error) {
+		console.error(error);
+		return c.json({ success: false, message: 'Failed to fetch trades' }, 500);
+	}
+};
+
+export const getMarketStats = async (c: Context) => {
+	const symbol = c.req.param('symbol');
+	
+	try {
+		const market = await prisma.market.findUnique({
+			where: { symbol },
+			select: { id: true, yesPrice: true, noPrice: true, volume: true },
+		});
+
+		if (!market) {
+			return c.json({ success: false, message: 'Market not found' }, 404);
+		}
+
+		// 24h stats
+		const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+		const query = `
+			SELECT 
+				max(high) AS high,
+				min(low) AS low,
+				sum(volume) AS volume24h,
+				first(open, bucket) AS open24h
+			FROM trade_candles_1m
+			WHERE "marketId" = $1 AND bucket >= $2
+		`;
+
+		const stats: any[] = await prisma.$queryRawUnsafe(query, market.id, oneDayAgo);
+		
+		return c.json({
+			success: true,
+			data: {
+				currentYesPrice: market.yesPrice,
+				currentNoPrice: market.noPrice,
+				totalVolume: market.volume,
+				high24h: stats[0]?.high || market.yesPrice,
+				low24h: stats[0]?.low || market.yesPrice,
+				volume24h: stats[0]?.volume24h || 0,
+				open24h: stats[0]?.open24h || market.yesPrice,
+			},
+		});
+	} catch (error) {
+		console.error(error);
+		return c.json({ success: false, message: 'Failed to fetch market stats' }, 500);
 	}
 };
