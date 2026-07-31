@@ -2,18 +2,22 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import EventsPage from '@/pages/Events';
 import WalletPage from '@/pages/Wallet';
-import Navbar from '@/components/Navbar';
+import NavbarV2 from '@/components/NavbarV2';
 import Footer from '@/components/Footer';
 import SearchPage from '@/pages/Search';
 import PrivateRoute from './PrivateRoute';
 import RechargePage from '@/pages/Recharge';
 import WithdrawPage from '@/pages/Withdraw';
 import NotFoundPage from '@/pages/NotFound';
+import BlogPage from '@/pages/Blog';
+import AboutPage from '@/pages/About';
+import TermsPage from '@/pages/Terms';
+import PrivacyPage from '@/pages/Privacy';
 import { useAuthStore } from '@/store/auth';
 import EventDetails from '@/pages/EventDetails';
 import CreateEvent from '@/pages/admin/CreateEvent';
 import VerificationgePage from '@/pages/Verification';
-import OnboardModal from '@/components/modals/OnboardModal';
+import AuthModal from '@/components/modals/AuthModal';
 import TransactionHistoryPage from '@/pages/TransactionHistory';
 import VerificationListsPage from '@/pages/admin/VerificationLists';
 import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
@@ -23,6 +27,7 @@ import Portfolio from '@/pages/Portfolio';
 import AdminDashboard from '@/pages/Admin';
 
 import { useThemeStore } from '@/store/theme';
+import { useModalStore } from '@/store/modal';
 
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
@@ -41,6 +46,13 @@ function App() {
 		}
 	}, [theme, hydrate]);
 
+	const user = useAuthStore((state) => state.user);
+	useEffect(() => {
+		if (isHydrated && user && user.onboardingStatus !== 'COMPLETED') {
+			useModalStore.getState().openOnboardModal();
+		}
+	}, [isHydrated, user]);
+
 	if (!isHydrated) {
 		return (
 			<div className="w-full bg-[#f4f4f5] flex justify-center items-center h-screen">
@@ -52,14 +64,21 @@ function App() {
 	return (
 		<BrowserRouter>
 			<Toaster position="bottom-center" richColors />
-			<Navbar />
-			<OnboardModal />
+			<div className="min-h-screen flex flex-col">
+				<NavbarV2 />
+				<AuthModal />
+				<main className="flex-grow pt-[64px]">
 			<Routes>
 				{/* public routes  */}
 				<Route path="/" element={<Navigate to="/events" replace />} />
 				<Route path="/events" element={<EventsPage />} />
 				<Route path="/events/:symbol" element={<EventDetails />} />
 				<Route path="/search" element={<SearchPage />} />
+				
+				<Route path="/about" element={<AboutPage />} />
+				<Route path="/blog" element={<BlogPage />} />
+				<Route path="/privacy" element={<PrivacyPage />} />
+				<Route path="/terms" element={<TermsPage />} />
 
 				{/* all private routes */}
 				<Route element={<PrivateRoute />}>
@@ -81,7 +100,9 @@ function App() {
 				</Route>
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>
+			</main>
 			<Footer />
+			</div>
 		</BrowserRouter>
 	);
 }

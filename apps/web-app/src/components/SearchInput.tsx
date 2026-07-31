@@ -29,6 +29,7 @@ export default function SearchInput() {
 	const [results, setResults] = useState<any[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 
 	const debouncedQuery = useDebounce(query, 300);
 
@@ -43,6 +44,17 @@ export default function SearchInput() {
 	}, []);
 
 	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+				e.preventDefault();
+				inputRef.current?.focus();
+			}
+		};
+		document.addEventListener('keydown', handleKeyDown);
+		return () => document.removeEventListener('keydown', handleKeyDown);
+	}, []);
+
+	useEffect(() => {
 		if (debouncedQuery.trim().length > 0) {
 			fetchResults(debouncedQuery);
 		} else {
@@ -53,7 +65,7 @@ export default function SearchInput() {
 	const fetchResults = async (q: string) => {
 		setIsLoading(true);
 		try {
-			const res = await axios.get(`http://localhost:3000/api/v1/markets/search?q=${q}&limit=6`, {
+			const res = await axios.get(`http://localhost:3000/api/v1/market/search?q=${q}&limit=6`, {
 				withCredentials: true,
 			});
 			if (res.data?.success) {
@@ -72,13 +84,14 @@ export default function SearchInput() {
 	};
 
 	return (
-		<div className="relative w-full max-w-md hidden md:block" ref={dropdownRef}>
-			<div className="relative flex items-center">
-				<Search className="absolute left-3 w-4 h-4 text-gray-500" />
+		<div className="relative w-full max-w-lg hidden md:block" ref={dropdownRef}>
+			<div className="relative flex items-center group">
+				<Search className="absolute left-3.5 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
 				<input
+					ref={inputRef}
 					type="text"
 					placeholder="Search markets..."
-					className="w-full bg-card border border-border text-foreground rounded-md pl-9 pr-8 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+					className="w-full bg-[#F4F5F6] dark:bg-slate-800 text-gray-900 dark:text-gray-100 rounded-md pl-10 pr-10 py-2.5 text-[15px] focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm transition-all placeholder:text-gray-500"
 					value={query}
 					onChange={(e) => {
 						setQuery(e.target.value);
@@ -86,9 +99,13 @@ export default function SearchInput() {
 					}}
 					onFocus={() => setIsOpen(true)}
 				/>
-				{query && (
+				{!query ? (
+					<div className="absolute right-3.5 text-gray-400 font-semibold text-sm pointer-events-none transition-opacity group-focus-within:opacity-0">
+						/
+					</div>
+				) : (
 					<button
-						className="absolute right-3 text-gray-500 hover:text-foreground"
+						className="absolute right-3.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors bg-transparent rounded-md p-0.5"
 						onClick={() => setQuery('')}
 					>
 						<X className="w-4 h-4" />

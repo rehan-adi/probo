@@ -1,4 +1,4 @@
-import { logout } from '@/api/auth';
+// Removed unused import
 import SearchInput from './SearchInput';
 import BottomNavbar from './BottomNavbar';
 import { NavLink } from 'react-router-dom';
@@ -50,12 +50,7 @@ export default function Navbar() {
 
 	const handleLogout = async () => {
 		try {
-			const response = await logout();
-
-			if (response.status == 200) {
-				useAuthStore.getState().logout();
-				navigate('/');
-			}
+			await useAuthStore.getState().logout();
 		} catch (error) {
 			console.error('Logout failed', error);
 		}

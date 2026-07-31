@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getAllCategoary } from '@/api/category';
 
 interface Category {
@@ -6,13 +7,10 @@ interface Category {
 	categoryName: string;
 }
 
-interface CategoryNavProps {
-	selectedCategoryId: string;
-	onCategoryChange: (categoryId: string, categoryName: string) => void;
-}
-
-export default function CategoryNav({ selectedCategoryId, onCategoryChange }: CategoryNavProps) {
+export default function CategoryNav() {
 	const [categories, setCategories] = useState<Category[]>([]);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const selectedCategoryName = searchParams.get('category') || 'All Events';
 
 	useEffect(() => {
 		const fetchCategories = async () => {
@@ -27,22 +25,34 @@ export default function CategoryNav({ selectedCategoryId, onCategoryChange }: Ca
 		fetchCategories();
 	}, []);
 
+	const handleCategoryChange = (name: string) => {
+		if (name === 'All Events') {
+			setSearchParams({});
+		} else {
+			setSearchParams({ category: name });
+		}
+	};
+
 	return (
-		<div className="flex gap-8 mb-4 border-b lg:px-5 border-gray-400/20 pb-2 overflow-x-auto scrollbar-hide">
-			{categories.map((cat) => (
-				<button
-					key={cat.id}
-					onClick={() => onCategoryChange(cat.id, cat.categoryName)}
-					className={`relative pb-2 md:text-sm text-xs whitespace-nowrap transition-colors duration-200 ${
-						selectedCategoryId === cat.id ? 'text-black font-semibold' : 'text-[#545454]'
-					}`}
-				>
-					{cat.categoryName}
-					{selectedCategoryId === cat.id && (
-						<span className="absolute left-0 right-0 -bottom-[8px] h-[1px] bg-black" />
-					)}
-				</button>
-			))}
+		<div className="w-full bg-white dark:bg-[#090C1A] border-b border-gray-100 dark:border-gray-800 transition-colors">
+			<div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-8 overflow-x-auto scrollbar-hide">
+				{categories.map((cat) => (
+					<button
+						key={cat.id}
+						onClick={() => handleCategoryChange(cat.categoryName)}
+						className={`relative h-full flex items-center md:text-[15px] text-sm whitespace-nowrap transition-colors duration-300 cursor-pointer ${
+							selectedCategoryName === cat.categoryName 
+								? 'text-black dark:text-white font-semibold' 
+								: 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+						}`}
+					>
+						{cat.categoryName}
+						{selectedCategoryName === cat.categoryName && (
+							<span className="absolute left-0 right-0 bottom-0 h-[2px] bg-black dark:bg-white transition-colors" />
+						)}
+					</button>
+				))}
+			</div>
 		</div>
 	);
 }
