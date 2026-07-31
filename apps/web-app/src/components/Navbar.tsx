@@ -1,52 +1,48 @@
-// Removed unused import
+import { useTranslation } from 'react-i18next';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+	Menu, Gift, Bell, ChevronDown, User,
+	LogOut, Settings, Briefcase, Info
+} from 'lucide-react';
 import SearchInput from './SearchInput';
-import BottomNavbar from './BottomNavbar';
-import { NavLink } from 'react-router-dom';
+import CategoryNav from './CategoryNav';
+import MenuModal from './modals/MenuModal';
 import { useAuthStore } from '@/store/auth';
-import { useModalStore } from '@/store/modal';
-import { useThemeStore } from '@/store/theme';
 import logo from '@/assets/images/logo.avif';
-import { LINKS } from '@/constants/constants';
+import { useModalStore } from '@/store/modal';
 import pfpIcon from '@/assets/images/pfp.avif';
-import { useEffect, useRef, useState } from 'react';
 import walletIcon from '@/assets/images/wallet.svg';
-import { Link, useNavigate } from 'react-router-dom';
-import homeActiveIcon from '@/assets/images/home.svg';
-import homeIcon from '@/assets/images/home-active.svg';
-import portfolioIcon from '@/assets/images/portfolio.svg';
+import HowItWorksModal from './modals/HowItWorksModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBalanceQuery } from '@/hooks/queries/balance';
-import LogoutModalIcon from '@/assets/images/LogoutModal.svg';
-import portfolioAtiveIcon from '@/assets/images/portfolio-active.svg';
-import { ChevronDown, ClipboardCheck, LogOut, Menu, Store, X } from 'lucide-react';
 
 export default function Navbar() {
-	const navigate = useNavigate();
-
+	const { t } = useTranslation();
+	const location = useLocation();
+	const isEventsPage = location.pathname === '/events' || location.pathname === '/';
 	const { user } = useAuthStore();
 	const { openOnboardModal } = useModalStore();
+	const { data: balance, isLoading: balanceLoading } = useBalanceQuery();
 
-	const [isOpen, setIsOpen] = useState(false);
-	const [menuOpen, setMenuOpen] = useState(false);
-	const [showLogoutModal, setShowLogoutModal] = useState(false);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isProfileOpen, setIsProfileOpen] = useState(false);
+	const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+	const [showHowItWorks, setShowHowItWorks] = useState(false);
 
 	const menuRef = useRef<HTMLDivElement>(null);
-
-	const toggleMenu = () => setMenuOpen((prev) => !prev);
+	const profileRef = useRef<HTMLDivElement>(null);
+	const notifRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-				setMenuOpen(false);
-			}
+		const handleClickOutside = (e: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
+			if (profileRef.current && !profileRef.current.contains(e.target as Node)) setIsProfileOpen(false);
+			if (notifRef.current && !notifRef.current.contains(e.target as Node)) setIsNotificationOpen(false);
 		};
-
 		document.addEventListener('mousedown', handleClickOutside);
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
+		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, []);
-
-	const { data: balance, isLoading } = useBalanceQuery();
 
 	const handleLogout = async () => {
 		try {
@@ -57,382 +53,182 @@ export default function Navbar() {
 	};
 
 	return (
-		<nav className="w-full bg-[#f4f4f5] fixed px-4 lg:px-12 z-50 custom-px">
-			<div className="md:h-16 h-12 border-b border-gray-300/50 flex items-center justify-between">
-				<div className="flex items-center gap-6 lg:gap-14 flex-1">
-					<Link to="/events" className="shrink-0">
-						<img src={logo} className="md:w-[120px] w-[67px] md:h-8 h-[18px]" alt="Logo" />
-					</Link>
-					
-					<SearchInput />
+		<>
+			<nav className="w-full bg-white dark:bg-[#090C1A] fixed top-0 z-[50] transition-colors flex flex-col">
+				<div className={`w-full px-6 ${isEventsPage ? '' : 'border-b border-gray-100 dark:border-gray-800'}`}>
+					<div className="max-w-7xl mx-auto h-16 flex items-center justify-between gap-4">
 
-					{!user && (
-						<div className="hidden md:flex items-center gap-9 lg:gap-9 custom-gap text-sm">
-							<a
-								href={LINKS.team}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Team 11
-							</a>
-							<a
-								href={LINKS.read}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Read
-							</a>
-							<a
-								href={LINKS.trust}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Trust & Safety
-							</a>
-							<a
-								href={LINKS.careers}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Careers
-							</a>
-							<a
-								href={LINKS.about}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								About us
-							</a>
+						<div className="flex items-center gap-6 flex-1">
+							<Link to="/events" className="shrink-0">
+								<img src={logo} className="w-[112px] md:w-[130px] object-contain" alt="Logo" />
+							</Link>
+
+							<div className="hidden md:flex items-center gap-4 flex-1 max-w-[500px]">
+								<div className="w-full">
+									<SearchInput />
+								</div>
+							</div>
 						</div>
-					)}
+
+						<div className="flex items-center gap-2 lg:gap-2 shrink-0">
+
+							{!user && (
+								<>
+									<button
+										onClick={() => setShowHowItWorks(true)}
+										className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-black dark:text-white bg-gray-100 dark:bg-slate-800 transition-colors cursor-pointer"
+									>
+										<div className="flex items-center justify-center">
+											<Info size={14} className="text-black dark:text-white" />
+										</div>
+										{t('How it works')}
+									</button>
+
+									<button
+										onClick={openOnboardModal}
+										className="bg-black dark:bg-white text-white dark:text-black font-medium text-sm px-4 py-1.5 rounded-md hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+									>
+										{t('Sign In')}
+									</button>
+
+									<div ref={menuRef} className="relative hidden lg:block" onMouseLeave={() => setIsMenuOpen(false)}>
+										<button
+											onMouseEnter={() => setIsMenuOpen(true)}
+											className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-700 dark:text-gray-300"
+										>
+											<Menu size={22} />
+										</button>
+										<AnimatePresence>
+											{isMenuOpen && (
+												<MenuModal onClose={() => setIsMenuOpen(false)} />
+											)}
+										</AnimatePresence>
+									</div>
+								</>
+							)}
+
+							{user?.role === 'USER' && (
+								<div className="flex items-center gap-4 lg:gap-6">
+									{/* Refer & Earn */}
+									<div className="hidden lg:flex group relative items-center gap-2 cursor-pointer p-2 rounded-xl hover:bg-orange-50 text-orange-600 transition-all overflow-hidden w-10 hover:w-[130px]">
+										<Gift size={20} className="shrink-0" />
+										<span className="whitespace-nowrap text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+											{t('Refer & Earn')}
+										</span>
+									</div>
+
+									{/* Notifications */}
+									<div ref={notifRef} className="relative">
+										<button
+											onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+											className="p-2.5 rounded-xl hover:bg-gray-100 transition-colors text-gray-600 relative"
+										>
+											<Bell size={20} />
+											<span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+										</button>
+										<AnimatePresence>
+											{isNotificationOpen && (
+												<motion.div
+													initial={{ opacity: 0, y: 10, scale: 0.95 }}
+													animate={{ opacity: 1, y: 0, scale: 1 }}
+													exit={{ opacity: 0, y: 10, scale: 0.95 }}
+													className="absolute right-0 top-12 w-64 bg-white shadow-xl rounded-xl border border-gray-100 p-4 text-center z-50"
+												>
+													<Bell size={32} className="mx-auto text-gray-300 mb-2" />
+													<p className="text-sm font-medium text-gray-800">No new notifications</p>
+													<p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
+												</motion.div>
+											)}
+										</AnimatePresence>
+									</div>
+
+									{/* Wallet */}
+									<Link
+										to="/wallet"
+										className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+									>
+										<img src={walletIcon} alt="Wallet" className="w-4 h-4" />
+										<span className="font-semibold text-sm">
+											₹{balanceLoading ? '0' : balance?.data?.data?.amount ?? 0}
+										</span>
+									</Link>
+
+									<div className="hidden lg:block w-px h-6 bg-gray-200" /> {/* Divider */}
+
+									{/* Profile */}
+									<div ref={profileRef} className="relative">
+										<div
+											onMouseEnter={() => setIsProfileOpen(true)}
+											className="flex items-center gap-1.5 cursor-pointer p-1 rounded-full hover:bg-gray-50 transition-colors"
+										>
+											<img src={pfpIcon} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-gray-200" />
+											<ChevronDown size={16} className="text-gray-500" />
+										</div>
+
+										<AnimatePresence>
+											{isProfileOpen && (
+												<div onMouseLeave={() => setIsProfileOpen(false)}>
+													<motion.div
+														initial={{ opacity: 0, y: 10 }}
+														animate={{ opacity: 1, y: 0 }}
+														exit={{ opacity: 0, y: 10 }}
+														className="absolute right-0 top-12 w-56 bg-white shadow-xl rounded-xl py-2 border border-gray-100 z-50"
+													>
+														<div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 mb-1">
+															<img src={pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+															<div className="flex flex-col">
+																<span className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+																	@{user.username || 'User'}
+																</span>
+															</div>
+														</div>
+
+														<div className="flex flex-col gap-0.5 px-2">
+															<Link to="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
+																<User size={16} className="text-gray-400" /> {t('Profile')}
+															</Link>
+															<Link to="/portfolio" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
+																<Briefcase size={16} className="text-gray-400" /> {t('Portfolio')}
+															</Link>
+															<Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
+																<Settings size={16} className="text-gray-400" /> {t('Settings')}
+															</Link>
+
+															<div className="h-px bg-gray-100 my-1 mx-2" />
+
+															<button
+																onClick={handleLogout}
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 text-sm font-medium text-red-600 transition-colors w-full text-left"
+															>
+																<LogOut size={16} /> Logout
+															</button>
+														</div>
+													</motion.div>
+												</div>
+											)}
+										</AnimatePresence>
+									</div>
+								</div>
+							)}
+						</div>
+					</div>
 				</div>
+				{isEventsPage && <CategoryNav />}
+			</nav>
+			{isEventsPage && <div className="h-12 w-full" />}
 
-				{user?.role == 'USER' && (
-					<div className="flex justify-between items-center lg:gap-8 gap-4">
-						<NavLink
-							to="/events"
-							end
-							className="md:flex hidden justify-center items-center flex-col"
-						>
-							{({ isActive }) => (
-								<>
-									<img
-										src={isActive ? homeActiveIcon : homeIcon}
-										alt="Home icon"
-										className="w-5 h-6"
-									/>
-									<span className="text-sm">Home</span>
-								</>
-							)}
-						</NavLink>
-						<NavLink
-							to="/portfolio"
-							end
-							className="md:flex hidden justify-center items-center flex-col"
-						>
-							{({ isActive }) => (
-								<>
-									<img
-										src={isActive ? portfolioAtiveIcon : portfolioIcon}
-										alt="Home icon"
-										className="w-5 h-6"
-									/>
-									<span className="text-sm">Portfolio</span>
-								</>
-							)}
-						</NavLink>
-						<Link
-							to="/wallet"
-							className="lg:py-2 py-1 pl-3 pr-8 gap-6 border rounded border-gray-300/50 flex items-center hover:bg-gray-100 transition"
-						>
-							<img src={walletIcon} alt="Wallet icon" className="w-4 h-4" />
-							{isLoading ? (
-								<span className="text-gray-800 text-sm font-semibold">₹0</span>
-							) : (
-								<span className="text-gray-800 text-sm font-semibold">
-									₹{balance?.data.data.amount ?? 0}
-								</span>
-							)}
-						</Link>
+			{user?.role === 'USER' && (
+				<BottomNavbar
+					onOpenSearch={() => { }}
+					onOpenMenu={() => setIsMenuOpen(true)}
+				/>
+			)}
 
-						<div
-							ref={menuRef}
-							className="relative flex justify-center gap-0.5 items-center cursor-pointer"
-						>
-							<div onClick={toggleMenu} className="flex items-center gap-0.5">
-								<img
-									src={pfpIcon}
-									alt="Profile icon"
-									className="lg:w-10 w-8 lg:h-10 h-8 rounded-full"
-								/>
-								<ChevronDown size={22} className="text-foreground" />
-							</div>
-
-							{menuOpen && (
-								<div className="absolute right-6 top-12 bg-background shadow-md rounded-md py-2 px-4 text-sm border border-border flex flex-col z-50">
-									<button
-										onClick={() => {
-											useThemeStore.getState().toggleTheme();
-										}}
-										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
-									>
-										{useThemeStore.getState().theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-									</button>
-									<button
-										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
-									>
-										English
-									</button>
-									<button
-										onClick={() => setShowLogoutModal(true)}
-										className="flex items-center cursor-pointer justify-start px-1 pr-12 py-2 gap-2 text-left w-full text-sm font-medium text-destructive hover:bg-muted rounded"
-									>
-										<LogOut size={22} /> Logout
-									</button>
-								</div>
-							)}
-						</div>
-
-						{showLogoutModal && (
-							<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-3.5 sm:px-0 ">
-								<div className="relative w-full max-w-sm sm:max-w-[600px] bg-white flex justify-center items-center flex-col rounded-xl px-5 py-4 text-center shadow-lg">
-									<button
-										onClick={() => setShowLogoutModal(false)}
-										className="absolute top-3.5 text-gray-500 right-4"
-									>
-										<X />
-									</button>
-
-									{/* Icon and Content */}
-									<img
-										src={LogoutModalIcon}
-										className="w-[70px] mt-9 mb-1.5 sm:mb-2.5 h-20"
-										alt=""
-									/>
-									<h2 className="text-base sm:text-2xl font-semibold">
-										Are you sure you want to log out?
-									</h2>
-
-									{/* Buttons */}
-									<div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-6 mt-4 mb-2 sm:mb-0">
-										<button
-											onClick={() => setShowLogoutModal(false)}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-card text-foreground rounded-xl text-sm font-semibold border border-border cursor-pointer hover:bg-muted"
-										>
-											Cancel
-										</button>
-										<button
-											onClick={handleLogout}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-[#262626] text-white rounded-xl text-sm font-semibold"
-										>
-											Logout
-										</button>
-									</div>
-								</div>
-							</div>
-						)}
-
-						<BottomNavbar />
-					</div>
+			<AnimatePresence>
+				{showHowItWorks && (
+					<HowItWorksModal onClose={() => setShowHowItWorks(false)} />
 				)}
-
-				{!(user?.role === 'USER' || user?.role === 'ADMIN') && (
-					<>
-						<div className="hidden lg:flex items-center gap-4">
-							<div className="whitespace-nowrap text-xs text-right">
-								<span className="block text-foreground">
-									For 18 years and <br />
-									<span>above only</span>
-								</span>
-							</div>
-
-							<button className="bg-background text-foreground font-semibold text-sm px-4 lg:px-8 py-2 border border-border cursor-pointer rounded hover:bg-muted">
-								Download App
-							</button>
-
-							<button
-								onClick={openOnboardModal}
-								className="bg-primary cursor-pointer text-primary-foreground font-semibold text-sm px-5 lg:px-8 py-2 border border-border rounded hover:opacity-90"
-							>
-								Login/Signup
-							</button>
-							
-							<div ref={menuRef} className="relative">
-								<button className="cursor-pointer flex items-center justify-center p-2 rounded hover:bg-muted text-foreground" onClick={toggleMenu}>
-									<Menu size={25} className="w-6 h-6" />
-								</button>
-								{menuOpen && (
-									<div className="absolute right-0 top-12 bg-background shadow-md rounded-md py-2 px-4 text-sm border border-border flex flex-col z-50 min-w-[150px]">
-										<button
-											onClick={() => {
-												useThemeStore.getState().toggleTheme();
-											}}
-											className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded"
-										>
-											{useThemeStore.getState().theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-										</button>
-										<button className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded">
-											Leaderboard
-										</button>
-										<button className="flex items-center cursor-pointer justify-start px-2 py-2 gap-2 text-left w-full text-sm font-medium text-foreground hover:bg-muted rounded">
-											English
-										</button>
-									</div>
-								)}
-							</div>
-						</div>
-
-						<div className="flex lg:hidden items-center gap-3">
-							<button className="cursor-pointer text-foreground" onClick={() => setIsOpen(!isOpen)}>
-								<Menu size={25} className="w-5 h-7" />
-							</button>
-						</div>
-					</>
-				)}
-
-				{user?.role === 'ADMIN' && (
-					<div className="flex items-center gap-8">
-						<a href="/events/create" className="flex flex-col items-center cursor-pointer">
-							<Store className="w-5 h-5" />
-							<span className="text-sm md:flex hidden text-[#262626]">Create Event</span>
-						</a>
-
-						<a href="/verifications" className="flex flex-col items-center cursor-pointer">
-							<ClipboardCheck className="w-5 h-5" />
-							<span className="text-sm md:flex hidden text-[#262626]">Verifications</span>
-						</a>
-						<div
-							ref={menuRef}
-							className="relative flex justify-center gap-0.5 items-center cursor-pointer"
-						>
-							<div onClick={toggleMenu} className="flex items-center gap-0.5">
-								<img
-									src={pfpIcon}
-									alt="Profile icon"
-									className="lg:w-10 w-8 lg:h-10 h-8 rounded-full"
-								/>
-								<ChevronDown size={22} />
-							</div>
-
-							{menuOpen && (
-								<div className="absolute right-6 top-12 bg-[#f4f4f5] shadow-md rounded-md py-2 px-4 text-sm border border-gray-400/25 flex flex-col z-50">
-									<button
-										onClick={() => setShowLogoutModal(true)}
-										className="flex items-center cursor-pointer justify-start px-1 pr-24 py-1.5 gap-2 text-left w-full text-sm font-medium text-gray-700"
-									>
-										<LogOut size={22} /> Logout
-									</button>
-								</div>
-							)}
-						</div>
-
-						{showLogoutModal && (
-							<div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-3.5 sm:px-0 ">
-								<div className="relative w-full max-w-sm sm:max-w-[600px] bg-white flex justify-center items-center flex-col rounded-xl px-5 py-4 text-center shadow-lg">
-									<button
-										onClick={() => setShowLogoutModal(false)}
-										className="absolute top-3.5 text-gray-500 right-4"
-									>
-										<X />
-									</button>
-
-									<img
-										src={LogoutModalIcon}
-										className="w-[70px] mt-9 mb-1.5 sm:mb-2.5 h-20"
-										alt=""
-									/>
-									<h2 className="text-base sm:text-2xl font-semibold">
-										Are you sure you want to log out?
-									</h2>
-
-									{/* Buttons */}
-									<div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-6 mt-4 mb-2 sm:mb-0">
-										<button
-											onClick={() => setShowLogoutModal(false)}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-card text-foreground rounded-xl text-sm font-semibold border border-border cursor-pointer hover:bg-muted"
-										>
-											Cancel
-										</button>
-										<button
-											onClick={handleLogout}
-											className="px-[120px] sm:px-28 py-[9px] sm:py-[13px] w-full bg-[#262626] text-white rounded-xl text-sm font-semibold"
-										>
-											Logout
-										</button>
-									</div>
-								</div>
-							</div>
-						)}
-					</div>
-				)}
-
-				{!user && isOpen && (
-					<div className="fixed inset-0 bg-black/40 z-50" onClick={() => setIsOpen(false)}>
-						<div
-							className={`fixed top-0 right-0 w-60 h-full bg-[#f4f4f5] z-50 px-5 py-3.5 flex flex-col gap-6 text-sm transition-transform duration-300 transform ${
-								isOpen ? 'translate-x-0' : 'translate-x-full'
-							}`}
-							onClick={(e) => e.stopPropagation()}
-						>
-							<button
-								className="self-end cursor-pointer text-xl font-semibold"
-								onClick={() => setIsOpen(false)}
-							>
-								<X />
-							</button>
-
-							<a
-								href="https://probo.in/team-11"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Team 11
-							</a>
-							<a
-								href="https://probo.in/read"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Read
-							</a>
-							<a
-								href="https://probo.in/trust&safety"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Trust & Safety
-							</a>
-							<a
-								href="https://probo.in/careers"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Careers
-							</a>
-
-							<button className="bg-background text-foreground font-semibold text-sm px-4 py-2 border border-border cursor-pointer rounded hover:bg-muted">
-								Download App
-							</button>
-
-							<button
-								onClick={openOnboardModal}
-								className="bg-[#262626] text-white font-semibold text-sm px-4 py-2 border border-gray-500/10 cursor-pointer rounded"
-							>
-								Login/Signup
-							</button>
-						</div>
-					</div>
-				)}
-			</div>
-		</nav>
+			</AnimatePresence>
+		</>
 	);
 }

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import EventsPage from '@/pages/Events';
 import WalletPage from '@/pages/Wallet';
-import NavbarV2 from '@/components/NavbarV2';
+import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchPage from '@/pages/Search';
 import PrivateRoute from './PrivateRoute';
@@ -64,8 +64,8 @@ function App() {
 	return (
 		<BrowserRouter>
 			<Toaster position="bottom-center" richColors />
-			<div className="min-h-screen flex flex-col">
-				<NavbarV2 />
+			<div className="flex flex-col min-h-screen">
+				<Navbar />
 				<AuthModal />
 				<main className="flex-grow pt-[64px]">
 			<Routes>
