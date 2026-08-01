@@ -9,7 +9,7 @@ export default function Footer() {
 	const year = new Date().getFullYear();
 
 	return (
-		<footer className="bg-white dark:bg-[#090C1A] border-t border-gray-100 dark:border-gray-800 px-6 py-10 md:py-12 text-sm text-gray-600 dark:text-gray-400 pb-8 md:pb-10 transition-colors">
+		<footer className="bg-white dark:bg-[#090C1A] border-t border-gray-100 dark:border-gray-800 px-6 py-10 md:py-12 text-sm text-gray-600 dark:text-gray-400 pb-20 md:pb-10 transition-colors">
 			<div className="max-w-7xl mx-auto flex flex-col gap-8 md:gap-10">
 
 				{/* Top Row: Logo */}
