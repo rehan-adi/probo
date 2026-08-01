@@ -1,18 +1,23 @@
+import { Toaster } from 'sonner';
 import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
-import EventsPage from '@/pages/Events';
-import WalletPage from '@/pages/Wallet';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import SearchPage from '@/pages/Search';
-import PrivateRoute from './PrivateRoute';
-import RechargePage from '@/pages/Recharge';
-import WithdrawPage from '@/pages/Withdraw';
-import NotFoundPage from '@/pages/NotFound';
 import BlogPage from '@/pages/Blog';
 import AboutPage from '@/pages/About';
 import TermsPage from '@/pages/Terms';
+import { Loader2 } from 'lucide-react';
+import EventsPage from '@/pages/Events';
+import WalletPage from '@/pages/Wallet';
+import SearchPage from '@/pages/Search';
+import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
+import Portfolio from '@/pages/Portfolio';
+import ProfilePage from '@/pages/Profile';
+import PrivateRoute from './PrivateRoute';
 import PrivacyPage from '@/pages/Privacy';
+import AdminDashboard from '@/pages/Admin';
+import RechargePage from '@/pages/Recharge';
+import WithdrawPage from '@/pages/Withdraw';
+import SettingsPage from '@/pages/Settings';
+import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
 import EventDetails from '@/pages/EventDetails';
 import CreateEvent from '@/pages/admin/CreateEvent';
@@ -22,9 +27,6 @@ import TransactionHistoryPage from '@/pages/TransactionHistory';
 import VerificationListsPage from '@/pages/admin/VerificationLists';
 import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import Portfolio from '@/pages/Portfolio';
-import AdminDashboard from '@/pages/Admin';
 
 import { useThemeStore } from '@/store/theme';
 import { useModalStore } from '@/store/modal';
@@ -32,13 +34,12 @@ import { useModalStore } from '@/store/modal';
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
 	const isHydrated = useAuthStore((state) => state.isHydrated);
-	
+
 	const theme = useThemeStore((state) => state.theme);
 
 	useEffect(() => {
 		hydrate();
-		
-		// Initialize theme class
+
 		if (theme === 'dark') {
 			document.documentElement.classList.add('dark');
 		} else {
@@ -68,40 +69,41 @@ function App() {
 				<Navbar />
 				<AuthModal />
 				<main className="flex-grow pt-[64px]">
-			<Routes>
-				{/* public routes  */}
-				<Route path="/" element={<Navigate to="/events" replace />} />
-				<Route path="/events" element={<EventsPage />} />
-				<Route path="/events/:symbol" element={<EventDetails />} />
-				<Route path="/search" element={<SearchPage />} />
-				
-				<Route path="/about" element={<AboutPage />} />
-				<Route path="/blog" element={<BlogPage />} />
-				<Route path="/privacy" element={<PrivacyPage />} />
-				<Route path="/terms" element={<TermsPage />} />
+					<Routes>
+						{/* public routes  */}
+						<Route path="/" element={<Navigate to="/events" replace />} />
+						<Route path="/events" element={<EventsPage />} />
+						<Route path="/events/:symbol" element={<EventDetails />} />
+						<Route path="/search" element={<SearchPage />} />
 
-				{/* all private routes */}
-				<Route element={<PrivateRoute />}>
-					{/* user specific routes */}
-					<Route path="/wallet">
-						<Route index element={<WalletPage />} />
-						<Route path="recharge" element={<RechargePage />} />
-						<Route path="withdraw" element={<WithdrawPage />} />
-					</Route>
-					<Route path="/portfolio" element={<Portfolio />} />
-					<Route path="/verification" element={<VerificationgePage />} />
-					<Route path="/transaction-history" element={<TransactionHistoryPage />} />
+						<Route path="/about" element={<AboutPage />} />
+						<Route path="/blog" element={<BlogPage />} />
+						<Route path="/privacy" element={<PrivacyPage />} />
+						<Route path="/terms" element={<TermsPage />} />
 
-					{/* admin specific routes  */}
-					<Route path="/admin" element={<AdminDashboard />} />
-					<Route path="/events/create" element={<CreateEvent />} />
-					<Route path="/verifications" element={<VerificationListsPage />} />
-					<Route path="/verifications/:id" element={<VerificationDetailsPage />} />
-				</Route>
-				<Route path="*" element={<NotFoundPage />} />
-			</Routes>
-			</main>
-			<Footer />
+						{/* all private routes */}
+						<Route element={<PrivateRoute />}>
+							<Route path="/wallet">
+								<Route index element={<WalletPage />} />
+								<Route path="recharge" element={<RechargePage />} />
+								<Route path="withdraw" element={<WithdrawPage />} />
+							</Route>
+							<Route path="/portfolio" element={<Portfolio />} />
+							<Route path="/settings" element={<SettingsPage />} />
+							<Route path="/profile/:username" element={<ProfilePage />} />
+							<Route path="/profile" element={<Navigate to="/settings" replace />} />
+							<Route path="/verification" element={<VerificationgePage />} />
+							<Route path="/transaction-history" element={<TransactionHistoryPage />} />
+
+							<Route path="/admin" element={<AdminDashboard />} />
+							<Route path="/events/create" element={<CreateEvent />} />
+							<Route path="/verifications" element={<VerificationListsPage />} />
+							<Route path="/verifications/:id" element={<VerificationDetailsPage />} />
+						</Route>
+						<Route path="*" element={<NotFoundPage />} />
+					</Routes>
+				</main>
+				<Footer />
 			</div>
 		</BrowserRouter>
 	);

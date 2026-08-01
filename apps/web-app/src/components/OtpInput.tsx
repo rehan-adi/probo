@@ -45,7 +45,7 @@ export default function OTPInput({
 	};
 
 	return (
-		<div className="flex md:gap-4 gap-3 mb-3 justify-start">
+		<div className="flex gap-2 sm:gap-3 mb-3 justify-center w-full">
 			{[...Array(6)].map((_, i) => (
 				<input
 					key={i}
@@ -57,7 +57,7 @@ export default function OTPInput({
 					value={value[i] || ''}
 					onChange={(e) => handleChange(e.target.value, i)}
 					onKeyDown={(e) => handleKeyDown(e, i)}
-					className="md:w-12 w-10 md:h-12 h-10 border border-gray-300/80 rounded-md text-center text-lg focus:outline-none"
+					className="w-12 h-14 sm:w-14 sm:h-16 border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl text-center text-2xl font-bold focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 text-gray-900 dark:text-white transition-all shadow-sm"
 				/>
 			))}
 		</div>

@@ -22,15 +22,7 @@ export const useVerifyMutation = () => {
 		onSuccess: (response) => {
 			const { data, token } = response.data;
 
-			useAuthStore.getState().setUserWithToken(
-				{
-					id: data.id,
-					phone: data.phone,
-					role: data.role,
-					isNewUser: data.isNewUser,
-				},
-				token,
-			);
+			useAuthStore.getState().login(data);
 		},
 		onError: (error) => {
 			console.error('Failed to verify', error);

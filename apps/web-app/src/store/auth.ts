@@ -1,70 +1,70 @@
 import { create } from 'zustand';
-import { jwtDecode } from 'jwt-decode';
+import api from '@/config/axios';
 
-interface User {
+export type OnboardingStatus = 'PENDING_USERNAME' | 'PENDING_PREFERENCES' | 'COMPLETED';
+
+export interface User {
 	id: string;
-	phone: string;
+	email?: string;
+	phone?: string;
+	username?: string;
+	avatarUrl?: string;
 	role: string;
 	isNewUser?: boolean;
+	onboardingStatus: OnboardingStatus;
 }
 
 interface AuthState {
 	user: User | null;
-	token: string | null;
+	isAuthenticated: boolean;
 	isHydrated: boolean;
-	login: (token: string) => void;
+	login: (user: User) => void;
 	logout: () => void;
-	hydrate: () => void;
-	setUserWithToken: (user: User, token: string) => void;
-	isLoggedIn: () => boolean;
+	updateUser: (data: Partial<User>) => void;
+	hydrate: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
 	user: null,
-	token: null,
+	isAuthenticated: false,
 	isHydrated: false,
 
-	login: (token) => {
+	login: (user) => {
+		set({ user, isAuthenticated: true });
+	},
+
+	logout: async () => {
 		try {
-			const decoded = jwtDecode<User>(token);
-			localStorage.setItem('token', token);
-			set({ user: decoded, token });
-		} catch (err) {
-			console.error('Invalid token:', err);
+			await api.post('/auth/logout');
+		} catch (error) {
+			console.error('Logout failed on backend', error);
+		} finally {
+			set({ user: null, isAuthenticated: false });
 		}
 	},
 
-	setUserWithToken: (user, token) => {
-		localStorage.setItem('token', token);
-		set({ user, token });
+	updateUser: (data) => {
+		const currentUser = get().user;
+		if (currentUser) {
+			set({ user: { ...currentUser, ...data } });
+		}
 	},
 
-	logout: () => {
-		localStorage.removeItem('token');
-		set({ user: null, token: null });
-	},
-
-	hydrate: () => {
-		const token = localStorage.getItem('token');
-		let decodedUser: User | null = null;
-
-		if (token) {
-			try {
-				decodedUser = jwtDecode<User>(token);
-			} catch (err) {
-				console.error('Failed to decode token:', err);
+	hydrate: async () => {
+		try {
+			const response = await api.get('/auth/me');
+			if (response.data && response.data.success) {
+				set({
+					user: response.data.data,
+					isAuthenticated: true,
+					isHydrated: true,
+				});
+			} else {
+				set({ user: null, isAuthenticated: false, isHydrated: true });
 			}
+		} catch (error) {
+			// 401 means not authenticated, which is fine, just means no session
+			set({ user: null, isAuthenticated: false, isHydrated: true });
 		}
-
-		set({
-			token: token || null,
-			user: decodedUser,
-			isHydrated: true,
-		});
-	},
-
-	isLoggedIn: () => {
-		const token = localStorage.getItem('token');
-		return !!token;
 	},
 }));
