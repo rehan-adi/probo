@@ -1,6 +1,8 @@
-import { Home, Search, Menu } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useAuthStore } from '@/store/auth';
 import { useTranslation } from 'react-i18next';
+import { Home, Search, Menu } from 'lucide-react';
+import walletIcon from '@/assets/images/wallet.svg';
 
 export default function BottomNavbar({ 
 	onOpenSearch, 
@@ -10,37 +12,54 @@ export default function BottomNavbar({
 	onOpenMenu: () => void;
 }) {
 	const { t } = useTranslation();
+	const { user } = useAuthStore();
 
-	return (
-		<div className="fixed bottom-0 w-full bg-white border-t border-gray-200 py-2 px-6 flex justify-between items-center z-50 md:hidden pb-safe">
+	const renderNavLinks = () => (
+		<>
 			<NavLink
 				to="/events"
 				end
 				className={({ isActive }) => 
-					`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`
+					`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
 				}
 			>
-				<Home size={22} className="stroke-[2.5]" />
-				<span className="text-[10px] font-semibold">{t('Home')}</span>
-			</NavLink>
-
-			<NavLink 
-				to="/search"
-				className={({ isActive }) => 
-					`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black' : 'text-gray-400 hover:text-gray-600'}`
-				}
-			>
-				<Search size={22} className="stroke-[2.5]" />
-				<span className="text-[10px] font-semibold">{t('Search')}</span>
+				<Home size={22} className="stroke-[2]" />
+				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Home')}</span>
 			</NavLink>
 
 			<button 
-				onClick={onOpenMenu}
-				className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 transition-colors"
+				onClick={onOpenSearch}
+				className={`flex flex-col items-center gap-1 transition-colors text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white`}
 			>
-				<Menu size={22} className="stroke-[2.5]" />
-				<span className="text-[10px] font-semibold">{t('More')}</span>
+				<Search size={22} className="stroke-[2]" />
+				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Search')}</span>
 			</button>
+
+			{user?.role === 'USER' ? (
+				<NavLink
+					to="/wallet"
+					className={({ isActive }) => 
+						`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
+					}
+				>
+					<img src={walletIcon} alt="Wallet" className="w-[22px] h-[22px] opacity-80" />
+					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Wallet')}</span>
+				</NavLink>
+			) : (
+				<button 
+					onClick={onOpenMenu}
+					className="flex flex-col items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+				>
+					<Menu size={22} className="stroke-[2]" />
+					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('More')}</span>
+				</button>
+			)}
+		</>
+	);
+
+	return (
+		<div className="fixed bottom-0 w-full bg-white dark:bg-[#090C1A] border-t border-gray-200 dark:border-gray-800 py-2 px-12 flex justify-between items-center z-50 md:hidden pb-safe">
+			{renderNavLinks()}
 		</div>
 	);
 }

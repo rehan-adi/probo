@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, X, Flame, TrendingUp, Clock, Target, DollarSign, Activity } from 'lucide-react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
-import axios from 'axios';
+import { useState, useEffect, useRef } from 'react';
+import { Search, X, Flame, TrendingUp, Clock, Target, DollarSign, Activity } from 'lucide-react';
 
 const BROWSE_CATEGORIES = [
 	{ id: 'new', name: 'New', icon: <Target className="w-4 h-4" /> },
@@ -11,15 +11,6 @@ const BROWSE_CATEGORIES = [
 	{ id: 'liquid', name: 'Liquid', icon: <DollarSign className="w-4 h-4" /> },
 	{ id: 'ending-soon', name: 'Ending Soon', icon: <Clock className="w-4 h-4" /> },
 	{ id: 'competitive', name: 'Competitive', icon: <Activity className="w-4 h-4" /> },
-];
-
-const HOT_TOPICS = [
-	{ id: 'live-crypto', name: 'Live Crypto', icon: '📈' },
-	{ id: 'politics', name: 'Politics', icon: '🏛️' },
-	{ id: 'middle-east', name: 'Middle East', icon: '🌍' },
-	{ id: 'crypto', name: 'Crypto', icon: '₿' },
-	{ id: 'sports', name: 'Sports', icon: '🏀' },
-	{ id: 'pop-culture', name: 'Pop Culture', icon: '🍿' },
 ];
 
 export default function SearchInput() {
@@ -86,7 +77,7 @@ export default function SearchInput() {
 	return (
 		<div className="relative w-full max-w-lg hidden md:block" ref={dropdownRef}>
 			<div className="relative flex items-center group">
-				<Search className="absolute left-3.5 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+				<Search className="absolute left-3.5 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
 				<input
 					ref={inputRef}
 					type="text"
@@ -128,21 +119,6 @@ export default function SearchInput() {
 									>
 										{cat.icon}
 										<span>{cat.name}</span>
-									</button>
-								))}
-							</div>
-
-							<h3 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider">
-								Category
-							</h3>
-							<div className="grid grid-cols-2 gap-2">
-								{HOT_TOPICS.map((topic) => (
-									<button
-										key={topic.id}
-										className="flex items-center gap-3 px-3 py-2 text-sm bg-background border border-border hover:bg-muted rounded-xl text-foreground text-left"
-									>
-										<span className="text-lg">{topic.icon}</span>
-										<span className="font-medium">{topic.name}</span>
 									</button>
 								))}
 							</div>
