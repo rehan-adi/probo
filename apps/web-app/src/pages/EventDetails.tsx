@@ -56,8 +56,7 @@ interface Market {
 export default function EventDetails() {
 	const { symbol } = useParams<{ symbol: string }>();
 
-	const { isLoggedIn } = useAuthStore();
-	const loggedIn = isLoggedIn();
+	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
 	const [market, setMarket] = useState<Market | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -188,13 +187,13 @@ export default function EventDetails() {
 			.get(`/market/${symbol}`)
 			.then((res) => {
 				setMarket(res.data.data);
-				if (loggedIn && res.data.data) {
+				if (isAuthenticated && res.data.data) {
 					checkBookmark(res.data.data.marketId);
 				}
 			})
 			.catch((err) => console.error('Error fetching market details:', err))
 			.finally(() => setLoading(false));
-	}, [symbol, loggedIn]);
+	}, [symbol, isAuthenticated]);
 
 	const checkBookmark = async (marketId: string) => {
 		try {
@@ -209,7 +208,7 @@ export default function EventDetails() {
 	};
 
 	const toggleBookmark = async () => {
-		if (!market || !loggedIn) return;
+		if (!market || !isAuthenticated) return;
 		try {
 			if (isBookmarked) {
 				await api.delete(`/profile/watchlist/${market.marketId}`);
@@ -261,8 +260,8 @@ export default function EventDetails() {
 
 	return (
 		<div className="w-full bg-background min-h-screen py-4 flex items-start justify-center text-foreground transition-colors">
-			<div className="flex gap-12 w-full px-[128px] pt-20 max-[1220px]:px-[40px] max-[640px]:px-[20px]">
-				<div className="w-[70%] max-[1160px]:w-[65%] max-[970px]:w-full">
+			<div className="flex gap-12 max-w-7xl mx-auto w-full px-6 pt-4 md:pt-8 flex-col lg:flex-row">
+				<div className="w-full lg:w-[65%]">
 					<div className="flex justify-between items-start mb-8 gap-4">
 						<div className="flex items-start gap-4">
 							<div className="w-16 h-16 md:w-[72px] md:h-[72px] shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
@@ -523,7 +522,7 @@ export default function EventDetails() {
 				</div>
 
 				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden">
-					{loggedIn ? (
+					{isAuthenticated ? (
 						<PlaceOrder
 							symbol={market.symbol}
 							marketId={market.marketId}
@@ -591,7 +590,7 @@ export default function EventDetails() {
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
-						{loggedIn ? (
+						{isAuthenticated ? (
 							<PlaceOrder
 								symbol={market.symbol}
 								marketId={market.marketId}
