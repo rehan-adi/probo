@@ -24,7 +24,7 @@ export default function Search() {
 
 		setIsLoading(true);
 		try {
-			const res = await axios.get(`http://localhost:3000/api/v1/markets/search?q=${searchQuery}&page=${pageNum}&limit=10`, {
+			const res = await axios.get(`http://localhost:3000/api/v1/market/search?q=${searchQuery}&page=${pageNum}&limit=10`, {
 				withCredentials: true,
 			});
 			if (res.data?.success) {
