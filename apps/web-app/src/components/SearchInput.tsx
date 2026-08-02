@@ -77,7 +77,7 @@ export default function SearchInput() {
 	return (
 		<div className="relative w-full max-w-lg hidden md:block" ref={dropdownRef}>
 			<div className="relative flex items-center group">
-				<Search className="absolute left-3.5 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+				<Search className="absolute left-3.5 w-4 h-4 text-gray-400 group-focus-within:text-gray-900 dark:group-focus-within:text-gray-100 transition-colors" />
 				<input
 					ref={inputRef}
 					type="text"
@@ -109,13 +109,14 @@ export default function SearchInput() {
 					{query.trim().length === 0 ? (
 						<div className="p-4">
 							<h3 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider">
-								Browse
+								Browse Categories
 							</h3>
 							<div className="flex flex-wrap gap-2 mb-6">
 								{BROWSE_CATEGORIES.map((cat) => (
 									<button
 										key={cat.id}
-										className="flex items-center gap-2 px-3 py-1.5 text-sm bg-background border border-border hover:bg-muted rounded-full text-foreground"
+										onClick={() => handleNavigate(`/category/${cat.id}`)}
+										className="flex items-center gap-2 px-3 py-1.5 text-sm bg-background border border-border hover:bg-gray-200 dark:hover:bg-muted rounded-full text-foreground cursor-pointer transition-colors"
 									>
 										{cat.icon}
 										<span>{cat.name}</span>
@@ -142,7 +143,7 @@ export default function SearchInput() {
 										<button
 											key={market.id}
 											onClick={() => handleNavigate(`/events/${market.symbol}`)}
-											className="flex items-center gap-3 px-4 py-3 hover:bg-muted text-left"
+											className="flex items-center gap-3 px-4 py-3 hover:bg-gray-200 dark:hover:bg-muted text-left"
 										>
 											<img
 												src={market.thumbnail || 'https://via.placeholder.com/40'}
