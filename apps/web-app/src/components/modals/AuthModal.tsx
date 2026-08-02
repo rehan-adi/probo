@@ -43,7 +43,7 @@ export default function AuthModal() {
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [onboardModalOpen, closeOnboardModal]);
 
-	const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+	const handleDragEnd = (info: PanInfo) => {
 		if (info.offset.y > 100 || info.velocity.y > 500) {
 			closeOnboardModal();
 		}
@@ -52,8 +52,8 @@ export default function AuthModal() {
 	const modalVariants = isMobile
 		? {
 			hidden: { y: '100%' },
-			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 200 } },
-			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 200 } }
+			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
+			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } }
 		}
 		: {
 			hidden: { opacity: 0, scale: 0.95 },
@@ -85,22 +85,22 @@ export default function AuthModal() {
 						dragConstraints={{ top: 0 }}
 						dragElastic={0.2}
 						onDragEnd={handleDragEnd}
-						className="w-full md:w-[720px] bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col md:flex-row overflow-hidden md:h-[420px] max-h-[90vh]"
+						className="w-full md:w-[720px] h-[85vh] md:h-[420px] bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col md:flex-row overflow-hidden"
 					>
 
 						{isMobile && (
 							<div
-								className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing shrink-0 z-20 absolute top-0 bg-transparent touch-none"
+								className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing z-20 touch-none shrink-0 bg-white dark:bg-[#1C1C1E] rounded-t-[24px]"
 								onPointerDown={(e) => dragControls.start(e)}
 							>
 								<div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
 							</div>
 						)}
 
-						<div className="w-full h-full flex flex-col md:flex-row overflow-y-auto scrollbar-hide pt-10 md:pt-0">
+						<div className="w-full h-full flex flex-col md:flex-row overflow-y-auto scrollbar-hide pt-2 md:pt-0">
 
 							{/* Left Panel - Marketing / Brand */}
-							<div className="w-full md:w-[42%] bg-blue-600 relative overflow-hidden flex flex-col justify-between p-8 md:p-10 shrink-0">
+							<div className="hidden md:flex w-full md:w-[42%] bg-blue-600 relative overflow-hidden flex-col justify-between p-8 md:p-10 shrink-0">
 								{/* Background CSS Art */}
 								<div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-800" />
 
@@ -114,7 +114,7 @@ export default function AuthModal() {
 									<div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
 										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
 									</div>
-									
+
 									<div className="text-white mt-auto">
 										<h2 className="text-2xl font-bold mb-3 tracking-tight leading-snug">
 											Trade on Real<br />World Events
