@@ -58,5 +58,8 @@
 	"packageManager": "bun@1.2.17",
 	"engines": {
 		"bun": ">=1.2.17"
+	},
+	"dependencies": {
+		"input-otp": "^1.4.2"
 	}
 }
