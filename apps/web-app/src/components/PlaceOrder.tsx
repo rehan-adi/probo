@@ -80,13 +80,13 @@ export default function PlaceOrder({
 	const [activeTab, setActiveTab] = useState<'YES' | 'NO'>('YES');
 	const [orderType, setOrderType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
 
-	const [yesOrderPrice, setYesOrderPrice] = useState(yOrderPrice || 5.0);
-	const [noOrderPrice, setNoOrderPrice] = useState(nOrderPrice || 5.0);
+	const [yesOrderPrice, setYesOrderPrice] = useState<string | number>(yOrderPrice || 5.0);
+	const [noOrderPrice, setNoOrderPrice] = useState<string | number>(nOrderPrice || 5.0);
 	const [shares, setShares] = useState<number | string>(1);
 
 	const activePrice = activeTab === 'YES' ? yesOrderPrice : noOrderPrice;
 	const currentMarketPrice = activeTab === 'YES' ? yPrice : nPrice;
-	const executionPrice = orderType === 'LIMIT' ? activePrice : currentMarketPrice;
+	const executionPrice = orderType === 'LIMIT' ? Number(activePrice) || 0 : currentMarketPrice;
 
 	const numShares = Number(shares) || 0;
 	const estimatedCost = numShares * executionPrice;
@@ -95,18 +95,19 @@ export default function PlaceOrder({
 
 	const handlePriceChange = (val: string) => {
 		if (val === '') {
-			activeTab === 'YES' ? setYesOrderPrice(0) : setNoOrderPrice(0);
+			activeTab === 'YES' ? setYesOrderPrice('') : setNoOrderPrice('');
 			return;
 		}
-		const num = parseFloat(val);
-		if (!isNaN(num) && num >= 0.5 && num <= 9.5) {
-			activeTab === 'YES' ? setYesOrderPrice(num) : setNoOrderPrice(num);
-		}
+		activeTab === 'YES' ? setYesOrderPrice(val) : setNoOrderPrice(val);
 	};
 
 	const handlePlaceOrder = () => {
 		if (numShares <= 0) {
 			toast.error('Amount too low to trade 1 share');
+			return;
+		}
+		if (executionPrice < 0.5 || executionPrice > 9.5) {
+			toast.error('Price must be between 0.5 and 9.5');
 			return;
 		}
 
@@ -138,7 +139,7 @@ export default function PlaceOrder({
 	};
 
 	const isYes = activeTab === 'YES';
-	const bgAccent = isYes ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700';
+	const bgAccent = isYes ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
 
 	return (
 		<div className="bg-card rounded-xl shadow-sm border border-border p-5 w-full flex flex-col font-sans">
@@ -173,7 +174,7 @@ export default function PlaceOrder({
 					value={activeTab}
 					options={['YES', 'NO']}
 					onChange={(v) => setActiveTab(v as 'YES' | 'NO')}
-					colorMap={{ YES: 'text-blue-500', NO: 'text-red-500' }}
+					colorMap={{ YES: 'text-green-500', NO: 'text-red-500' }}
 				/>
 
 				{/* LIMIT / MARKET Dropdown */}
@@ -260,7 +261,7 @@ export default function PlaceOrder({
 					whileTap={{ scale: 0.98 }}
 					onClick={handlePlaceOrder}
 					disabled={isPending}
-					className={`w-full py-4 rounded-xl cursor-pointer text-base font-bold text-white shadow-md transition-all flex justify-center items-center gap-2 ${bgAccent} hover:shadow-lg`}
+					className="w-full py-2.5 rounded-md cursor-pointer text-base font-bold text-white dark:text-black bg-black dark:bg-white shadow-md transition-all flex justify-center items-center gap-2 hover:opacity-90 hover:shadow-lg"
 				>
 					{isPending ? (
 						<Loader2 className="animate-spin w-5 h-5" />

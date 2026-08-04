@@ -53,6 +53,22 @@ interface Market {
 	}
 }
 
+const MOCK_USERS = [
+	{ name: 'Satoshi N.', color: 'from-orange-400 to-red-400', initial: 'S' },
+	{ name: 'Alex H.', color: 'from-blue-400 to-indigo-400', initial: 'A' },
+	{ name: 'Maria G.', color: 'from-pink-400 to-rose-400', initial: 'M' },
+	{ name: 'John D.', color: 'from-emerald-400 to-teal-400', initial: 'J' },
+	{ name: 'TraderX', color: 'from-purple-400 to-fuchsia-400', initial: 'X' },
+	{ name: 'Probo_Whale', color: 'from-indigo-500 to-purple-500', initial: 'P' },
+	{ name: 'CryptoKing', color: 'from-yellow-400 to-orange-500', initial: 'C' },
+];
+
+const getUserMock = (id: string) => {
+	if (!id) return MOCK_USERS[0];
+	const num = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+	return MOCK_USERS[num % MOCK_USERS.length];
+};
+
 export default function EventDetails() {
 	const { symbol } = useParams<{ symbol: string }>();
 
@@ -386,38 +402,41 @@ export default function EventDetails() {
 									<div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40 space-y-1">
 										{market.trades && market.trades.length > 0 ? (
 											<div className="space-y-4">
-												{market.trades.map((trade, idx) => (
-													<div
-														key={idx}
-														className="flex items-center justify-between p-3 bg-white/50 border border-border/40 rounded-xl"
-													>
-														<div className="flex items-center gap-3">
-															<div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-																T
+												{market.trades.map((trade, idx) => {
+													const userMock = getUserMock(trade.takerId || trade.makerId);
+													const actionText = trade.takerAction ? (trade.takerAction.toLowerCase() === 'buy' ? 'bought' : 'sold') : 'traded';
+													const price = Number(trade.price);
+													const total = (trade.quantity * price).toFixed(1);
+													
+													return (
+														<div
+															key={idx}
+															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors rounded-lg"
+														>
+															<div className={`w-8 h-8 rounded-full bg-gradient-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}>
+																{userMock.initial}
 															</div>
 															<div className="flex flex-col">
-																<span className="font-semibold text-sm">Trade Executed</span>
-																<span className="text-xs text-muted-foreground">
-																	{new Date(trade.timestamp).toLocaleTimeString()}
+																<span className="text-sm text-foreground leading-snug">
+																	<span className="font-semibold">{userMock.name}</span> {actionText} <span className="font-bold">{trade.quantity}</span>{' '}
+																	<span className={`font-semibold ${trade.stockType.toLowerCase() === 'yes' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+																		{trade.stockType}
+																	</span>{' '}
+																	at ₹{price.toFixed(1)}{' '}
+																	<span className="text-muted-foreground">(₹{total})</span>
+																</span>
+																<span className="text-xs text-muted-foreground font-medium mt-1">
+																	{(() => {
+																		const diff = Math.floor((new Date().getTime() - new Date(trade.timestamp).getTime()) / 1000);
+																		if (diff < 60) return `${diff}s ago`;
+																		if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+																		return `${Math.floor(diff / 3600)}h ago`;
+																	})()}
 																</span>
 															</div>
 														</div>
-														<div className="flex flex-col items-end">
-															<span className="font-bold text-sm">
-																{trade.quantity} shares
-															</span>
-															<span
-																className={`text-xs font-semibold ${
-																	trade.stockType.toLowerCase() === 'yes'
-																		? 'text-[#00c853]'
-																		: 'text-[#ff3d00]'
-																}`}
-															>
-																{trade.stockType} @ ₹{trade.price}
-															</span>
-														</div>
-													</div>
-												))}
+													);
+												})}
 											</div>
 										) : (
 											<div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -555,7 +574,7 @@ export default function EventDetails() {
 									</div>
 								</div>
 								<div className="flex bg-card p-4 w-full gap-3 rounded-xl border border-border shadow-sm">
-									<button className="text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 cursor-pointer bg-blue-50 dark:bg-blue-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-blue-100 dark:hover:bg-blue-900/50">
+									<button className="text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900 cursor-pointer bg-green-50 dark:bg-green-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-green-100 dark:hover:bg-green-900/50">
 										Yes ₹{market.yesPrice}
 									</button>
 									<button className="text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 cursor-pointer bg-red-50 dark:bg-red-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-red-100 dark:hover:bg-red-900/50">

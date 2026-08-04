@@ -21,12 +21,14 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 	const chartContainerRef = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<'yes' | 'no'>('yes');
 	const [timeframe, setTimeframe] = useState<Timeframe>('1m');
-	
+
 	const [showGridX, setShowGridX] = useState(false);
 	const [showGridY, setShowGridY] = useState(true);
 	const [showCrosshair, setShowCrosshair] = useState(true);
 	const [isLogScale, setIsLogScale] = useState(false);
+	const [isDarkTheme, setIsDarkTheme] = useState(() => document.documentElement.classList.contains('dark'));
 	const [fillArea, setFillArea] = useState(true);
+	const [isDarkChart, setIsDarkChart] = useState(false);
 
 	const chartRef = useRef<IChartApi | null>(null);
 	const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
@@ -38,7 +40,7 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 			const res = await api.get(`/market/${symbol}/klines?resolution=${tf}`);
 			if (res.data?.success) {
 				const rawData = res.data.data || [];
-				
+
 				const data = rawData.map((d: any) => ({
 					time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
 					value: view === 'yes' ? Number(d.close) : 10 - Number(d.close),
@@ -90,44 +92,29 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 			},
 			rightPriceScale: {
 				borderVisible: false,
+				mode: isLogScale ? 1 : 0,
 			},
 			timeScale: {
 				borderVisible: false,
 				timeVisible: true,
-				secondsVisible: false,
 			},
 			crosshair: {
-				vertLine: {
-					color: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
-					width: 1,
-					style: 1,
-					labelBackgroundColor: isDark ? '#27272a' : '#18181b',
-				},
-				horzLine: {
-					color: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
-					width: 1,
-					style: 1,
-					labelBackgroundColor: isDark ? '#27272a' : '#18181b',
-				},
-			},
-			handleScroll: {
-				mouseWheel: true,
-				pressedMouseMove: true,
-			},
-			handleScale: {
-				axisPressedMouseMove: true,
-				mouseWheel: true,
-				pinch: true,
+				vertLine: { visible: showCrosshair, width: 1, color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+				horzLine: { visible: showCrosshair, width: 1, color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
 			},
 			width: chartContainerRef.current.clientWidth,
 			height: 288,
 		});
-		
+
 		chartRef.current = chart;
 
 		const series = chart.addSeries(AreaSeries, {
-			lineColor: view === 'yes' ? '#3b82f6' : '#ef4444',
-			topColor: view === 'yes' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+			lineColor: isDarkChart
+				? (isDarkTheme ? '#ffffff' : '#000000')
+				: (view === 'yes' ? '#22c55e' : '#ef4444'),
+			topColor: isDarkChart
+				? (isDarkTheme ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')
+				: (view === 'yes' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'),
 			bottomColor: 'rgba(0, 0, 0, 0)',
 			lineWidth: 2,
 			priceFormat: {
@@ -144,13 +131,27 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 			window.removeEventListener('resize', handleResize);
 			chart.remove();
 		};
-	}, [view]);
+	}, [view, isDarkTheme]);
+
+	// Observe dark mode changes
+	useEffect(() => {
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				if (mutation.attributeName === 'class') {
+					setIsDarkTheme(document.documentElement.classList.contains('dark'));
+				}
+			}
+		});
+
+		observer.observe(document.documentElement, { attributes: true });
+
+		return () => observer.disconnect();
+	}, []);
 
 	// Dynamically update grid when toggles change
 	useEffect(() => {
 		if (chartRef.current) {
-			const isDark = document.documentElement.classList.contains('dark');
-			const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+			const gridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 			chartRef.current.applyOptions({
 				grid: {
 					vertLines: { visible: showGridX, color: gridColor },
@@ -169,12 +170,20 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 
 	useEffect(() => {
 		if (seriesRef.current) {
-			const topColor = view === 'yes' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+			const lineColor = isDarkChart
+				? (isDarkTheme ? '#ffffff' : '#000000')
+				: (view === 'yes' ? '#22c55e' : '#ef4444');
+
+			const topColor = isDarkChart
+				? (isDarkTheme ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')
+				: (view === 'yes' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+
 			seriesRef.current.applyOptions({
+				lineColor: lineColor,
 				topColor: fillArea ? topColor : 'rgba(0, 0, 0, 0)',
 			});
 		}
-	}, [fillArea, view]);
+	}, [fillArea, view, isDarkChart]);
 
 	useEffect(() => {
 		fetchKlines(timeframe);
@@ -185,7 +194,7 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 		if (seriesRef.current) {
 			const value = view === 'yes' ? yesPrice : noPrice;
 			const currentTime = Math.floor(Date.now() / 1000) as Time;
-			
+
 			// We try to update, if lightweight charts throws an error because of time being older, we catch it
 			try {
 				seriesRef.current.update({
@@ -207,7 +216,7 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 		const now = Date.now();
 		const diff = end - now;
 		if (diff <= 0) return 'Ended';
-		
+
 		const hours = Math.floor(diff / (1000 * 60 * 60));
 		if (hours > 0) return `${hours}h`;
 		const minutes = Math.floor(diff / (1000 * 60));
@@ -217,21 +226,21 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 	return (
 		<Card className="bg-background rounded-2xl border shadow-none relative overflow-hidden group">
 			<div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-border to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-			
+
 			<div className="flex items-center justify-between p-4 pb-2">
 				<div className="flex items-center gap-3">
 					<button
 						onClick={() => setView(view === 'yes' ? 'no' : 'yes')}
-						className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm ${view === 'yes' ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
+						className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm ${view === 'yes' ? 'bg-green-500/10 hover:bg-green-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
 					>
 						<ArrowRightLeft
-							className={`h-4 w-4 ${view === 'yes' ? 'text-blue-500' : 'text-red-500'}`}
+							className={`h-4 w-4 ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
 						/>
 					</button>
 
 					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground tracking-wide">
 						{view.toUpperCase()} PROBABILITY
-						<span className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-blue-500' : 'text-red-500'}`}>
+						<span className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}>
 							{view === 'yes' ? Math.round(yesProb) : Math.round(noProb)}%
 						</span>
 					</div>
@@ -255,15 +264,15 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 				<div className="flex flex-col md:flex-row items-center justify-between mt-2 pt-4 border-t border-border/40 gap-4">
 					<div className="flex items-center gap-5 text-xs font-medium w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
-							<TrendingUp className="w-3.5 h-3.5 text-muted-foreground" /> 
+							<TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
 							<span className="text-foreground">₹{(volume || 0).toLocaleString()}</span>
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
-							<Clock className="w-3.5 h-3.5 text-muted-foreground" /> 
+							<Clock className="w-3.5 h-3.5 text-muted-foreground" />
 							<span className="text-muted-foreground">{getRemainingTime(overview?.EndDate)}</span>
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
-							<Users className="w-3.5 h-3.5 text-muted-foreground" /> 
+							<Users className="w-3.5 h-3.5 text-muted-foreground" />
 							<span className="text-muted-foreground">{traders || 0}</span>
 						</div>
 					</div>
@@ -271,8 +280,8 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 					<div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
 						<div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg border border-border/50">
 							{(['1m', '5m', '15m', '1h', '4h', '1d'] as Timeframe[]).map((tf) => (
-								<button 
-									key={tf} 
+								<button
+									key={tf}
 									onClick={() => setTimeframe(tf)}
 									className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all duration-200 ${timeframe === tf ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
 								>
@@ -288,13 +297,23 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 								<PopoverContent className="w-56 p-3" align="end">
 									<div className="space-y-3">
 										<h4 className="font-medium text-sm leading-none mb-3">Chart Settings</h4>
-										
+
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
+												<label htmlFor="dark-chart" className="text-xs text-muted-foreground font-medium cursor-pointer">Premium Charts</label>
+												<input
+													id="dark-chart"
+													type="checkbox"
+													checked={isDarkChart}
+													onChange={(e) => setIsDarkChart(e.target.checked)}
+													className="accent-primary w-3.5 h-3.5 rounded-sm"
+												/>
+											</div>
+											<div className="flex items-center justify-between">
 												<label htmlFor="fill-area" className="text-xs text-muted-foreground font-medium">Fill Area</label>
-												<input 
+												<input
 													id="fill-area"
-													type="checkbox" 
+													type="checkbox"
 													checked={fillArea}
 													onChange={(e) => setFillArea(e.target.checked)}
 													className="accent-primary w-3.5 h-3.5 rounded-sm"
@@ -302,9 +321,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 											</div>
 											<div className="flex items-center justify-between">
 												<label htmlFor="crosshair" className="text-xs text-muted-foreground font-medium">Crosshair</label>
-												<input 
+												<input
 													id="crosshair"
-													type="checkbox" 
+													type="checkbox"
 													checked={showCrosshair}
 													onChange={(e) => setShowCrosshair(e.target.checked)}
 													className="accent-primary w-3.5 h-3.5 rounded-sm"
@@ -312,9 +331,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 											</div>
 											<div className="flex items-center justify-between">
 												<label htmlFor="log-scale" className="text-xs text-muted-foreground font-medium">Logarithmic Scale</label>
-												<input 
+												<input
 													id="log-scale"
-													type="checkbox" 
+													type="checkbox"
 													checked={isLogScale}
 													onChange={(e) => setIsLogScale(e.target.checked)}
 													className="accent-primary w-3.5 h-3.5 rounded-sm"
@@ -323,9 +342,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 											<div className="h-px bg-border/50 w-full my-2"></div>
 											<div className="flex items-center justify-between">
 												<label htmlFor="grid-x" className="text-xs text-muted-foreground font-medium">Vertical Grid</label>
-												<input 
+												<input
 													id="grid-x"
-													type="checkbox" 
+													type="checkbox"
 													checked={showGridX}
 													onChange={(e) => setShowGridX(e.target.checked)}
 													className="accent-primary w-3.5 h-3.5 rounded-sm"
@@ -333,9 +352,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 											</div>
 											<div className="flex items-center justify-between">
 												<label htmlFor="grid-y" className="text-xs text-muted-foreground font-medium">Horizontal Grid</label>
-												<input 
+												<input
 													id="grid-y"
-													type="checkbox" 
+													type="checkbox"
 													checked={showGridY}
 													onChange={(e) => setShowGridY(e.target.checked)}
 													className="accent-primary w-3.5 h-3.5 rounded-sm"

@@ -1,5 +1,6 @@
 import { api } from '@/lib/axios';
-import { Clock } from 'lucide-react';
+import { socket } from '@/socket';
+import { Bookmark } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import { useModalStore } from '@/store/modal';
@@ -8,12 +9,18 @@ import defaultThumbnail from '@/assets/images/logo.avif';
 import barChartIcon from '@/assets/images/Bar_Chart.avif';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+const formatVolume = (vol: number) => {
+	if (!vol) return '0';
+	return vol.toLocaleString('en-IN');
+};
 
 export default function EventsPage() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const [events, setEvents] = useState<any[]>([]);
-	const { user } = useAuthStore();
+	const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+	const { user, isAuthenticated } = useAuthStore();
 	const { openOnboardModal } = useModalStore();
 
 	const selectedCategoryName = searchParams.get('category') || 'All Events';
@@ -35,6 +42,82 @@ export default function EventsPage() {
 		fetchEvents();
 	}, [selectedCategoryName]);
 
+	useEffect(() => {
+		if (isAuthenticated) {
+			api.get('/profile/watchlist')
+				.then(res => {
+					if (res.data?.success) {
+						const ids = new Set<string>(res.data.data.map((m: any) => m.id));
+						setBookmarkedIds(ids);
+					}
+				})
+				.catch(err => console.error('Error fetching watchlist', err));
+		}
+	}, [isAuthenticated]);
+
+	useEffect(() => {
+		if (events.length === 0) return;
+
+		if (!socket.connected) {
+			socket.connect();
+		}
+
+		events.forEach(event => {
+			socket.emit('SUBSCRIBE', event.symbol);
+		});
+
+		const handleMessage = (data: any) => {
+			setEvents(prev => prev.map(event => {
+				if (event.symbol === data.symbol || event.symbol === data.Symbol) {
+					return {
+						...event,
+						yesPrice: data.yesPrice ?? event.yesPrice,
+						noPrice: data.noPrice ?? event.noPrice,
+						volume: data.volume ?? event.volume,
+					};
+				}
+				return event;
+			}));
+		};
+
+		socket.on('MESSAGE', handleMessage);
+
+		return () => {
+			events.forEach(event => {
+				socket.emit('UNSUBSCRIBE', event.symbol);
+			});
+			socket.off('MESSAGE', handleMessage);
+		};
+	}, [events.length]);
+
+	const toggleBookmark = async (e: React.MouseEvent, marketId: string) => {
+		e.stopPropagation();
+		if (!isAuthenticated) {
+			openOnboardModal();
+			return;
+		}
+		
+		try {
+			if (bookmarkedIds.has(marketId)) {
+				await api.delete(`/profile/watchlist/${marketId}`);
+				setBookmarkedIds(prev => {
+					const next = new Set(prev);
+					next.delete(marketId);
+					return next;
+				});
+			} else {
+				await api.post('/profile/watchlist', { marketId });
+				setBookmarkedIds(prev => {
+					const next = new Set(prev);
+					next.add(marketId);
+					return next;
+				});
+			}
+		} catch (error) {
+			console.error('Failed to toggle bookmark', error);
+		}
+	};
+
 	return (
 		<div className="w-full bg-gray-50 dark:bg-[#090C1A] min-h-screen">
 			<div className="max-w-7xl mx-auto md:px-0 px-6 py-6 md:py-8 flex flex-col gap-6">
@@ -43,59 +126,53 @@ export default function EventsPage() {
 						<h1 className="text-xl font-semibold border-b border-gray-200 dark:border-gray-800 pb-3 mb-4 text-gray-900 dark:text-white">
 							{selectedCategoryName}
 						</h1>
-						<div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className={`flex-1 grid grid-cols-1 md:grid-cols-2 ${!user ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-4`}>
 							{events.length > 0 ? (
 								events.map((event, idx) => (
 									<div
 										key={idx}
 										onClick={() => navigate(`/events/${event.symbol}`)}
-										className="bg-white cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-2 h-[220px]"
+										className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-0 h-[230px] transition-colors"
 									>
-										<div>
-											<div className="flex items-center">
+										<div className=''>
+											<div className="flex items-center text-gray-600 dark:text-gray-400">
 												<img src={barChartIcon} className="w-4 h-4 mr-1" />
-												<p className="text-xs">{event.numberOfTraders} traders</p>
+												<p className="text-xs">{event.numberOfTraders || 0} traders</p>
 											</div>
 
-											<div className="flex gap-3 mt-2.5">
+											<div className="flex gap-3 mt-4">
 												<img
 													src={event.thumbnail || defaultThumbnail}
 													alt={event.title}
-													className="w-16 h-16 object-cover rounded-lg"
+													className="w-14 h-14 object-cover rounded-lg border border-gray-100 dark:border-gray-800 shrink-0"
 												/>
-												<h2 className="md:text-base text-xs font-medium line-clamp-2 leading-snug md:max-h-[100px] overflow-hidden">
+												<h2 className="md:text-base text-sm font-medium line-clamp-3 leading-snug overflow-hidden text-gray-900 dark:text-white">
 													{event.title}
 												</h2>
 											</div>
 										</div>
 
-										<div>
-											<p className="text-xs flex items-center justify-start gap-3">
-												<Clock size={16} className="text-[#262626]" />
-												Expires in{' '}
-												{(() => {
-													const now = new Date();
-													const target = new Date(event.endTime);
-													const diffMs = target.getTime() - now.getTime();
+										<div className="flex flex-col gap-3">
+											<div className="flex gap-4 w-full">
+												<button className="text-green-700 dark:text-green-400 cursor-pointer bg-green-50 dark:bg-green-900/30 text-xs px-3 py-3 rounded-md w-full font-bold transition hover:bg-green-100 dark:hover:bg-green-900/50">
+													Yes ₹{event.yesPrice}
+												</button>
+												<button className="text-red-700 dark:text-red-400 cursor-pointer bg-red-50 dark:bg-red-900/30 text-xs px-3 py-3 rounded-md w-full font-bold transition hover:bg-red-100 dark:hover:bg-red-900/50">
+													No ₹{event.noPrice}
+												</button>
+											</div>
 
-													if (diffMs <= 0) return 'Expired';
-
-													const diffMinutes = Math.floor(diffMs / (1000 * 60));
-													const hours = Math.floor(diffMinutes / 60);
-													const minutes = diffMinutes % 60;
-
-													return hours > 0 ? `${hours}h ${minutes}m left` : `${minutes}m left`;
-												})()}
-											</p>
-										</div>
-
-										<div className="flex gap-4 w-full">
-											<button className="text-[#197BFF] cursor-pointer bg-[#E8F2FF] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
-												Yes ₹{event.yesPrice}
-											</button>
-											<button className="text-[#DC2804] cursor-pointer bg-[#FDF3F2] text-xs px-3 py-2.5 rounded-sm w-full font-semibold">
-												No ₹{event.NoPrice}
-											</button>
+											<div className="flex items-center justify-between md:pt-0 pt-1">
+												<p className="text-xs flex items-center justify-start gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
+													<span className="font-bold text-gray-900 dark:text-white">₹{formatVolume(event.volume || 0)} Vol.</span>
+												</p>
+												<button
+													onClick={(e) => toggleBookmark(e, event.id)}
+													className="p-1 text-black dark:text-white transition-colors"
+												>
+													<Bookmark size={18} fill={bookmarkedIds.has(event.id) ? "currentColor" : "transparent"} className="hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer" />
+												</button>
+											</div>
 										</div>
 									</div>
 								))
