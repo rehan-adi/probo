@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 const url = import.meta.env.VITE_STREAM_SERVICE_URL;
 
 export const socket = io(url, {
-	autoConnect: false,
+	autoConnect: true,
 	timeout: 5000,
 	transports: ['websocket', 'polling'],
 });
