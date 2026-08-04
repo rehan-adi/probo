@@ -1,23 +1,23 @@
-import { useEffect, useState } from 'react';
-import { Loader2, TrendingUp, Clock, AlertCircle } from 'lucide-react';
-import axios from 'axios';
-import { PROBO_API } from '@/constants/constants';
+import api from '@/config/axios';
+import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { formatDistanceToNow } from 'date-fns';
+import { useEffect, useState } from 'react';
+import logo from '@/assets/images/logo.avif';
+import { useBalanceQuery } from '@/hooks/queries/balance';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { Loader2, Eye, EyeOff, TrendingUp, Search, SlidersHorizontal, ChevronDown, Download } from 'lucide-react';
 
 interface PortfolioData {
-	stockBalances: any[];
+	positions: any[];
 	activeOrders: any[];
 	recentActivity: any[];
 }
 
-// Generate some mock chart data for a beautiful visual effect
 const generateMockChartData = () => {
 	const data = [];
 	let base = 5000;
 	for (let i = 0; i < 30; i++) {
-		base = base + (Math.random() * 400 - 150);
+		base = base + (Math.random() * 100 - 50);
 		data.push({ name: `Day ${i + 1}`, value: Math.max(base, 0) });
 	}
 	return data;
@@ -27,18 +27,36 @@ export default function Portfolio() {
 	const [data, setData] = useState<PortfolioData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [chartData] = useState(() => generateMockChartData());
-	const token = useAuthStore((state) => state.token);
+	const user = useAuthStore((state) => state.user);
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const { data: balanceData, refetch: refetchBalance } = useBalanceQuery();
+	
+	const [showBalance, setShowBalance] = useState(true);
+	const [activeTab, setActiveTab] = useState('positions');
+	const [searchQuery, setSearchQuery] = useState('');
+	const [statusFilter, setStatusFilter] = useState('All');
+	const [showStatusFilter, setShowStatusFilter] = useState(false);
 
-	// Pagination for Activity
-	const [activityPage, setActivityPage] = useState(1);
-	const activityPerPage = 5;
+	const walletBalance = balanceData?.data?.data?.amount || 0;
+	
+	const totalInvested = data?.positions?.reduce((acc, pos) => {
+		return acc + Number(pos.yesInvested || 0) + Number(pos.noInvested || 0);
+	}, 0) || 0;
+
+	const totalCurrentValue = data?.positions?.reduce((acc, pos) => {
+		const yesValue = (Number(pos.yesQuantity || 0) + Number(pos.yesLocked || 0)) * Number(pos.market?.yesPrice || 0);
+		const noValue = (Number(pos.noQuantity || 0) + Number(pos.noLocked || 0)) * Number(pos.market?.noPrice || 0);
+		return acc + yesValue + noValue;
+	}, 0) || 0;
+
+	const portfolioValue = walletBalance + totalCurrentValue;
+	const totalPnL = totalCurrentValue - totalInvested;
+	const pnlPercentage = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
 	useEffect(() => {
 		const fetchPortfolio = async () => {
 			try {
-				const res = await axios.get(`${PROBO_API}/portfolio/get`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				const res = await api.get(`/portfolio`);
 				if (res.data.success) {
 					setData(res.data.data);
 				}
@@ -49,227 +67,390 @@ export default function Portfolio() {
 			}
 		};
 
-		if (token) fetchPortfolio();
-	}, [token]);
+		if (isAuthenticated) fetchPortfolio();
+
+		if (isAuthenticated && user?.id) {
+			if (socket.connected) {
+				socket.emit('SUBSCRIBE', user.id);
+			} else {
+				socket.connect();
+				socket.once('connect', () => {
+					socket.emit('SUBSCRIBE', user.id);
+				});
+			}
+
+			const handleMessage = (msgData: any) => {
+				if (msgData?.type === 'PORTFOLIO_UPDATE') {
+					fetchPortfolio();
+					refetchBalance();
+				}
+			};
+
+			socket.on('MESSAGE', handleMessage);
+
+			return () => {
+				socket.emit('UNSUBSCRIBE', user.id);
+				socket.off('MESSAGE', handleMessage);
+			};
+		}
+	}, [isAuthenticated, user?.id, refetchBalance]);
 
 	if (loading) {
 		return (
 			<div className="flex justify-center items-center min-h-[60vh]">
-				<Loader2 className="animate-spin w-8 h-8 text-primary" />
+				<Loader2 className="animate-spin w-8 h-8 text-black dark:text-white" />
 			</div>
 		);
 	}
 
-	const totalActivityPages = data?.recentActivity ? Math.ceil(data.recentActivity.length / activityPerPage) : 0;
-	const currentActivity = data?.recentActivity?.slice((activityPage - 1) * activityPerPage, activityPage * activityPerPage);
-
 	return (
-		<div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 font-sans">
-			{/* Header & Chart Section */}
-			<section className="bg-card border border-border shadow-sm rounded-2xl p-6 md:p-8 relative overflow-hidden">
-				<div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 relative z-10">
-					<div>
-						<h1 className="text-3xl font-bold text-foreground">Portfolio Value</h1>
-						<div className="flex items-center gap-2 mt-2">
-							<span className="text-4xl font-extrabold tracking-tight">₹{chartData[chartData.length - 1]?.value.toFixed(2)}</span>
-							<span className="text-sm font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md flex items-center gap-1">
-								<TrendingUp className="w-4 h-4" /> +12.4%
-							</span>
+		<div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6 font-sans w-full">
+			
+			{/* Top Cards Section */}
+			<div className="grid md:grid-cols-2 gap-4 md:gap-6">
+				
+				{/* Left Card: Portfolio Balance */}
+				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col justify-between min-h-[220px]">
+					<div className="flex justify-between items-start">
+						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium">
+							Portfolio
+							<button onClick={() => setShowBalance(!showBalance)} className="hover:text-gray-900 dark:hover:text-white transition-colors">
+								{showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+							</button>
+						</div>
+						<div className="text-right">
+							<div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Available to trade</div>
+							<div className="text-xl font-bold text-gray-900 dark:text-white">
+								{showBalance ? `₹${walletBalance.toFixed(2)}` : '****'}
+							</div>
 						</div>
 					</div>
-					<div className="mt-4 md:mt-0 flex gap-2">
-						<button className="px-3 py-1.5 text-xs font-semibold bg-muted text-foreground rounded-lg">1D</button>
-						<button className="px-3 py-1.5 text-xs font-semibold bg-primary text-white shadow-md rounded-lg">1W</button>
-						<button className="px-3 py-1.5 text-xs font-semibold bg-muted text-foreground rounded-lg">1M</button>
-						<button className="px-3 py-1.5 text-xs font-semibold bg-muted text-foreground rounded-lg">ALL</button>
+
+					<div className="mt-8">
+						<div className="text-3xl md:text-[40px] font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3 flex-wrap break-all">
+							{showBalance ? `₹${portfolioValue.toFixed(2)}` : '****'}
+							{!showBalance && <EyeOff size={24} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-pointer" />}
+						</div>
+						<div className="text-gray-500 dark:text-gray-400 font-medium mt-1 flex items-center gap-2">
+							<span className={`font-bold ${totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
+								{totalPnL >= 0 ? '+' : ''}₹{Math.abs(totalPnL).toFixed(2)} ({pnlPercentage.toFixed(2)}%)
+							</span>
+							<span>overall</span>
+						</div>
 					</div>
 				</div>
 
-				<div className="h-[240px] w-full -mx-4 md:mx-0">
-					<ResponsiveContainer width="100%" height="100%">
-						<AreaChart data={chartData}>
-							<defs>
-								<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-									<stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-								</linearGradient>
-							</defs>
-							<Tooltip 
-								contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-								labelStyle={{ display: 'none' }}
-								itemStyle={{ color: 'hsl(var(--primary))', fontWeight: 'bold' }}
-							/>
-							<Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-						</AreaChart>
-					</ResponsiveContainer>
-				</div>
-			</section>
+				{/* Right Card: Profit/Loss Chart */}
+				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative flex flex-col justify-between min-h-[220px]">
+					<div className="flex justify-between items-start">
+						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+							<div className="w-2 h-2 rounded-full bg-gray-400"></div>
+							Profit/Loss
+						</div>
+						<div className="flex flex-wrap justify-end gap-1 overflow-hidden">
+							{['1D', '1W', '1M', '1Y', 'YTD', 'ALL'].map((tf) => (
+								<button 
+									key={tf}
+									className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${
+										tf === '1D' 
+											? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+											: 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+									}`}
+								>
+									{tf}
+								</button>
+							))}
+						</div>
+					</div>
 
-			<div className="grid md:grid-cols-3 gap-8">
-				{/* Left Column: Positions & Orders */}
-				<div className="md:col-span-2 space-y-8">
-					{/* Open Positions */}
-					<section>
-						<h2 className="text-xl font-bold text-foreground mb-4">Open Positions</h2>
-						{data?.stockBalances?.length === 0 ? (
-							<div className="bg-muted/30 border border-border/50 rounded-xl p-8 text-center flex flex-col items-center">
-								<AlertCircle className="w-8 h-8 text-muted-foreground mb-2" />
-								<p className="text-muted-foreground font-medium">No open positions right now.</p>
+					<div className="flex justify-between items-end mt-6 relative z-10 gap-4">
+						<div className="min-w-0">
+							<div className="text-2xl md:text-[32px] font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2 truncate">
+								<span className={totalPnL >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}>
+									{totalPnL >= 0 ? '+' : ''}₹{Math.abs(totalPnL).toFixed(2)}
+								</span>
 							</div>
-						) : (
-							<div className="grid gap-4">
-								{data?.stockBalances?.map((pos) => (
-									<div key={pos.id} className="bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all hover:border-border/80 hover:shadow-md">
-										<div className="flex items-center gap-4 flex-1 w-full">
-											{pos.market.thumbnail && (
-												<img src={pos.market.thumbnail} alt="" className="w-14 h-14 rounded-lg object-cover border border-border/50 shrink-0" />
-											)}
-											<div className="flex-1 min-w-0">
-												<h3 className="font-bold text-foreground text-sm line-clamp-2 leading-snug">{pos.market.title}</h3>
-												<div className="flex items-center gap-2 mt-2">
-													<span className="inline-block text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-wider border border-primary/20">
-														{pos.market.status}
-													</span>
-												</div>
-											</div>
-										</div>
-										<div className="flex gap-3 shrink-0 w-full sm:w-auto">
-											<div className="flex flex-col items-center justify-center bg-blue-500/10 px-5 py-2.5 rounded-lg border border-blue-500/20 flex-1 sm:flex-none min-w-[90px]">
-												<p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest mb-1">YES</p>
-												<p className="font-extrabold text-blue-700 text-xl leading-none">{pos.yesQuantity}</p>
-											</div>
-											<div className="flex flex-col items-center justify-center bg-red-500/10 px-5 py-2.5 rounded-lg border border-red-500/20 flex-1 sm:flex-none min-w-[90px]">
-												<p className="text-[10px] text-red-600 font-bold uppercase tracking-widest mb-1">NO</p>
-												<p className="font-extrabold text-red-700 text-xl leading-none">{pos.noQuantity}</p>
-											</div>
-										</div>
-									</div>
-								))}
+							<div className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+								Unrealized P&L
 							</div>
-						)}
-					</section>
+						</div>
+						<div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 font-bold text-xl opacity-50">
+							<img src={logo} alt="Probo" className="h-6 grayscale opacity-50" />
+						</div>
+					</div>
 
-					{/* Active Orders */}
-					<section>
-						<h2 className="text-xl font-bold text-foreground mb-4">Active Orders</h2>
-						{data?.activeOrders?.length === 0 ? (
-							<div className="bg-muted/30 border border-border/50 rounded-xl p-8 text-center">
-								<p className="text-muted-foreground font-medium">No active limit orders.</p>
-							</div>
-						) : (
-							<div className="grid gap-4">
-								{data?.activeOrders?.map((order) => (
-									<div key={order.id} className="bg-card p-5 rounded-xl border border-border shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:border-border/80">
-										<div className="flex-1 min-w-0">
-											<h3 className="font-bold text-foreground text-sm mb-2 line-clamp-1">{order.market.title}</h3>
-											<div className="flex items-center gap-2">
-												<span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-													order.orderType === 'BUY' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-												}`}>
-													{order.orderType}
-												</span>
-												<span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-													order.stockType === 'YES' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
-												}`}>
-													{order.stockType}
-												</span>
-												<span className="text-sm font-bold text-foreground ml-1">
-													₹{Number(order.price).toFixed(1)}
-												</span>
-											</div>
-										</div>
-										<div className="flex items-center gap-6 shrink-0 w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t border-border/50 md:border-0">
-											<div className="flex flex-col">
-												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Filled</span>
-												<span className="font-bold text-foreground text-sm">{order.filledQuantity} <span className="text-muted-foreground text-xs font-medium">/ {order.quantity}</span></span>
-											</div>
-											<div className="flex flex-col items-end min-w-[80px]">
-												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Status</span>
-												<span className="inline-block px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded text-[10px] font-bold uppercase tracking-wider border border-amber-500/20">
-													{order.status}
-												</span>
-											</div>
-										</div>
-									</div>
-								))}
-							</div>
-						)}
-					</section>
+					{/* Background Chart */}
+					<div className="absolute bottom-0 left-0 right-0 h-24 overflow-hidden rounded-b-xl opacity-30 pointer-events-none">
+						<ResponsiveContainer width="100%" height="100%">
+							<AreaChart data={chartData}>
+								<defs>
+									<linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+										<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+										<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+									</linearGradient>
+								</defs>
+								<Area type="monotone" dataKey="value" stroke="none" fillOpacity={1} fill="url(#colorPv)" />
+							</AreaChart>
+						</ResponsiveContainer>
+					</div>
 				</div>
 
-				{/* Right Column: Activity */}
-				<div className="space-y-4">
-					<h2 className="text-xl font-bold text-foreground mb-4">Recent Activity</h2>
-					<div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-						{currentActivity?.length === 0 ? (
-							<div className="p-8 text-center">
-								<p className="text-muted-foreground text-sm font-medium">No recent activity.</p>
+			</div>
+
+			{/* Bottom Section: Positions Table */}
+			<div className="pt-6">
+				{/* Filter Bar */}
+				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6 mt-2">
+					{/* Custom Tabs */}
+					<div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-lg shrink-0 w-full sm:w-auto overflow-x-auto">
+						{['positions', 'open', 'history'].map((tab) => (
+							<button
+								key={tab}
+								onClick={() => setActiveTab(tab as typeof activeTab)}
+								className={`px-4 sm:px-6 py-1.5 rounded-md text-sm font-semibold capitalize whitespace-nowrap transition-all duration-200 flex-1 sm:flex-none ${
+									activeTab === tab 
+										? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' 
+										: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer'
+								}`}
+							>
+								{tab} {tab === 'positions' && data?.positions ? `(${data.positions.length})` : 
+									  tab === 'open' && data?.activeOrders ? `(${data.activeOrders.length})` : ''}
+							</button>
+						))}
+					</div>
+					
+					{/* Flexible Search Bar */}
+					<div className="relative flex-1 min-w-[200px]">
+						<Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+						<input 
+							type="text" 
+							placeholder="Search markets..." 
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+						/>
+					</div>
+
+					{/* Filters and Actions */}
+					<div className="flex items-center gap-2 shrink-0 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+						{activeTab === 'history' && (
+							<select 
+								className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none"
+								value={statusFilter}
+								onChange={(e) => setStatusFilter(e.target.value)}
+							>
+								<option value="All">All Types</option>
+								<option value="BUY">Buy</option>
+								<option value="SELL">Sell</option>
+							</select>
+						)}
+						{activeTab === 'positions' && (
+							<select className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none">
+								<option>All Status</option>
+								<option>Active</option>
+								<option>Closed</option>
+							</select>
+						)}
+						{activeTab === 'open' && (
+							<select className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex-1 sm:flex-none">
+								<option>Order Date</option>
+								<option>Amount</option>
+							</select>
+						)}
+						{activeTab === 'history' && (
+							<button className="flex items-center justify-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-1.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer shrink-0 shadow-sm">
+								<Download size={16} /> Export
+							</button>
+						)}
+					</div>
+				</div>
+
+				<div className="w-full overflow-x-auto pb-4">
+					<div className="min-w-[1000px]">
+						{/* Dynamic Table Headers */}
+						{activeTab === 'positions' && (
+							<div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1.5fr_0.8fr] gap-4 px-6 py-4 border-b border-gray-400/25">
+								<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">AVG</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">NOW</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">TRADED</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">TO WIN</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">VALUE</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase text-right">ACTION</div>
 							</div>
-						) : (
-							<div className="divide-y divide-border/50">
-								{currentActivity?.map((act) => (
-									<div key={act.id} className="p-4 hover:bg-muted/30 transition-colors">
-										<div className="flex justify-between items-start mb-2">
-											<div className="flex items-center gap-2">
-												<span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-													act.orderType === 'BUY' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-												}`}>
-													{act.orderType}
-												</span>
-												<span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-													act.stockType === 'YES' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-red-500/10 text-red-600 border-red-500/20'
-												}`}>
-													{act.stockType}
-												</span>
-												<span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
-													act.status === 'COMPLETED' ? 'bg-blue-500/10 text-blue-600 border-blue-500/20' : 'bg-muted text-muted-foreground border-border/50'
-												}`}>
-													{act.status}
-												</span>
-											</div>
-											<div className="flex items-center gap-1 text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
-												<Clock className="w-3 h-3" />
-												{formatDistanceToNow(new Date(act.createdAt), { addSuffix: true })}
-											</div>
-										</div>
-										<p className="text-sm font-semibold text-foreground line-clamp-1 mb-3">{act.market.title}</p>
-										<div className="flex justify-between items-center text-xs">
-											<div className="flex flex-col">
-												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Quantity</span>
-												<span className="font-bold text-foreground text-sm">{act.quantity}</span>
-											</div>
-											<div className="flex flex-col items-end">
-												<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Price</span>
-												<span className="font-bold text-foreground text-sm">₹{Number(act.price).toFixed(1)}</span>
-											</div>
+						)}
+						{activeTab === 'open' && (
+							<div className="grid grid-cols-[3fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-4 border-b border-gray-400/25">
+								<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">FILLED</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">TOTAL</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">EXPIRATION</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase text-right">ACTION</div>
+							</div>
+						)}
+						{activeTab === 'history' && (
+							<div className="grid grid-cols-[1.5fr_3fr_1.5fr_1.5fr] gap-4 px-6 py-4 border-b border-gray-400/25">
+								<div className="text-xs font-semibold text-gray-500 uppercase">ACTIVITY</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">MARKET</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase">VALUE</div>
+								<div className="text-xs font-semibold text-gray-500 uppercase text-right">TIME</div>
+							</div>
+						)}
+
+						{/* Table Content */}
+				{activeTab === 'positions' && (
+					(!data?.positions || data.positions.length === 0) ? (
+						<div className="py-24 text-center">
+							<p className="text-gray-400 dark:text-gray-500 font-medium">No positions found.</p>
+						</div>
+					) : (
+						<div className="divide-y divide-gray-100 dark:divide-gray-800">
+							{data.positions.flatMap((pos) => {
+								const rows = [];
+								if ((pos.yesQuantity || 0) > 0 || (pos.yesLocked || 0) > 0) {
+									const qty = Number(pos.yesQuantity || 0) + Number(pos.yesLocked || 0);
+									const invested = Number(pos.yesInvested || 0);
+									const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+									const currentPrice = Number(pos.market?.yesPrice || 0);
+									const currentValue = qty * currentPrice;
+									const pnl = currentValue - invested;
+									rows.push({ ...pos, uniqueId: `${pos.id}-yes`, side: 'Yes', qty, invested, avgPrice: avg, currentPrice, currentValue, pnl });
+								}
+								if ((pos.noQuantity || 0) > 0 || (pos.noLocked || 0) > 0) {
+									const qty = Number(pos.noQuantity || 0) + Number(pos.noLocked || 0);
+									const invested = Number(pos.noInvested || 0);
+									const avg = qty > 0 ? (invested / qty).toFixed(2) : '0.00';
+									const currentPrice = Number(pos.market?.noPrice || 0);
+									const currentValue = qty * currentPrice;
+									const pnl = currentValue - invested;
+									rows.push({ ...pos, uniqueId: `${pos.id}-no`, side: 'No', qty, invested, avgPrice: avg, currentPrice, currentValue, pnl });
+								}
+								return rows;
+							}).filter(row => row.market?.title?.toLowerCase().includes(searchQuery.toLowerCase())).map((row) => (
+								<div key={row.uniqueId} className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1.5fr_0.8fr] gap-4 px-6 py-5 items-center border-b border-gray-400/25 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+									<div className="flex items-center gap-3">
+										{row.market?.thumbnail && (
+											<img src={row.market.thumbnail} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />
+										)}
+										<div className="flex flex-col">
+											<h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1" title={row.market?.title}>{row.market?.title || 'Unknown Market'}</h3>
+											<span className={`text-[10px] font-bold mt-0.5 ${row.side === 'Yes' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+												{row.side}
+											</span>
 										</div>
 									</div>
-								))}
-							</div>
-						)}
-						{/* Pagination Controls */}
-						{totalActivityPages > 1 && (
-							<div className="p-3 border-t border-border/50 flex justify-between items-center bg-muted/20">
-								<button 
-									onClick={() => setActivityPage(p => Math.max(1, p - 1))}
-									disabled={activityPage === 1}
-									className="px-3 py-1 text-xs font-semibold text-foreground bg-background border border-border rounded-md disabled:opacity-50"
-								>
-									Prev
-								</button>
-								<span className="text-xs font-medium text-muted-foreground">Page {activityPage} of {totalActivityPages}</span>
-								<button 
-									onClick={() => setActivityPage(p => Math.min(totalActivityPages, p + 1))}
-									disabled={activityPage === totalActivityPages}
-									className="px-3 py-1 text-xs font-semibold text-foreground bg-background border border-border rounded-md disabled:opacity-50"
-								>
-									Next
-								</button>
-							</div>
-						)}
+									
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										₹{row.avgPrice}
+									</div>
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										₹{row.currentPrice.toFixed(2)}
+									</div>
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										{row.qty}
+									</div>
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										₹{(row.qty * 10).toFixed(2)}
+									</div>
+									<div className="text-sm font-medium flex flex-col justify-center">
+										<span className="font-bold text-gray-900 dark:text-white">₹{row.currentValue.toFixed(2)}</span>
+										<span className={`text-xs font-bold ${row.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
+											{row.pnl >= 0 ? '+' : ''}₹{row.pnl.toFixed(2)} ({row.invested > 0 ? ((row.pnl / row.invested) * 100).toFixed(2) : '0.00'}%)
+										</span>
+									</div>
+									<div className="flex justify-end">
+										<button className="text-xs bg-gray-900 text-white dark:bg-white dark:text-black rounded-md px-4 py-1.5 font-bold hover:opacity-80 transition-opacity cursor-pointer shadow-sm">Sell</button>
+									</div>
+								</div>
+							))}
+						</div>
+					)
+				)}
+
+				{activeTab === 'open' && (
+					(!data?.activeOrders || data.activeOrders.length === 0) ? (
+						<div className="py-24 text-center">
+							<p className="text-gray-400 dark:text-gray-500 font-medium">No open orders.</p>
+						</div>
+					) : (
+						<div className="divide-y divide-gray-100 dark:divide-gray-800">
+							{data.activeOrders
+								.filter(order => order.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+								.map((order) => (
+								<div key={order.id} className="grid grid-cols-[3fr_1.5fr_1.5fr_1.5fr_1fr] gap-4 px-6 py-5 items-center border-b border-gray-400/25 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+									<div className="flex items-center gap-3">
+										{order.market?.thumbnail && (
+											<img src={order.market.thumbnail} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />
+										)}
+										<div className="flex flex-col">
+											<h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1" title={order.market?.title}>{order.market?.title || 'Unknown Market'}</h3>
+											<span className={`text-[10px] font-bold mt-0.5 ${order.stockType === 'YES' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+												{order.stockType}
+											</span>
+										</div>
+									</div>
+									
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										{order.filledQuantity} / {order.quantity}
+									</div>
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										₹{Number(order.totalPrice).toFixed(2)}
+									</div>
+									<div className="text-sm text-gray-500 dark:text-gray-400">
+										Until Cancelled
+									</div>
+									<div className="flex justify-end">
+										<button className="text-xs font-semibold text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer">Cancel</button>
+									</div>
+								</div>
+							))}
+						</div>
+					)
+				)}
+
+				{activeTab === 'history' && (
+					(!data?.recentActivity || data.recentActivity.length === 0) ? (
+						<div className="py-24 text-center">
+							<p className="text-gray-400 dark:text-gray-500 font-medium">No recent activity.</p>
+						</div>
+					) : (
+						<div className="divide-y divide-gray-100 dark:divide-gray-800">
+							{data.recentActivity
+								.filter(act => act.market?.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+								.filter(act => statusFilter === 'All' || act.orderType === statusFilter)
+								.map((activity) => (
+								<div key={activity.id} className="grid grid-cols-[1.5fr_3fr_1.5fr_1.5fr] gap-4 px-6 py-5 items-center border-b border-gray-400/25 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+									<div className="flex items-center">
+										<span className={`text-xs font-bold flex items-center gap-1 ${activity.orderType === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+											{activity.orderType === 'BUY' ? '+' : '-'} {activity.orderType}
+										</span>
+									</div>
+									
+									<div className="flex items-center gap-3">
+										{activity.market.thumbnail && (
+											<img src={activity.market.thumbnail} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />
+										)}
+										<div className="flex flex-col">
+											<h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1" title={activity.market.title}>{activity.market.title}</h3>
+											<span className="text-[11px] text-gray-500 mt-0.5">{activity.quantity} shares • {activity.stockType}</span>
+										</div>
+									</div>
+
+									<div className="text-sm text-gray-900 dark:text-white font-medium">
+										₹{(activity.quantity * Number(activity.price)).toFixed(2)}
+									</div>
+									<div className="text-sm text-gray-500 flex justify-end">
+										{new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+									</div>
+								</div>
+							))}
+						</div>
+					)
+				)}
 					</div>
 				</div>
 			</div>
+
 		</div>
 	);
 }
