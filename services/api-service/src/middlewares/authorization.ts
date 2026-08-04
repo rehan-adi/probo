@@ -1,12 +1,11 @@
-import { verify } from 'hono/jwt';
-import { ENV } from '@/config/env';
 import { logger } from '@/utils/logger';
 import { getCookie } from 'hono/cookie';
 import { Context, MiddlewareHandler } from 'hono';
+import { verifyAccessToken } from '@/utils/token';
 
 export const authorization: MiddlewareHandler = async (c: Context, next) => {
 	try {
-		let token = getCookie(c, 'token');
+		let token = getCookie(c, 'accessToken');
 		
 		if (!token) {
 			const authHeader = c.req.header('Authorization');
@@ -20,19 +19,15 @@ export const authorization: MiddlewareHandler = async (c: Context, next) => {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
 
-		const payload = await verify(token, ENV.JWT_SECRET);
+		const payload = await verifyAccessToken(token);
 
-		const { id, phone, role } = payload as {
-			id: string;
-			phone: string;
-			role: string;
-		};
+		const { id, email, role } = payload;
 
-		c.set('user', { id, phone, role });
+		c.set('user', { id, email, role });
 
 		await next();
 	} catch (error) {
-		logger.error({ error }, 'JWT verification failed');
+		logger.error({ error }, 'Access token verification failed');
 		return c.json({ success: false, message: 'Invalid or expired token' }, 401);
 	}
 };
