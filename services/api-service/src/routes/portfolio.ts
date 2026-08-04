@@ -4,4 +4,4 @@ import { authorization } from '@/middlewares/authorization';
 
 export const portfolioRoutes = new Hono();
 
-portfolioRoutes.get('/get', authorization, getPortfolio);
+portfolioRoutes.get('/', authorization, getPortfolio);

@@ -10,7 +10,7 @@ export const getPortfolio = async (c: Context) => {
 			return c.json({ success: false, message: 'Unauthorized' }, 401);
 		}
 
-		const stockBalances = await prisma.stockBalance.findMany({
+		const positions = await prisma.position.findMany({
 			where: { userId: user.id },
 			include: {
 				market: {
@@ -21,6 +21,8 @@ export const getPortfolio = async (c: Context) => {
 						thumbnail: true,
 						status: true,
 						result: true,
+						yesPrice: true,
+						noPrice: true,
 					},
 				},
 			},
@@ -62,7 +64,7 @@ export const getPortfolio = async (c: Context) => {
 		return c.json({
 			success: true,
 			data: {
-				stockBalances,
+				positions,
 				activeOrders,
 				recentActivity,
 			},
