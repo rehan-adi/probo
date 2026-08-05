@@ -213,7 +213,7 @@ export const submitReferral = async (c: Context) => {
 
 		try {
 			await prisma.$transaction(async (tx) => {
-				await tx.inrBalance.update({
+				await tx.wallet.update({
 					where: { userId: referrer.id },
 					data: {
 						balance: {
@@ -222,13 +222,13 @@ export const submitReferral = async (c: Context) => {
 					},
 				});
 
-				await tx.transactionHistory.create({
+				await tx.transaction.create({
 					data: {
 						userId: referrer.id,
 						type: 'REFERRAL_REWARD',
 						status: 'SUCCESS',
 						amount: '20.00',
-						remarks: `Referral bonus from +91-XXXXXX${referrer.phone.slice(-4)}`,
+						remarks: `Referral bonus from +91-XXXXXX${(referrer.phone || "0000").slice(-4)}`,
 					},
 				});
 

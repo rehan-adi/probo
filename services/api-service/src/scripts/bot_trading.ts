@@ -6,42 +6,45 @@ import { EVENTS } from '../constants/constants';
 const API_URL = 'http://localhost:3000/api/v1';
 
 const BOTS = [
-	{ name: 'Lionel Messi', phone: '7777777701', style: 'aggressive', pref: 'YES' },
-	{ name: 'Cristiano Ronaldo', phone: '7777777702', style: 'moderate', pref: 'NO' },
-	{ name: 'Neymar Jr', phone: '7777777703', style: 'frequent', pref: 'YES' },
-	{ name: 'Elon Musk', phone: '7777777704', style: 'whale', pref: 'NO' },
-	{ name: 'Virat Kohli', phone: '7777777705', style: 'moderate', pref: 'YES' },
-	{ name: 'Taylor Swift', phone: '7777777706', style: 'passive', pref: 'NO' },
+	{ name: 'Satoshi N.', phone: '7777777701', style: 'aggressive', pref: 'YES' },
+	{ name: 'Alex H.', phone: '7777777702', style: 'moderate', pref: 'NO' },
+	{ name: 'Maria G.', phone: '7777777703', style: 'frequent', pref: 'YES' },
+	{ name: 'John D.', phone: '7777777704', style: 'whale', pref: 'NO' },
+	{ name: 'TraderX', phone: '7777777705', style: 'moderate', pref: 'YES' },
+	{ name: 'Probo_Whale', phone: '7777777706', style: 'passive', pref: 'NO' },
+	{ name: 'CryptoKing', phone: '7777777707', style: 'frequent', pref: 'YES' },
 ];
 
 const REHAN_USER = { name: 'Rehan', phone: '9748151073' };
 const AMM_USER = { name: 'AMM Bot', phone: '7777777700' };
 
 async function loginUser(phone: string, name: string) {
-	const loginRes = await fetch(`${API_URL}/auth/login`, {
+	const email = `${phone}@bot.probo.local`; // Synthetic email for bot
+
+	const loginRes = await fetch(`${API_URL}/auth/send-otp`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ phone }),
+		body: JSON.stringify({ email }),
 	});
 	const loginData = await loginRes.json();
 
 	//@ts-ignore
-	if (!loginData.success) throw new Error(`Login failed for ${phone}: ${loginData.message}`);
+	if (!loginData.success) throw new Error(`Login failed for ${email}: ${loginData.message || JSON.stringify(loginData.error)}`);
 
 	const redis = new Redis('redis://127.0.0.1:6380');
-	const otp = await redis.get(`otp:${phone}`);
+	const otp = await redis.get(`otp:${email}`);
 	redis.disconnect();
-	if (!otp) throw new Error(`OTP not found in Redis for ${phone}`);
+	if (!otp) throw new Error(`OTP not found in Redis for ${email}`);
 
 	const verifyRes = await fetch(`${API_URL}/auth/verify-otp`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ phone, otp }),
+		body: JSON.stringify({ email, otp }),
 	});
 	
 	const cookie = verifyRes.headers.get('set-cookie');
 	const token = cookie?.split(';')[0].split('=')[1];
-	if (!token) throw new Error(`Token not found for ${phone}`);
+	if (!token) throw new Error(`Token not found for ${email}`);
 
 	return token;
 }
@@ -63,7 +66,7 @@ async function createMarket(token: string) {
 		method: 'POST',
 		headers: { 
 			'Content-Type': 'application/json',
-			'Cookie': `token=${token}`
+			'Cookie': `accessToken=${token}`
 		},
 		body: JSON.stringify(body)
 	});
@@ -82,7 +85,7 @@ async function placeOrder(token: string, marketId: string, symbol: string, side:
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Cookie': `token=${token}`
+			'Cookie': `accessToken=${token}`
 		},
 		body: JSON.stringify({
 			marketId,
@@ -106,13 +109,14 @@ async function placeOrder(token: string, marketId: string, symbol: string, side:
 async function setupUser(phone: string, name: string) {
 	let token = await loginUser(phone, name);
 	
-	const updateData: any = { name: name };
+	const email = `${phone}@bot.probo.local`;
+	const updateData: any = { username: name.replace(/\s+/g, '').toLowerCase() };
 	if (phone === '9999999999') {
 		updateData.role = 'ADMIN';
 	}
 	
 	await prisma.user.updateMany({
-		where: { phone: phone },
+		where: { email: email },
 		data: updateData
 	});
 
@@ -121,9 +125,9 @@ async function setupUser(phone: string, name: string) {
 		token = await loginUser(phone, name);
 	}
 
-	const user = await prisma.user.findFirst({ where: { phone: phone } });
+	const user = await prisma.user.findFirst({ where: { email: email } });
 	if (user) {
-		await prisma.inrBalance.updateMany({
+		await prisma.wallet.updateMany({
 			where: { userId: user.id },
 			data: { balance: 10000000 } // 10 million INR
 		});
@@ -195,8 +199,7 @@ async function runBotTrading() {
 		update: {},
 		create: {
 			id: catId,
-			categoryName: 'Finance',
-			icon: '📈'
+			categoryName: 'Finance'
 		}
 	});
 

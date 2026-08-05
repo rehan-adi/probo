@@ -37,7 +37,7 @@ export const getBalance = async (c: Context) => {
 			logger.warn({ userId }, 'User not found in engine, attempting to sync from DB');
 			const dbUser = await prisma.user.findUnique({
 				where: { id: userId },
-				include: { inrBalance: true }
+				include: { wallet: true }
 			});
 
 			if (dbUser) {
@@ -52,8 +52,8 @@ export const getBalance = async (c: Context) => {
 				// Sync balance to engine
 				await pushToQueue(EVENTS.INIT_BALANCE, {
 					userId: dbUser.id,
-					amount: Number(dbUser.inrBalance?.balance || 0),
-					locked: Number(dbUser.inrBalance?.locked || 0),
+					amount: Number(dbUser.wallet?.balance || 0),
+					locked: Number(dbUser.wallet?.locked || 0),
 				});
 
 				// Retry fetching balance
@@ -181,7 +181,7 @@ export const deposit = async (c: Context) => {
 
 		try {
 			await prisma.$transaction(async (tx) => {
-				await tx.inrBalance.update({
+				await tx.wallet.update({
 					where: { userId },
 					data: {
 						balance: {
@@ -190,7 +190,7 @@ export const deposit = async (c: Context) => {
 					},
 				});
 
-				await tx.transactionHistory.create({
+				await tx.transaction.create({
 					data: {
 						userId: userId,
 						type: 'DEPOSIT',
@@ -321,7 +321,7 @@ export const getDepositAmount = async (c: Context) => {
 			);
 		}
 
-		const { _sum } = await prisma.transactionHistory.aggregate({
+		const { _sum } = await prisma.transaction.aggregate({
 			_sum: {
 				amount: true,
 			},
@@ -425,12 +425,12 @@ export const withdraw = async (c: Context) => {
 		if (response.success) {
 			try {
 				await prisma.$transaction(async (tx) => {
-					await tx.inrBalance.update({
+					await tx.wallet.update({
 						where: { userId },
 						data: { balance: { decrement: amount } },
 					});
 
-					await tx.transactionHistory.create({
+					await tx.transaction.create({
 						data: {
 							userId,
 							amount,

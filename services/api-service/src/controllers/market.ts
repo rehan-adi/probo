@@ -106,7 +106,7 @@ export const createMarket = async (c: Context) => {
 				title: data.title,
 				symbol,
 				yesPrice: 5.0,
-				NoPrice: 5.0,
+				noPrice: 5.0,
 				startTime: data.startTime,
 				endTime: data.endTime,
 				eos: data.eos,
@@ -118,14 +118,14 @@ export const createMarket = async (c: Context) => {
 		});
 
 		const yesPrice = parseFloat(newMarket.yesPrice.toString());
-		const noPrice = parseFloat(newMarket.NoPrice.toString());
+		const noPrice = parseFloat(newMarket.noPrice.toString());
 
 		const queuePayload = {
 			marketId: newMarket.id,
 			title: newMarket.title,
 			symbol: newMarket.symbol,
 			yesPrice: yesPrice,
-			NoPrice: noPrice,
+			noPrice: noPrice,
 			eos: newMarket.eos,
 			rules: newMarket.rules,
 			endDate: newMarket.endTime,
@@ -312,7 +312,7 @@ export const getAllMarket = async (c: Context) => {
 				id: true,
 				title: true,
 				yesPrice: true,
-				NoPrice: true,
+				noPrice: true,
 				endTime: true,
 				numberOfTraders: true,
 				thumbnail: true,
@@ -360,33 +360,39 @@ export const getAllMarket = async (c: Context) => {
 
 export const getMarketsByCategory = async (c: Context) => {
 	try {
-		const categoryId = c.req.param('categoryId');
+		const categoryParam = c.req.param('categoryParam');
 
-		if (!categoryId) {
+		if (!categoryParam) {
 			logger.warn(
 				{
 					context: 'GET_MARKETS_BY_CATEGORY_MISSING_PARAM',
 				},
-				'Missing categoryId in request',
+				'Missing category parameter in request',
 			);
 			return c.json(
 				{
 					success: false,
-					message: 'categoryId is required',
+					message: 'category parameter is required',
 				},
 				400,
 			);
 		}
 
-		const category = await prisma.category.findUnique({
-			where: { id: categoryId },
+		let category = await prisma.category.findUnique({
+			where: { id: categoryParam },
 		});
+
+		if (!category) {
+			category = await prisma.category.findFirst({
+				where: { categoryName: { equals: categoryParam, mode: 'insensitive' } },
+			});
+		}
 
 		if (!category) {
 			return c.json(
 				{
 					success: false,
-					message: 'Invalid categoryId',
+					message: 'Invalid category',
 				},
 				400,
 			);
@@ -394,7 +400,7 @@ export const getMarketsByCategory = async (c: Context) => {
 
 		const markets = await prisma.market.findMany({
 			where: {
-				categoryId,
+				categoryId: category.id,
 				status: 'OPEN',
 			},
 			orderBy: {
@@ -405,7 +411,7 @@ export const getMarketsByCategory = async (c: Context) => {
 				title: true,
 				categoryId: true,
 				yesPrice: true,
-				NoPrice: true,
+				noPrice: true,
 				endTime: true,
 				numberOfTraders: true,
 				thumbnail: true,
@@ -454,7 +460,7 @@ export const resolveMarket = async (c: Context) => {
 	try {
 		const userId = c.get('user').id;
 		const user = await prisma.user.findUnique({ where: { id: userId } });
-		
+
 		if (!user || user.role !== 'ADMIN') {
 			return c.json({ success: false, error: 'Unauthorized: Admin only' }, 401);
 		}
@@ -528,7 +534,7 @@ export const getMarketDetails = async (c: Context) => {
 					title: true,
 					symbol: true,
 					yesPrice: true,
-					NoPrice: true,
+					noPrice: true,
 					thumbnail: true,
 					eos: true,
 					rules: true,
@@ -552,7 +558,7 @@ export const getMarketDetails = async (c: Context) => {
 					where: { marketId: marketDetails.id },
 					select: { price: true, filledQuantity: true, userId: true },
 				});
-				
+
 				const uniqueTraders = new Set<string>();
 				for (const o of orders) {
 					volume += Number(o.price) * o.filledQuantity;
@@ -599,14 +605,14 @@ export const getMarketDetails = async (c: Context) => {
 				where: { marketId },
 				select: { price: true, filledQuantity: true, userId: true },
 			});
-			
+
 			const uniqueTraders = new Set<string>();
 			for (const o of orders) {
 				volume += Number(o.price) * o.filledQuantity;
 				uniqueTraders.add(o.userId);
 			}
 			tradersCount = uniqueTraders.size;
-			
+
 			// Fetch category name
 			let categoryName = 'Unknown';
 			if (response.data?.categoryId) {
@@ -680,7 +686,7 @@ export const searchMarkets = async (c: Context) => {
 					title: true,
 					symbol: true,
 					yesPrice: true,
-					NoPrice: true,
+					noPrice: true,
 					thumbnail: true,
 					status: true,
 				},
@@ -729,47 +735,53 @@ export const getMarketKlines = async (c: Context) => {
 			return c.json({ success: false, message: 'Market not found' }, 404);
 		}
 
-		let timeBucket = '1 minute';
+		let timeFilter: any = {};
+		if (from) timeFilter.gte = new Date(Number(from) * 1000);
+		if (to) timeFilter.lte = new Date(Number(to) * 1000);
+
+		const trades = await prisma.trade.findMany({
+			where: {
+				marketId: market.id,
+				...(Object.keys(timeFilter).length > 0 && { createdAt: timeFilter })
+			},
+			orderBy: { createdAt: 'asc' },
+			select: { price: true, quantity: true, createdAt: true }
+		});
+
+		let bucketMs = 60 * 1000;
 		switch (resolution) {
-			case '1m': timeBucket = '1 minute'; break;
-			case '5m': timeBucket = '5 minutes'; break;
-			case '15m': timeBucket = '15 minutes'; break;
-			case '1h': timeBucket = '1 hour'; break;
-			case '4h': timeBucket = '4 hours'; break;
-			case '1d': timeBucket = '1 day'; break;
-			default: timeBucket = '1 minute';
+			case '1m': bucketMs = 60 * 1000; break;
+			case '5m': bucketMs = 5 * 60 * 1000; break;
+			case '15m': bucketMs = 15 * 60 * 1000; break;
+			case '1h': bucketMs = 60 * 60 * 1000; break;
+			case '4h': bucketMs = 4 * 60 * 60 * 1000; break;
+			case '1d': bucketMs = 24 * 60 * 60 * 1000; break;
+			default: bucketMs = 60 * 1000;
 		}
 
-		let timeFilter = '';
-		const params: any[] = [market.id];
-		let paramIndex = 2;
-
-		if (from) {
-			timeFilter += ` AND bucket >= $${paramIndex}`;
-			params.push(new Date(Number(from) * 1000));
-			paramIndex++;
+		const klinesMap = new Map<number, any>();
+		for (const trade of trades) {
+			const time = Math.floor(trade.createdAt.getTime() / bucketMs) * bucketMs;
+			const price = Number(trade.price);
+			if (!klinesMap.has(time)) {
+				klinesMap.set(time, {
+					time: new Date(time),
+					open: price,
+					high: price,
+					low: price,
+					close: price,
+					volume: trade.quantity
+				});
+			} else {
+				const bucket = klinesMap.get(time);
+				bucket.high = Math.max(bucket.high, price);
+				bucket.low = Math.min(bucket.low, price);
+				bucket.close = price;
+				bucket.volume += trade.quantity;
+			}
 		}
-		if (to) {
-			timeFilter += ` AND bucket <= $${paramIndex}`;
-			params.push(new Date(Number(to) * 1000));
-			paramIndex++;
-		}
 
-		const query = `
-			SELECT 
-				time_bucket('${timeBucket}', bucket) AS time,
-				first(open, bucket) AS open,
-				max(high) AS high,
-				min(low) AS low,
-				last(close, bucket) AS close,
-				sum(volume) AS volume
-			FROM trade_candles_1m
-			WHERE "marketId" = $1 ${timeFilter}
-			GROUP BY time
-			ORDER BY time ASC
-		`;
-
-		const klines = await prisma.$queryRawUnsafe(query, ...params);
+		const klines = Array.from(klinesMap.values());
 
 		return c.json({
 			success: true,
@@ -809,12 +821,22 @@ export const getMarketTrades = async (c: Context) => {
 				quantity: true,
 				matchType: true,
 				createdAt: true,
+				maker: { select: { username: true } },
+				taker: { select: { username: true } },
 			}
 		});
 
+		const formattedTrades = trades.map((trade) => ({
+			...trade,
+			makerName: trade.maker?.username,
+			takerName: trade.taker?.username,
+			maker: undefined,
+			taker: undefined,
+		}));
+
 		return c.json({
 			success: true,
-			data: trades,
+			data: formattedTrades,
 		});
 	} catch (error) {
 		console.error(error);
@@ -824,7 +846,7 @@ export const getMarketTrades = async (c: Context) => {
 
 export const getMarketStats = async (c: Context) => {
 	const symbol = c.req.param('symbol');
-	
+
 	try {
 		const market = await prisma.market.findUnique({
 			where: { symbol },
@@ -849,12 +871,12 @@ export const getMarketStats = async (c: Context) => {
 		`;
 
 		const stats: any[] = await prisma.$queryRawUnsafe(query, market.id, oneDayAgo);
-		
+
 		return c.json({
 			success: true,
 			data: {
 				currentYesPrice: market.yesPrice,
-				currentNoPrice: market.noPrice,
+				currentnoPrice: market.noPrice,
 				totalVolume: market.volume,
 				high24h: stats[0]?.high || market.yesPrice,
 				low24h: stats[0]?.low || market.yesPrice,

@@ -31,7 +31,7 @@ export const initPayment = async (c: Context) => {
 			order_id: orderId,
 			customer_details: {
 				customer_id: userId,
-				customer_phone: user.phone,
+				customer_phone: user.phone || "9999999999",
 				customer_email: user.email || "test@probo.com",
 				customer_name: "Probo User"
 			},
@@ -106,7 +106,7 @@ export const paymentWebhook = async (c: Context) => {
 				}
 
 
-				await tx.inrBalance.upsert({
+				await tx.wallet.upsert({
 					where: { userId: customerId },
 					update: { balance: { increment: amount } },
 					create: { userId: customerId, balance: amount, locked: 0 }
@@ -123,7 +123,7 @@ export const paymentWebhook = async (c: Context) => {
 					}
 				});
 
-				await tx.transactionHistory.create({
+				await tx.transaction.create({
 					data: {
 						userId: customerId,
 						type: 'DEPOSIT',
@@ -131,6 +131,50 @@ export const paymentWebhook = async (c: Context) => {
 						status: 'SUCCESS'
 					}
 				});
+
+				if (amount >= 50.0) {
+					const pendingReferrals = await tx.referral.findMany({
+						where: {
+							referredId: customerId,
+							status: 'PENDING'
+						}
+					});
+
+					for (const ref of pendingReferrals) {
+						await tx.referral.update({
+							where: { id: ref.id },
+							data: { status: 'COMPLETED' }
+						});
+
+						const targetUserId = ref.isReferrer ? ref.referrerId : ref.referredId;
+
+						if (targetUserId) {
+							await tx.wallet.update({
+								where: { userId: targetUserId },
+								data: { balance: { increment: ref.amount } }
+							});
+
+							await tx.transaction.create({
+								data: {
+									userId: targetUserId,
+									type: 'REFERRAL_REWARD',
+									amount: ref.amount,
+									status: 'SUCCESS',
+									remarks: ref.isReferrer
+										? `Referral reward for user ${customerId} depositing`
+										: `Bonus for using a referral code and making first deposit`
+								}
+							});
+
+							if (ref.isReferrer) {
+								await tx.user.update({
+									where: { id: targetUserId },
+									data: { totalReferralReward: { increment: Number(ref.amount) } }
+								});
+							}
+						}
+					}
+				}
 			});
 
 			await pushToQueue(EVENTS.DEPOSIT_BALANCE, {

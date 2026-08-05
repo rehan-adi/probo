@@ -38,7 +38,7 @@ export const getTransactionHistory = async (c: Context) => {
 			);
 		}
 
-		const allTransactionHistory = await prisma.transactionHistory.findMany({
+		const allTransactionHistory = await prisma.transaction.findMany({
 			where: {
 				userId,
 			},

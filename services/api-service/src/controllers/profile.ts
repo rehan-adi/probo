@@ -13,9 +13,9 @@ export const getProfile = async (c: Context) => {
 			where: { id: user.id },
 			select: {
 				id: true,
-				name: true,
+				username: true,
 				phone: true,
-				profilePic: true,
+				avatarUrl: true,
 				createdAt: true,
 			},
 		});
@@ -42,20 +42,20 @@ export const updateProfile = async (c: Context) => {
 		}
 
 		const body = await c.req.json();
-		const { name, profilePic } = body;
+		const { name, avatarUrl } = body;
 
 		const updateData: any = {};
 		if (name !== undefined) updateData.name = name;
-		if (profilePic !== undefined) updateData.profilePic = profilePic;
+		if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
 
 		const updatedUser = await prisma.user.update({
 			where: { id: user.id },
 			data: updateData,
 			select: {
 				id: true,
-				name: true,
+				username: true,
 				phone: true,
-				profilePic: true,
+				avatarUrl: true,
 			},
 		});
 
@@ -126,7 +126,7 @@ export const getWatchlist = async (c: Context) => {
 						id: true,
 						title: true,
 						yesPrice: true,
-						NoPrice: true,
+						noPrice: true,
 						thumbnail: true,
 						symbol: true,
 						status: true,
@@ -151,7 +151,7 @@ export const getUserTrades = async (c: Context) => {
 		const limit = Number(c.req.query('limit') || 50);
 
 		const trades = await prisma.trade.findMany({
-			where: { 
+			where: {
 				OR: [
 					{ makerId: user.id },
 					{ takerId: user.id }

@@ -16,7 +16,7 @@ import {
 export const marketRoutes = new Hono();
 
 marketRoutes.get('/', getAllMarket);
-marketRoutes.get('/category/:categoryId', getMarketsByCategory);
+marketRoutes.get('/category/:categoryParam', getMarketsByCategory);
 marketRoutes.post('/create', authorization, createMarket);
 marketRoutes.post('/liquidity-add', authorization, addLiquidity);
 marketRoutes.post('/resolve', authorization, resolveMarket);

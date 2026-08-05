@@ -30,6 +30,7 @@ export const pushToQueue = async (eventType: string, data: any): Promise<EngineR
 
 	return new Promise<EngineResponse>(async (resolve) => {
 		let handled = false;
+		let timeout: NodeJS.Timeout | undefined;
 
 		logger.info({ responseId }, 'Waiting for engine response');
 
@@ -38,7 +39,7 @@ export const pushToQueue = async (eventType: string, data: any): Promise<EngineR
 				logger.info({ responseId, message }, 'Received engine response');
 
 				handled = true;
-				clearTimeout(timeout);
+				if (timeout) clearTimeout(timeout);
 				await pubsubClient.unsubscribe(responseChannel);
 				pubsubClient.removeListener('message', messageHandler);
 
@@ -74,7 +75,7 @@ export const pushToQueue = async (eventType: string, data: any): Promise<EngineR
 		await client.lpush('engine:queue', JSON.stringify(payload));
 		logger.info({ payload }, 'Pushed payload to engine queue');
 
-		const timeout = setTimeout(async () => {
+		timeout = setTimeout(async () => {
 			if (!handled) {
 				logger.warn({ responseChannel }, '⏰ Timeout waiting for engine response');
 				await pubsubClient.unsubscribe(responseChannel);

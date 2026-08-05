@@ -27,6 +27,7 @@
 		"@probo/database": "workspace:*",
 		"@probo/logger": "workspace:*",
 		"cashfree-pg": "^6.0.4",
+		"google-auth-library": "^10.9.1",
 		"hono": "^4.8.5",
 		"ioredis": "^5.6.1",
 		"rate-limiter-flexible": "^7.1.1",
