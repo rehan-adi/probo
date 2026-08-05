@@ -58,8 +58,8 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 	const modalVariants = isMobile
 		? {
 			hidden: { y: '100%' },
-			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 200 } },
-			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 200 } }
+			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
+			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } }
 		}
 		: {
 			hidden: { opacity: 0, scale: 0.95 },

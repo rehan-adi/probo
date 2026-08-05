@@ -1,9 +1,9 @@
 import api from '@/config/axios';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { Loader, Mail } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useModalStore } from '@/store/modal';
+import { useState, useEffect, useRef } from 'react';
+import { Loader2, Mail, Clock } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 
 interface ProviderSelectProps {
@@ -17,7 +17,7 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 	const { login } = useAuthStore();
 	const [email, setEmail] = useState('');
 	const [isSendingOtp, setIsSendingOtp] = useState(false);
-	const [isOAuthLoading, setIsOAuthLoading] = useState(false);
+	const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 	const [lastProvider, setLastProvider] = useState<string | null>(null);
 
 	const isValidEmail = /^\S+@\S+\.\S+$/.test(email);
@@ -27,11 +27,74 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 		if (storedLastProvider) {
 			setLastProvider(storedLastProvider);
 		}
-	}, []);
+
+		if (window.opener && window.location.hash.includes('access_token')) {
+			const params = new URLSearchParams(window.location.hash.substring(1));
+			const accessToken = params.get('access_token');
+			if (accessToken) {
+				window.opener.postMessage({ type: 'DISCORD_AUTH', accessToken }, window.location.origin);
+				window.close();
+			}
+		}
+
+		const handleMessage = (e: MessageEvent) => {
+			if (e.origin !== window.location.origin) return;
+			if (e.data.type === 'DISCORD_AUTH' && e.data.accessToken) {
+				setLoadingProvider('discord');
+				api.post('/auth/discord/callback', { accessToken: e.data.accessToken })
+					.then((res) => {
+						if (res.data.success) {
+							localStorage.setItem('last_provider', 'discord');
+							const user = res.data.data;
+							if (user.onboardingStatus === 'PENDING_USERNAME') onNextUsername(user);
+							else if (user.onboardingStatus === 'PENDING_PREFERENCES') onNextReferral(user);
+							else {
+								login(user);
+								closeOnboardModal();
+							}
+						}
+					})
+					.catch((err) => {
+						console.error('Discord Auth Failed', err);
+						alert('Discord login failed');
+					})
+					.finally(() => setLoadingProvider(null));
+			}
+		};
+
+		window.addEventListener('message', handleMessage);
+
+		(window as any).onTelegramAuth = (user: any) => {
+			setLoadingProvider('telegram');
+			api.post('/auth/telegram/callback', { widgetData: user })
+				.then((res) => {
+					if (res.data.success) {
+						localStorage.setItem('last_provider', 'telegram');
+						const userData = res.data.data;
+						if (userData.onboardingStatus === 'PENDING_USERNAME') onNextUsername(userData);
+						else if (userData.onboardingStatus === 'PENDING_PREFERENCES') onNextReferral(userData);
+						else {
+							login(userData);
+							closeOnboardModal();
+						}
+					}
+				})
+				.catch((err) => {
+					console.error('Telegram Auth Failed', err);
+					alert('Telegram login failed');
+				})
+				.finally(() => setLoadingProvider(null));
+		};
+
+		return () => {
+			window.removeEventListener('message', handleMessage);
+			delete (window as any).onTelegramAuth;
+		};
+	}, [onNextUsername, onNextReferral, login, closeOnboardModal]);
 
 	const googleLogin = useGoogleLogin({
 		onSuccess: async (tokenResponse) => {
-			setIsOAuthLoading(true);
+			setLoadingProvider('google');
 			try {
 				const res = await api.post('/auth/google/callback', {
 					idToken: tokenResponse.access_token,
@@ -40,7 +103,7 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 				if (res.data.success) {
 					localStorage.setItem('last_provider', 'google');
 
-					const { user } = res.data.data;
+					const user = res.data.data;
 
 					if (user.onboardingStatus === 'PENDING_USERNAME') {
 						onNextUsername(user);
@@ -54,7 +117,7 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 			} catch (error) {
 				console.error('Google Auth Failed', error);
 			} finally {
-				setIsOAuthLoading(false);
+				setLoadingProvider(null);
 			}
 		},
 	});
@@ -66,6 +129,45 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 			handleSendEmailOtp();
 		} else if (provider === 'google') {
 			googleLogin();
+		} else if (provider === 'telegram') {
+			const tg = (window as any).Telegram?.WebApp;
+			if (tg && tg.initData) {
+				setLoadingProvider('telegram');
+				api.post('/auth/telegram/callback', { initData: tg.initData })
+					.then((res) => {
+						if (res.data.success) {
+							const user = res.data.data;
+							if (user.onboardingStatus === 'PENDING_USERNAME') onNextUsername(user);
+							else if (user.onboardingStatus === 'PENDING_PREFERENCES') onNextReferral(user);
+							else {
+								login(user);
+								closeOnboardModal();
+							}
+						}
+					})
+					.catch((err) => {
+						console.error('Telegram Auth Failed', err);
+						alert('Telegram login failed');
+					})
+					.finally(() => setLoadingProvider(null));
+			} else {
+			}
+		} else if (provider === 'discord') {
+			const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
+			if (!clientId) {
+				alert('Discord Client ID is missing in frontend .env (VITE_DISCORD_CLIENT_ID)');
+				return;
+			}
+			const redirectUri = encodeURIComponent(window.location.origin + '/');
+			const width = 500;
+			const height = 750;
+			const left = window.screen.width / 2 - width / 2;
+			const top = window.screen.height / 2 - height / 2;
+			window.open(
+				`https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=identify+email`,
+				'Discord OAuth',
+				`width=${width},height=${height},left=${left},top=${top}`
+			);
 		} else {
 			alert(`${provider} OAuth coming soon!`);
 		}
@@ -76,7 +178,7 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 
 		setIsSendingOtp(true);
 		try {
-			await api.post('/auth/send-otp', { email });
+			await api.post('/auth/init-signin', { email });
 			onSelectEmail(email);
 		} catch (error: any) {
 			alert(error.response?.data?.error || 'Failed to send OTP');
@@ -98,17 +200,16 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 			animate={{ opacity: 1, scale: 1 }}
 			exit={{ opacity: 0, scale: 0.98 }}
 			transition={{ duration: 0.3 }}
-			className="flex flex-col h-full max-w-[310px] mx-auto w-full py-4 md:py-2"
+			className="flex flex-col h-full max-w-[333px] mx-auto w-full py-4 md:py-2"
 		>
 			<div className="flex-1 flex flex-col justify-center">
-				<div className="text-center mb-6">
-					<h2 className="text-lg font-medium text-black dark:text-white tracking-tight">
-						Continue to Your Account
+				<div className="text-center md:mb-8 mb-10">
+					<h2 className="text-lg font-medium text-black dark:text-white tracking-normal">
+						Continue to your Trader Account
 					</h2>
 				</div>
 
 				<div className="flex flex-col gap-3">
-					{/* Email Authentication */}
 					<div className="flex flex-col relative">
 						{lastProvider === 'email' && renderLastUsedIndicator()}
 						<div className="relative">
@@ -118,18 +219,18 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
 								placeholder="Email address"
-								className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#28292E] border border-gray-200 dark:border-white/5 rounded-xl focus:outline-none transition-all text-[13px] text-gray-900 dark:text-white placeholder:text-gray-500"
+								className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#28292E] border border-gray-200 dark:border-white/5 rounded-md focus:outline-none transition-all text-[13px] text-gray-900 dark:text-white placeholder:text-gray-500"
 								onKeyDown={(e) => {
 									if (e.key === 'Enter' && isValidEmail) handleProviderClick('email');
 								}}
 							/>
 						</div>
 						<button
-							className={`mt-2.5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-[13px] font-medium transition-all shadow-sm active:scale-[0.98] cursor-pointer ${isValidEmail ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed'}`}
-							disabled={!isValidEmail || isSendingOtp}
+							className="mt-2.5 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-[13px] font-medium transition-all active:scale-[0.98] cursor-pointer bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 disabled:cursor-not-allowed disabled:hover:bg-black dark:disabled:hover:bg-white"
+							disabled={!isValidEmail || isSendingOtp || loadingProvider !== null}
 							onClick={() => handleProviderClick('email')}
 						>
-							{isSendingOtp ? <Loader className="w-4 h-4 animate-spin" /> : 'Continue with Email'}
+							{isSendingOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continue with Email'}
 						</button>
 					</div>
 
@@ -139,14 +240,13 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 						<div className="flex-1 h-px bg-gray-200 dark:bg-white/10"></div>
 					</div>
 
-					{/* Social Authentication */}
-					<div className="grid grid-cols-1 gap-2.5">
+					<div className="grid grid-cols-1 gap-2">
 						<button
-							className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-xl hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 disabled:opacity-50 active:scale-[0.98] bg-white dark:bg-white cursor-pointer shadow-sm"
-							disabled={isOAuthLoading}
+							className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-md hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 active:scale-[0.98] bg-white dark:bg-white cursor-pointer"
+							disabled={loadingProvider !== null}
 							onClick={() => handleProviderClick('google')}
 						>
-							{isOAuthLoading ? <Loader className="w-4 h-4 animate-spin" /> : (
+							{loadingProvider === 'google' ? <Loader2 className="w-4 h-4 animate-spin" /> : (
 								<>
 									{lastProvider === 'google' && renderLastUsedIndicator()}
 									<svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg">
@@ -161,37 +261,78 @@ export default function ProviderSelect({ onSelectEmail, onNextUsername, onNextRe
 						</button>
 
 						<button
-							className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-xl hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 disabled:opacity-50 active:scale-[0.98] bg-white dark:bg-white cursor-pointer shadow-sm"
-							disabled={isOAuthLoading}
-							onClick={() => handleProviderClick('apple')}
+							className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-md hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 active:scale-[0.98] bg-white dark:bg-white cursor-pointer"
+							disabled={loadingProvider !== null}
+							onClick={() => handleProviderClick('discord')}
 						>
-							{lastProvider === 'apple' && renderLastUsedIndicator()}
-							<svg viewBox="0 0 24 24" className="w-[18px] h-[18px] fill-current text-black" xmlns="http://www.w3.org/2000/svg">
-								<path d="M16.365 14.786c-.033-2.617 2.14-3.89 2.235-3.945-1.22-1.782-3.118-2.023-3.8-2.062-1.616-.163-3.155.952-3.978.952-.823 0-2.09-1.002-3.418-.973-1.724.03-3.322.998-4.205 2.533-1.787 3.093-.457 7.675 1.285 10.188.851 1.229 1.862 2.605 3.195 2.553 1.284-.052 1.776-.83 3.324-.83 1.547 0 1.99.83 3.325.801 1.378-.029 2.247-1.256 3.093-2.49 1.054-1.538 1.488-3.031 1.51-3.107-.034-.015-2.9-1.11-2.934-4.04zM15.42 6.541c.699-.844 1.171-2.02 1.042-3.19-.997.04-2.222.664-2.942 1.508-.574.67-1.135 1.874-.985 3.018 1.113.086 2.18-.592 2.885-1.336z" />
-							</svg>
-							Continue with Apple
+							{loadingProvider === 'discord' ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+								<>
+									{lastProvider === 'discord' && renderLastUsedIndicator()}
+									<svg viewBox="0 0 24 24" className="w-[18px] h-[18px] fill-[#5865F2]" xmlns="http://www.w3.org/2000/svg">
+										<path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+									</svg>
+									Continue with Discord
+								</>
+							)}
 						</button>
 
-						<button
-							className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-xl hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 disabled:opacity-50 active:scale-[0.98] bg-white dark:bg-white cursor-pointer shadow-sm"
-							disabled={isOAuthLoading}
-							onClick={() => handleProviderClick('telegram')}
-						>
-							{lastProvider === 'telegram' && renderLastUsedIndicator()}
-							<svg viewBox="0 0 24 24" className="w-[18px] h-[18px] fill-[#2AABEE]" xmlns="http://www.w3.org/2000/svg">
-								<path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-							</svg>
-							Continue with Telegram
-						</button>
+						<div className="relative group">
+							<button
+								className="relative flex items-center justify-center gap-2.5 w-full px-4 py-3 border border-gray-200 dark:border-transparent rounded-md hover:bg-gray-50 dark:hover:bg-gray-200 transition-all text-[13px] font-medium text-gray-700 dark:text-gray-900 active:scale-[0.98] bg-white dark:bg-white cursor-pointer disabled:cursor-not-allowed"
+								disabled={loadingProvider !== null}
+								onClick={() => {
+									if ((window as any).Telegram?.WebApp?.initData) {
+										handleProviderClick('telegram');
+									}
+								}}
+							>
+								{loadingProvider === 'telegram' ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+									<>
+										{lastProvider === 'telegram' && renderLastUsedIndicator()}
+										<svg viewBox="0 0 24 24" className="w-[18px] h-[18px] fill-[#2AABEE]" xmlns="http://www.w3.org/2000/svg">
+											<path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+										</svg>
+										Continue with Telegram
+									</>
+								)}
+							</button>
+							{!((window as any).Telegram?.WebApp?.initData) && (
+								<div className="absolute top-14 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-black text-white text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg flex items-center gap-1.5">
+									<Clock className="w-3 h-3" />
+									<span className="font-medium text-[10px]">coming soon</span>
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<div className="mt-16 text-center flex items-center justify-center gap-3 md:hidden">
+			<div className="md:mt-10 mt-14 text-center flex items-center justify-center gap-3">
 				<a href="/terms" className="text-[13px] font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Terms</a>
 				<span className="text-gray-400 text-xs">&bull;</span>
 				<a href="/privacy" className="text-[13px] font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Privacy</a>
 			</div>
 		</motion.div>
 	);
+}
+
+function TelegramWidget({ botName }: { botName: string }) {
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!containerRef.current) return;
+		if (containerRef.current.hasChildNodes()) return;
+
+		const script = document.createElement('script');
+		script.src = 'https://telegram.org/js/telegram-widget.js?22';
+		script.setAttribute('data-telegram-login', botName);
+		script.setAttribute('data-size', 'large');
+		script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+		script.setAttribute('data-request-access', 'write');
+		script.async = true;
+
+		containerRef.current.appendChild(script);
+	}, [botName]);
+
+	return <div ref={containerRef} />;
 }

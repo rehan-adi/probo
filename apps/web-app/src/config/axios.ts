@@ -15,7 +15,7 @@ api.interceptors.response.use(
 		// If error is 401 and we haven't retried yet
 		if (error.response?.status === 401 && !originalRequest._retry) {
 			// Skip refresh logic if this was already a refresh call, login call, logout, or initial session check
-			const excludedUrls = ['/auth/refresh', '/auth/verify-otp', '/auth/google/callback', '/auth/apple/callback', '/auth/telegram/callback', '/auth/logout', '/auth/me'];
+			const excludedUrls = ['/auth/refresh', '/auth/verify-otp', '/auth/google/callback', '/auth/discord/callback', '/auth/telegram/callback', '/auth/logout', '/auth/me'];
 			const isExcluded = excludedUrls.some(url => originalRequest.url.includes(url));
 
 			if (isExcluded) {

@@ -200,7 +200,7 @@ export default function Navbar() {
 											onMouseEnter={() => setIsProfileOpen(true)}
 											className="flex items-center cursor-pointer p-0.5 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
 										>
-											<img src={pfpIcon} alt="Profile" className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10" />
+											<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10" />
 										</div>
 
 										<AnimatePresence>
@@ -213,7 +213,7 @@ export default function Navbar() {
 														className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1C1C1E] shadow-xl rounded-xl py-2 border border-gray-100 dark:border-white/10 z-50"
 													>
 														<div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-white/5 mb-1">
-															<img src={pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+															<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
 															<div className="flex flex-col">
 																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">{user?.username || 'User'}</span>
 															</div>

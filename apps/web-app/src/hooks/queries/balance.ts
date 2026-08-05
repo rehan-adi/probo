@@ -3,12 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { getBalance, getDepositAmount } from '@/api/balance';
 
 export const useBalanceQuery = () => {
-	const isLoggedIn = useAuthStore((s) => s.isLoggedIn());
+	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
 	return useQuery({
 		queryKey: ['balance'],
 		queryFn: () => getBalance(),
-		enabled: isLoggedIn,
+		enabled: isAuthenticated,
 		retry: 2,
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
 		refetchOnMount: false,

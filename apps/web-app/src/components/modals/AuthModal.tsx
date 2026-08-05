@@ -14,8 +14,7 @@ export default function AuthModal() {
 	const [step, setStep] = useState<AuthStep>('provider');
 	const [email, setEmail] = useState('');
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const [tempUser, setTempUser] = useState<any>(null);
+
 
 	const [isMobile, setIsMobile] = useState(false);
 	const dragControls = useDragControls();
@@ -37,15 +36,21 @@ export default function AuthModal() {
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && onboardModalOpen) closeOnboardModal();
+			if (e.key === 'Escape' && onboardModalOpen) {
+				if (!['username', 'referral'].includes(step)) {
+					closeOnboardModal();
+				}
+			}
 		};
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
-	}, [onboardModalOpen, closeOnboardModal]);
+	}, [onboardModalOpen, closeOnboardModal, step]);
 
-	const handleDragEnd = (info: PanInfo) => {
+	const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
 		if (info.offset.y > 100 || info.velocity.y > 500) {
-			closeOnboardModal();
+			if (!['username', 'referral'].includes(step)) {
+				closeOnboardModal();
+			}
 		}
 	};
 
@@ -56,9 +61,9 @@ export default function AuthModal() {
 			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } }
 		}
 		: {
-			hidden: { opacity: 0, scale: 0.95 },
-			visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-			exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } }
+			hidden: { opacity: 0 },
+			visible: { opacity: 1, transition: { duration: 0.15, ease: 'easeOut' } },
+			exit: { opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }
 		};
 
 	return (
@@ -69,13 +74,17 @@ export default function AuthModal() {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						onClick={closeOnboardModal}
+						onClick={() => {
+							if (!['username', 'referral'].includes(step)) {
+								closeOnboardModal();
+							}
+						}}
 						className="absolute inset-0 bg-black/60 backdrop-blur-sm"
 					/>
 
 					<motion.div
 						ref={containerRef}
-						variants={modalVariants}
+						variants={modalVariants as any}
 						initial="hidden"
 						animate="visible"
 						exit="exit"
@@ -85,7 +94,7 @@ export default function AuthModal() {
 						dragConstraints={{ top: 0 }}
 						dragElastic={0.2}
 						onDragEnd={handleDragEnd}
-						className="w-full md:w-[720px] h-[85vh] md:h-[420px] bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col md:flex-row overflow-hidden"
+						className={`w-full md:w-[420px] h-[85vh] ${step === 'provider' ? 'md:h-[500px]' : 'md:h-auto'} bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col overflow-hidden md:transition-[height] md:duration-300`}
 					>
 
 						{isMobile && (
@@ -97,37 +106,9 @@ export default function AuthModal() {
 							</div>
 						)}
 
-						<div className="w-full h-full flex flex-col md:flex-row overflow-y-auto scrollbar-hide pt-2 md:pt-0">
+						<div className="w-full h-full flex flex-col overflow-y-auto scrollbar-hide pt-2 md:pt-0">
 
-							{/* Left Panel - Marketing / Brand */}
-							<div className="hidden md:flex w-full md:w-[42%] bg-blue-600 relative overflow-hidden flex-col justify-between p-8 md:p-10 shrink-0">
-								{/* Background CSS Art */}
-								<div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-800" />
-
-								{/* Abstract Geometric Elements */}
-								<div className="absolute -top-20 -left-20 w-56 h-56 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
-								<div className="absolute top-1/3 -right-10 w-40 h-40 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-40" />
-								<div className="absolute -bottom-24 left-1/4 w-64 h-64 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30" />
-
-								{/* Simple Marketing Content */}
-								<div className="relative z-10 flex flex-col h-full justify-between">
-									<div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-									</div>
-
-									<div className="text-white mt-auto">
-										<h2 className="text-2xl font-bold mb-3 tracking-tight leading-snug">
-											Trade on Real<br />World Events
-										</h2>
-										<p className="text-blue-100/80 text-[14px] font-normal leading-relaxed">
-											Fast markets. Instant execution. Join millions predicting the future.
-										</p>
-									</div>
-								</div>
-							</div>
-
-							{/* Right Panel - Auth Steps */}
-							<div className="w-full md:w-[58%] px-6 py-6 md:px-8 md:py-8 relative flex flex-col justify-center">
+							<div className="w-full px-6 py-6 md:px-8 md:py-8 relative flex flex-col justify-center">
 								<AnimatePresence mode="wait">
 									{step === 'provider' && (
 										<ProviderSelect
@@ -136,12 +117,10 @@ export default function AuthModal() {
 												setEmail(email);
 												setStep('email-otp');
 											}}
-											onNextUsername={(user) => {
-												setTempUser(user);
+											onNextUsername={() => {
 												setStep('username');
 											}}
-											onNextReferral={(user) => {
-												setTempUser(user);
+											onNextReferral={() => {
 												setStep('referral');
 											}}
 										/>
@@ -152,12 +131,10 @@ export default function AuthModal() {
 											key="email-otp"
 											email={email}
 											onBack={() => setStep('provider')}
-											onNextUsername={(user) => {
-												setTempUser(user);
+											onNextUsername={() => {
 												setStep('username');
 											}}
-											onNextReferral={(user) => {
-												setTempUser(user);
+											onNextReferral={() => {
 												setStep('referral');
 											}}
 										/>
