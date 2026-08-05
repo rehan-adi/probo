@@ -1,17 +1,35 @@
 import { Hono } from 'hono';
-import { login, logout, verify } from '@/controllers/auth';
+import {
+	initSignin,
+	verifyOtp,
+	googleCallback,
+	discordCallback,
+	telegramCallback,
+	logout,
+	refresh,
+	getMe,
+	getSessions,
+	logoutAll,
+} from '@/controllers/auth';
 import { rateLimiter } from '@/middlewares/limiter';
-
-/**
- * Auth specific Routes
- *
- * POST /api/v1/auth/login       → Login or Signup users and send OTP
- * POST /api/v1/auth/verify-otp  → Verify OTP, issue JWT token and add welcome bonus to user's inr balance
- * POST /api/v1/auth/logout      → Logout and clear JWT cookie
- */
+import { authorization } from '@/middlewares/authorization';
 
 export const authRoutes = new Hono();
 
-authRoutes.post('/login', rateLimiter({ points: 30, duration: 300 }), login);
+const authLimiter = rateLimiter({ points: 100, duration: 60 });
+const loginLimiter = rateLimiter({ points: 100, duration: 300 });
+
+authRoutes.post('/init-signin', authLimiter, initSignin);
+authRoutes.post('/verify-otp', loginLimiter, verifyOtp);
+
+authRoutes.post('/google/callback', loginLimiter, googleCallback);
+authRoutes.post('/discord/callback', loginLimiter, discordCallback);
+authRoutes.post('/telegram/callback', loginLimiter, telegramCallback);
+
 authRoutes.post('/logout', logout);
-authRoutes.post('/verify-otp', rateLimiter({ points: 30, duration: 300 }), verify);
+authRoutes.use('/*', authorization);
+authRoutes.post('/refresh', refresh);
+
+authRoutes.get('/me', getMe);
+authRoutes.get('/sessions', getSessions);
+authRoutes.post('/logout-all', logoutAll);

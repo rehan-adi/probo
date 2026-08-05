@@ -1,17 +1,25 @@
 import z from 'zod';
 
-/**
- * Auth Validation Schemas
- *
- * - loginSchema: Validates user phone number for login/signup
- * - verifyOtpSchema: Validates phone number and OTP for verification
- */
-
-export const loginSchema = z.object({
-	phone: z.string().regex(/^[6-9]\d{9}$/, { message: 'Invalid phone number' }),
+export const sendEmailOtpSchema = z.object({
+	email: z.string().email({ message: 'Invalid email address' }),
 });
 
-export const verifyOtpSchema = z.object({
-	phone: z.string().regex(/^[6-9]\d{9}$/, { message: 'Invalid phone number' }),
+export const verifyEmailOtpSchema = z.object({
+	email: z.string().email({ message: 'Invalid email address' }),
 	otp: z.string().regex(/^\d{6}$/, { message: 'OTP must be a 6-digit number' }),
+});
+
+export const verifyGoogleSchema = z.object({
+	idToken: z.string().min(1, 'Token is required'),
+});
+
+export const verifyDiscordSchema = z.object({
+	accessToken: z.string().min(1, 'Discord Access Token is required'),
+});
+
+export const verifyTelegramSchema = z.object({
+	initData: z.string().optional(),
+	widgetData: z.any().optional(),
+}).refine(data => data.initData || data.widgetData, {
+	message: 'Either initData or widgetData is required'
 });
