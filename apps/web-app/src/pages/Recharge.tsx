@@ -76,10 +76,10 @@ export default function RechargePage() {
 						<button
 							onClick={handleSubmit}
 							disabled={!amount || amount <= 0 || isPending}
-							className={`w-full py-3 rounded-xl text-sm font-semibold transition flex items-center justify-center ${
+							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${
 								!amount || amount <= 0 || isPending
-									? 'bg-[#ABABAB] text-white cursor-not-allowed'
-									: 'bg-[#262626] cursor-pointer text-white'
+									? 'bg-[#ABABAB] text-white cursor-not-allowed disabled:opacity-50'
+									: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
 							}`}
 						>
 							{isPending ? (

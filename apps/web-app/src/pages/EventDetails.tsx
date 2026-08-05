@@ -26,6 +26,8 @@ interface TradeExecutedEvent {
 	quantity: number;
 	timestamp: string;
 	matchType: string;
+	takerName?: string;
+	makerName?: string;
 }
 
 interface Market {
@@ -85,12 +87,7 @@ export default function EventDetails() {
 	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 	const [resetScrollToken, setResetScrollToken] = useState(0);
 
-	const maskPhoneNumber = (phone: string) => {
-		if (!phone || phone.length < 4) return phone;
-		const last4 = phone.slice(-4);
-		const masked = '*'.repeat(phone.length - 4);
-		return masked + last4;
-	};
+
 
 	useEffect(() => {
 		if (!symbol) return;
@@ -385,7 +382,7 @@ export default function EventDetails() {
 										<OrderbookLadder
 											bids={bids}
 											asks={asks}
-											onPriceSelect={(price, qty) => {
+															onPriceSelect={() => {
 												// Select price in order form
 											}}
 											isLocked={isOrderbookLocked}
@@ -403,7 +400,16 @@ export default function EventDetails() {
 										{market.trades && market.trades.length > 0 ? (
 											<div className="space-y-4">
 												{market.trades.map((trade, idx) => {
-													const userMock = getUserMock(trade.takerId || trade.makerId);
+													const realName = trade.takerName || trade.makerName;
+													
+													let userMock;
+													if (realName) {
+														const found = MOCK_USERS.find(m => m.name === realName);
+														userMock = found ? found : { name: realName, color: MOCK_USERS[0].color, initial: realName.charAt(0).toUpperCase() };
+													} else {
+														userMock = getUserMock(trade.takerId || trade.makerId);
+													}
+
 													const actionText = trade.takerAction ? (trade.takerAction.toLowerCase() === 'buy' ? 'bought' : 'sold') : 'traded';
 													const price = Number(trade.price);
 													const total = (trade.quantity * price).toFixed(1);
