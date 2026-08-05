@@ -1,5 +1,6 @@
-import { logger } from '@/utils/logger';
+import { logger } from '../utils/logger.js';
 import { prisma } from '@probo/database';
+import { redisPublisher } from '../utils/redis.js';
 
 export const updateTradersCount = async (data: any) => {
 	try {
@@ -37,7 +38,7 @@ export const updateStockPrice = async (data: any) => {
 			},
 			data: {
 				yesPrice: data.yesPrice,
-				NoPrice: data.noPrice,
+				noPrice: data.noPrice,
 			},
 		});
 	} catch (error) {
@@ -80,6 +81,36 @@ export const recordTradeExecution = async (data: any) => {
 		const executionPrice = Number(price);
 
 		await prisma.$transaction(async (tx) => {
+			// Ensure maker and taker orders exist (AMM orders are created in-memory in matching-engine)
+			for (const [oId, uId, isMaker] of [[makerOrderId, makerId, true], [takerOrderId, takerId, false]] as const) {
+				if (!oId) continue;
+				const exists = await tx.order.findUnique({ where: { id: oId } });
+				if (!exists) {
+					const m = await tx.market.findUnique({ where: { id: marketId } });
+					let sType = stockType;
+					let p = executionPrice;
+					if (isMaker && matchType === 'MINT') {
+						sType = stockType === 'YES' ? 'NO' : 'YES';
+						p = 10.0 - executionPrice;
+					}
+					await tx.order.create({
+						data: {
+							id: oId,
+							marketId,
+							userId: uId,
+							stockSymbol: m?.symbol || '',
+							stockType: sType as any,
+							orderType: isMaker ? 'BUY' : takerAction as any,
+							price: p,
+							quantity: 100000, // Large quantity for AMM
+							totalPrice: p * 100000,
+							status: 'PARTIAL',
+							filledQuantity: 0,
+						}
+					});
+				}
+			}
+
 			// Insert immutable Trade record
 			await tx.trade.create({
 				data: {
@@ -106,30 +137,41 @@ export const recordTradeExecution = async (data: any) => {
 				if (takerAction === 'BUY') {
 					// Taker buys stockType from Maker
 					const field = stockType.toLowerCase();
-					
+
 					// Taker: -Locked INR, +Shares
-					await tx.inrBalance.updateMany({
+					await tx.wallet.updateMany({
 						where: { userId: takerId },
 						data: { locked: { decrement: executionPrice * qty } },
 					});
-					const takerStock = await tx.stockBalance.findFirst({ where: { userId: takerId, marketId } });
+					const takerStock = await tx.position.findFirst({ where: { userId: takerId, marketId } });
 					if (takerStock) {
-						await tx.stockBalance.update({
+						await tx.position.update({
 							where: { id: takerStock.id },
-							data: { [`${field}Quantity`]: { increment: qty } },
+							data: {
+								[`${field}Quantity`]: { increment: qty },
+								[`${field}Invested`]: { increment: executionPrice * qty }
+							},
 						});
 					} else {
-						await tx.stockBalance.create({
-							data: { userId: takerId, marketId, [`${field}Quantity`]: qty },
+						await tx.position.create({
+							data: {
+								userId: takerId,
+								marketId,
+								[`${field}Quantity`]: qty,
+								[`${field}Invested`]: executionPrice * qty
+							},
 						});
 					}
 
 					// Maker: -Locked Shares, +Wallet INR
-					await tx.stockBalance.updateMany({
+					await tx.position.updateMany({
 						where: { userId: makerId, marketId },
-						data: { [`${field}Locked`]: { decrement: qty } },
+						data: {
+							[`${field}Locked`]: { decrement: qty },
+							[`${field}SellValue`]: { increment: executionPrice * qty }
+						},
 					});
-					await tx.inrBalance.updateMany({
+					await tx.wallet.updateMany({
 						where: { userId: makerId },
 						data: { balance: { increment: executionPrice * qty } },
 					});
@@ -143,29 +185,40 @@ export const recordTradeExecution = async (data: any) => {
 					const field = stockType.toLowerCase();
 
 					// Taker: -Locked Shares, +Wallet INR
-					await tx.stockBalance.updateMany({
+					await tx.position.updateMany({
 						where: { userId: takerId, marketId },
-						data: { [`${field}Locked`]: { decrement: qty } },
+						data: {
+							[`${field}Locked`]: { decrement: qty },
+							[`${field}SellValue`]: { increment: executionPrice * qty }
+						},
 					});
-					await tx.inrBalance.updateMany({
+					await tx.wallet.updateMany({
 						where: { userId: takerId },
 						data: { balance: { increment: executionPrice * qty } },
 					});
 
 					// Maker: -Locked INR, +Shares
-					await tx.inrBalance.updateMany({
+					await tx.wallet.updateMany({
 						where: { userId: makerId },
 						data: { locked: { decrement: executionPrice * qty } },
 					});
-					const makerStock = await tx.stockBalance.findFirst({ where: { userId: makerId, marketId } });
+					const makerStock = await tx.position.findFirst({ where: { userId: makerId, marketId } });
 					if (makerStock) {
-						await tx.stockBalance.update({
+						await tx.position.update({
 							where: { id: makerStock.id },
-							data: { [`${field}Quantity`]: { increment: qty } },
+							data: {
+								[`${field}Quantity`]: { increment: qty },
+								[`${field}Invested`]: { increment: executionPrice * qty }
+							},
 						});
 					} else {
-						await tx.stockBalance.create({
-							data: { userId: makerId, marketId, [`${field}Quantity`]: qty },
+						await tx.position.create({
+							data: {
+								userId: makerId,
+								marketId,
+								[`${field}Quantity`]: qty,
+								[`${field}Invested`]: executionPrice * qty
+							},
 						});
 					}
 
@@ -178,32 +231,58 @@ export const recordTradeExecution = async (data: any) => {
 				// Both are BUYERS.
 				const yesPrice = stockType === 'YES' ? executionPrice : 10.0 - executionPrice;
 				const noPrice = stockType === 'YES' ? 10.0 - executionPrice : executionPrice;
-				
+
 				const yesBuyerId = stockType === 'YES' ? takerId : makerId;
 				const noBuyerId = stockType === 'YES' ? makerId : takerId;
 
 				// Yes Buyer
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId: yesBuyerId },
 					data: { locked: { decrement: yesPrice * qty } },
 				});
-				const yesStock = await tx.stockBalance.findFirst({ where: { userId: yesBuyerId, marketId } });
+				const yesStock = await tx.position.findFirst({ where: { userId: yesBuyerId, marketId } });
 				if (yesStock) {
-					await tx.stockBalance.update({ where: { id: yesStock.id }, data: { yesQuantity: { increment: qty } } });
+					await tx.position.update({
+						where: { id: yesStock.id },
+						data: {
+							yesQuantity: { increment: qty },
+							yesInvested: { increment: yesPrice * qty }
+						}
+					});
 				} else {
-					await tx.stockBalance.create({ data: { userId: yesBuyerId, marketId, yesQuantity: qty } });
+					await tx.position.create({
+						data: {
+							userId: yesBuyerId,
+							marketId,
+							yesQuantity: qty,
+							yesInvested: yesPrice * qty
+						}
+					});
 				}
 
 				// No Buyer
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId: noBuyerId },
 					data: { locked: { decrement: noPrice * qty } },
 				});
-				const noStock = await tx.stockBalance.findFirst({ where: { userId: noBuyerId, marketId } });
+				const noStock = await tx.position.findFirst({ where: { userId: noBuyerId, marketId } });
 				if (noStock) {
-					await tx.stockBalance.update({ where: { id: noStock.id }, data: { noQuantity: { increment: qty } } });
+					await tx.position.update({
+						where: { id: noStock.id },
+						data: {
+							noQuantity: { increment: qty },
+							noInvested: { increment: noPrice * qty }
+						}
+					});
 				} else {
-					await tx.stockBalance.create({ data: { userId: noBuyerId, marketId, noQuantity: qty } });
+					await tx.position.create({
+						data: {
+							userId: noBuyerId,
+							marketId,
+							noQuantity: qty,
+							noInvested: noPrice * qty
+						}
+					});
 				}
 			} else if (matchType === 'MERGE') {
 				// Both are SELLERS.
@@ -214,21 +293,27 @@ export const recordTradeExecution = async (data: any) => {
 				const noSellerId = stockType === 'YES' ? makerId : takerId;
 
 				// Yes Seller
-				await tx.stockBalance.updateMany({
+				await tx.position.updateMany({
 					where: { userId: yesSellerId, marketId },
-					data: { yesLocked: { decrement: qty } },
+					data: {
+						yesLocked: { decrement: qty },
+						yesSellValue: { increment: yesPrice * qty }
+					},
 				});
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId: yesSellerId },
 					data: { balance: { increment: yesPrice * qty } },
 				});
 
 				// No Seller
-				await tx.stockBalance.updateMany({
+				await tx.position.updateMany({
 					where: { userId: noSellerId, marketId },
-					data: { noLocked: { decrement: qty } },
+					data: {
+						noLocked: { decrement: qty },
+						noSellValue: { increment: noPrice * qty }
+					},
 				});
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId: noSellerId },
 					data: { balance: { increment: noPrice * qty } },
 				});
@@ -259,6 +344,10 @@ export const recordTradeExecution = async (data: any) => {
 			await updateOrder(makerOrderId, qty);
 			await updateOrder(takerOrderId, qty);
 		});
+
+		// Broadcast portfolio updates
+		redisPublisher.publish('stream:data', JSON.stringify({ symbol: makerId, type: 'PORTFOLIO_UPDATE' }));
+		redisPublisher.publish('stream:data', JSON.stringify({ symbol: takerId, type: 'PORTFOLIO_UPDATE' }));
 	} catch (error) {
 		logger.error({ error, data, context: 'TRADE_EXECUTED_FAIL' }, 'Failed to record trade execution');
 		throw error;
@@ -277,7 +366,7 @@ export const recordOrderPlaced = async (data: any) => {
 		await prisma.$transaction(async (tx) => {
 			if (action === 'BUY') {
 				// Lock INR
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId },
 					data: {
 						balance: { decrement: totalCost },
@@ -298,7 +387,7 @@ export const recordOrderPlaced = async (data: any) => {
 			} else {
 				// SELL: Lock Stocks
 				const field = side === 'Yes' ? 'yes' : 'no';
-				await tx.stockBalance.updateMany({
+				await tx.position.updateMany({
 					where: { userId, marketId },
 					data: {
 						[`${field}Quantity`]: { decrement: Number(originalQuantity) },
@@ -307,6 +396,9 @@ export const recordOrderPlaced = async (data: any) => {
 				});
 			}
 		});
+
+		// Broadcast portfolio update
+		redisPublisher.publish('stream:data', JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }));
 
 	} catch (error) {
 		logger.error({ error, data, context: 'ORDER_PLACED_FAIL' }, 'Failed to record order placement');
@@ -321,7 +413,7 @@ export const handleOrderCancelled = async (data: any) => {
 
 		await prisma.$transaction(async (tx) => {
 			if (type === 'INR') {
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId },
 					data: {
 						locked: { decrement: qty },
@@ -333,7 +425,7 @@ export const handleOrderCancelled = async (data: any) => {
 				});
 			} else if (type === 'YES_STOCK' || type === 'NO_STOCK') {
 				const field = type === 'YES_STOCK' ? 'yes' : 'no';
-				await tx.stockBalance.updateMany({
+				await tx.position.updateMany({
 					where: { userId, marketId },
 					data: {
 						[`${field}Locked`]: { decrement: qty },
@@ -342,6 +434,9 @@ export const handleOrderCancelled = async (data: any) => {
 				});
 			}
 		});
+
+		// Broadcast portfolio update
+		redisPublisher.publish('stream:data', JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }));
 	} catch (error) {
 		logger.error({ error, data }, 'Failed to process order cancellation');
 		throw error;
@@ -351,23 +446,23 @@ export const handleOrderCancelled = async (data: any) => {
 export const handleMarketResolved = async (data: any) => {
 	try {
 		const { marketId, result } = data;
-		
+
 		// If Cancel, refund initial investment? No, let's just use Yes/No winner.
 		// A Yes share pays out 10. A No share pays out 10.
 		if (result !== 'Yes' && result !== 'No') return;
-		
+
 		const field = result === 'Yes' ? 'yesQuantity' : 'noQuantity';
 
-		const holders = await prisma.stockBalance.findMany({
+		const holders = await prisma.position.findMany({
 			where: { marketId, [field]: { gt: 0 } },
 		});
 
 		await prisma.$transaction(async (tx) => {
 			for (const holder of holders) {
 				const payout = Number(holder[field]) * 10.0;
-				
+
 				// Add INR
-				await tx.inrBalance.updateMany({
+				await tx.wallet.updateMany({
 					where: { userId: holder.userId },
 					data: { balance: { increment: payout } }
 				});
@@ -379,7 +474,7 @@ export const handleMarketResolved = async (data: any) => {
 			}
 
 			// Delete all stock balances for this market as it is closed
-			await tx.stockBalance.deleteMany({
+			await tx.position.deleteMany({
 				where: { marketId }
 			});
 		});
