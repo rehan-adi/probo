@@ -6,6 +6,7 @@ import { prisma } from '@probo/database';
 import { EVENTS } from '@/constants/constants';
 import { pushToQueue } from '@/lib/redis/queue';
 import { createMarketSchema } from '@/validations/market';
+import { generatePresignedUrl } from '@/lib/aws/presign';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
@@ -887,5 +888,39 @@ export const getMarketStats = async (c: Context) => {
 	} catch (error) {
 		console.error(error);
 		return c.json({ success: false, message: 'Failed to fetch market stats' }, 500);
+	}
+};
+
+/**
+ * Generate a presigned URL for file uploads, used during market creation
+ * @param c Hono context
+ * @returns Json response with presigned URL
+ */
+
+export const generatePresignedUrlRoute = async (c: Context) => {
+	try {
+		const body = await c.req.json();
+		const { fileName, fileType } = body;
+
+		if (!fileName || !fileType) {
+			return c.json(
+				{
+					success: false,
+					message: 'Missing file name or type',
+				},
+				400,
+			);
+		}
+
+		const { url, publicUrl } = await generatePresignedUrl(fileName, fileType);
+		return c.json({
+			success: true,
+			message: 'Presinges url generated',
+			url,
+			publicUrl,
+		});
+	} catch (error) {
+		logger.error({ error }, 'Failed to generate presigned URL');
+		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };

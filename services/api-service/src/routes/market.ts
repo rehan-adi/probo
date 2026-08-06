@@ -11,6 +11,7 @@ import {
 	getMarketKlines,
 	getMarketTrades,
 	getMarketStats,
+	generatePresignedUrlRoute,
 } from '@/controllers/market';
 
 export const marketRoutes = new Hono();
@@ -20,6 +21,7 @@ marketRoutes.get('/category/:categoryParam', getMarketsByCategory);
 marketRoutes.post('/create', authorization, createMarket);
 marketRoutes.post('/liquidity-add', authorization, addLiquidity);
 marketRoutes.post('/resolve', authorization, resolveMarket);
+marketRoutes.post('/generate-url', authorization, generatePresignedUrlRoute);
 
 marketRoutes.get('/search', searchMarkets);
 marketRoutes.get('/:symbol', getMarketDetails);

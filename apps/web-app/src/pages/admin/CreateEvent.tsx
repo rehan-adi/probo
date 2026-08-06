@@ -1,3 +1,4 @@
+import api from '@/config/axios';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -28,15 +29,19 @@ const CreateEvent = () => {
 		endTime: '',
 		sourceOfTruth: '',
 		categoryId: '',
-		thumbnail: null,
+		thumbnail: null as File | null,
 	});
-	const [categories, setCategories] = useState([]);
+
+	const [categories, setCategories] = useState<{ id: string; categoryName: string }[]>([]);
 
 	useEffect(() => {
 		const fetchCategories = async () => {
 			try {
 				const response = await getAllCategoary();
-				setCategories(response.data.data);
+				const result = response.data;
+				if (result.success && result.data) {
+					setCategories(result.data);
+				}
 			} catch (err) {
 				console.error('Error fetching categories:', err);
 			}
@@ -56,20 +61,12 @@ const CreateEvent = () => {
 
 	const uploadToS3 = async (file: File): Promise<string> => {
 		try {
-			const res = await fetch('http://localhost:3000/api/v1/generate/url', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					fileName: file.name,
-					fileType: file.type,
-				}),
+			const res = await api.post('/market/generate-url', {
+				fileName: file.name,
+				fileType: file.type,
 			});
 
-			if (!res.ok) throw new Error('Failed to get presigned URL');
-
-			const { url, publicUrl } = await res.json();
+			const { url, publicUrl } = res.data;
 
 			const uploadRes = await fetch(url, {
 				method: 'PUT',

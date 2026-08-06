@@ -1,21 +1,21 @@
+import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { Context, Hono } from 'hono';
 
 import { authRoutes } from '@/routes/auth';
-import { orderRoutes } from './routes/order';
+import { orderRoutes } from '@/routes/order';
 import { healthRoutes } from '@/routes/health';
-import { marketRoutes } from './routes/market';
-import { paymentRoutes } from './routes/payment';
-import { profileRoutes } from './routes/profile';
-import { balanceRoutes } from './routes/balance';
-import { referralRoutes } from './routes/referral';
-import { portfolioRoutes } from './routes/portfolio';
+import { marketRoutes } from '@/routes/market';
+import { paymentRoutes } from '@/routes/payment';
+import { profileRoutes } from '@/routes/profile';
+import { balanceRoutes } from '@/routes/balance';
+import { settingsRoutes } from '@/routes/settings';
+import { referralRoutes } from '@/routes/referral';
+import { portfolioRoutes } from '@/routes/portfolio';
 import { onboardingRoutes } from '@/routes/onboarding';
-import { categoriesRoutes } from './routes/categories';
-import { generatePresignedUrl } from './lib/aws/presign';
-import { transactionRoutes } from './routes/transaction';
-import { verificationRoutes } from './routes/verification';
+import { categoriesRoutes } from '@/routes/categories';
+import { transactionRoutes } from '@/routes/transaction';
+import { verificationRoutes } from '@/routes/verification';
 
 const app = new Hono();
 
@@ -47,6 +47,7 @@ app.route('/api/v1/market', marketRoutes);
 app.route('/api/v1/balance', balanceRoutes);
 app.route('/api/v1/profile', profileRoutes);
 app.route('/api/v1/payments', paymentRoutes);
+app.route('/api/v1/settings', settingsRoutes);
 app.route('/api/v1/referral', referralRoutes);
 app.route('/api/v1/portfolio', portfolioRoutes);
 app.route('/api/v1/onboarding', onboardingRoutes);
@@ -54,32 +55,5 @@ app.route('/api/v1/categories', categoriesRoutes);
 app.route('/api/v1/transaction', transactionRoutes);
 app.route('/api/v1/verification', verificationRoutes);
 
-/**
- * this route is for generating Presigned Url, called by frontend in Create Event page
- */
-
-app.post('/api/v1/generate/url', async (c: Context) => {
-	const body = await c.req.json();
-
-	const { fileName, fileType } = body;
-
-	if (!fileName || !fileType) {
-		return c.json(
-			{
-				success: false,
-				message: 'Missing file name or type',
-			},
-			400,
-		);
-	}
-
-	const { url, publicUrl } = await generatePresignedUrl(fileName, fileType);
-	return c.json({
-		success: true,
-		message: 'Presinges url generated',
-		url,
-		publicUrl,
-	});
-});
 
 export default app;
