@@ -8,10 +8,12 @@ export interface User {
 	email?: string;
 	phone?: string;
 	username?: string;
+	bio?: string;
 	avatarUrl?: string;
 	role: string;
 	isNewUser?: boolean;
 	onboardingStatus: OnboardingStatus;
+	usernameChangedAt?: string | Date | null;
 }
 
 interface AuthState {
