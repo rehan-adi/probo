@@ -1,25 +1,12 @@
-# Processor Service
+# processor-service
 
-A backend worker service built with Bun that acts as the persistence layer for the Probo matching engine.
+The processor service acts as a background worker for the system. It listens to events from Kafka emitted by the Matching Engine, processes them by interacting with the database and broadcasts updates via Redis Pub/Sub.
 
-Instead of writing trades directly to the database synchronously, the Matching Engine publishes matched trades to Kafka. The **Processor Service** consumes these events from Kafka and reliably writes them to PostgreSQL. This asynchronous architecture ensures the Matching Engine remains unblocked and blazingly fast.
+## Running the Service
 
-## Setup
+Make sure your Docker services (Kafka, Zookeeper, Redis, Postgres) are running first.
 
-1. Make sure dependencies are installed via the workspace root.
-2. Ensure you have the proper `.env` configuration:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Start the service (usually run with `bun run start:all` at the root):
-   ```bash
-   bun start
-   ```
-
-## Key Technologies
-
-- **Consumer:** KafkaJS
-- **Persistence:** PostgreSQL via Prisma ORM
-- **Runtime:** Bun
+```bash
+bun install
+bun run start
+```

@@ -1,9 +1,10 @@
-import { logger } from '@/utils/logger';
-import { dbConsumer } from '@/kafka/consumer';
-import { connectProducer, disconnectProducer } from '@/kafka/client';
+import { logger } from '@/libs/logger';
+import { dbConsumer } from '@/libs/kafka/consumer';
+import { connectProducer, disconnectProducer } from '@/libs/kafka/client';
 
 async function startDBProcessor() {
 	await connectProducer();
+
 	logger.info('DB processor is running and ready to process');
 	await dbConsumer();
 

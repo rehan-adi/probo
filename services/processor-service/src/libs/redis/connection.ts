@@ -1,9 +1,10 @@
 import Redis from 'ioredis';
-import { logger } from '../utils/logger.js';
+import { logger } from '../logger/index.js';
+import { ENV } from '@/config/env.js';
 
 export const redisPublisher = new Redis({
-	host: process.env.REDIS_HOST || 'localhost',
-	port: Number(process.env.REDIS_PORT) || 6379,
+	host: ENV.REDIS_HOST,
+	port: Number(ENV.REDIS_PORT),
 });
 
 redisPublisher.on('connect', () => {
@@ -11,5 +12,5 @@ redisPublisher.on('connect', () => {
 });
 
 redisPublisher.on('error', (err) => {
-	logger.error('Failed to connect to Redis', err);
+	logger.error(err, 'Failed to connect to Redis');
 });

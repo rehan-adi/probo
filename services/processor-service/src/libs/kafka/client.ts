@@ -1,9 +1,10 @@
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
+import { ENV } from '@/config/env';
 import { Kafka, logLevel, Partitioners } from 'kafkajs';
 
 export const kafkaClient = new Kafka({
 	logLevel: logLevel.ERROR,
-	brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
+	brokers: [ENV.KAFKA_BROKERS],
 	clientId: 'processor-service-consumer',
 });
 
