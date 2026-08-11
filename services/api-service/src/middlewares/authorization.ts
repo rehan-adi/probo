@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { getCookie } from 'hono/cookie';
 import { Context, MiddlewareHandler } from 'hono';
 import { verifyAccessToken } from '@/utils/token';
@@ -6,7 +6,7 @@ import { verifyAccessToken } from '@/utils/token';
 export const authorization: MiddlewareHandler = async (c: Context, next) => {
 	try {
 		let token = getCookie(c, 'accessToken');
-		
+
 		if (!token) {
 			const authHeader = c.req.header('Authorization');
 			if (authHeader && authHeader.startsWith('Bearer ')) {

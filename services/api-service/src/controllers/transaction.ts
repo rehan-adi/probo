@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { Context } from 'hono';
 import { prisma } from '@probo/database';
 

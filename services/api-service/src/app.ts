@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
+import { aapiRoutes } from '@/routes/admin';
 import { authRoutes } from '@/routes/auth';
 import { orderRoutes } from '@/routes/order';
 import { healthRoutes } from '@/routes/health';
@@ -18,7 +19,6 @@ import { transactionRoutes } from '@/routes/transaction';
 import { verificationRoutes } from '@/routes/verification';
 
 const app = new Hono();
-
 
 app.use(logger());
 app.use(
@@ -39,21 +39,25 @@ app.use('*', async (c, next) => {
 	await next();
 });
 
+// Client APIs (CAPI)
+app.route('/api/v1/capi/auth', authRoutes);
+app.route('/api/v1/capi/order', orderRoutes);
+app.route('/api/v1/capi/market', marketRoutes);
+app.route('/api/v1/capi/balance', balanceRoutes);
+app.route('/api/v1/capi/profile', profileRoutes);
+app.route('/api/v1/capi/payments', paymentRoutes);
+app.route('/api/v1/capi/settings', settingsRoutes);
+app.route('/api/v1/capi/referral', referralRoutes);
+app.route('/api/v1/capi/portfolio', portfolioRoutes);
+app.route('/api/v1/capi/onboarding', onboardingRoutes);
+app.route('/api/v1/capi/categories', categoriesRoutes);
+app.route('/api/v1/capi/transaction', transactionRoutes);
+app.route('/api/v1/capi/verification', verificationRoutes);
 
-app.route('/api/v1/auth', authRoutes);
-app.route('/api/v1/order', orderRoutes);
-app.route('/api/v1/health', healthRoutes);
-app.route('/api/v1/market', marketRoutes);
-app.route('/api/v1/balance', balanceRoutes);
-app.route('/api/v1/profile', profileRoutes);
-app.route('/api/v1/payments', paymentRoutes);
-app.route('/api/v1/settings', settingsRoutes);
-app.route('/api/v1/referral', referralRoutes);
-app.route('/api/v1/portfolio', portfolioRoutes);
-app.route('/api/v1/onboarding', onboardingRoutes);
-app.route('/api/v1/categories', categoriesRoutes);
-app.route('/api/v1/transaction', transactionRoutes);
-app.route('/api/v1/verification', verificationRoutes);
+// Admin APIs (AAPI)
+app.route('/api/v1/aapi', aapiRoutes);
 
+// Health check APIs (PAPI)
+app.route('/api/v1/papi/health', healthRoutes);
 
 export default app;

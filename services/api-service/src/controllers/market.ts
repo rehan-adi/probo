@@ -1,12 +1,12 @@
 import slugify from 'slugify';
 import { Context } from 'hono';
 import { customAlphabet } from 'nanoid';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
 import { createMarketSchema } from '@/validations/market';
-import { generatePresignedUrl } from '@/lib/aws/presign';
+import { generatePresignedUrl } from '@/libs/aws/presign';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 6);
 
@@ -477,6 +477,7 @@ export const resolveMarket = async (c: Context) => {
 		// Push to Engine to halt trading and settle
 		const response = await pushToQueue(EVENTS.RESOLVE_MARKET, {
 			marketId: body.marketId,
+			symbol: market.symbol,
 			result: body.result,
 		});
 
@@ -545,8 +546,8 @@ export const getMarketDetails = async (c: Context) => {
 					status: true,
 					numberOfTraders: true,
 					category: {
-						select: { categoryName: true }
-					}
+						select: { categoryName: true },
+					},
 				},
 			});
 
@@ -619,7 +620,7 @@ export const getMarketDetails = async (c: Context) => {
 			if (response.data?.categoryId) {
 				const cat = await prisma.category.findUnique({
 					where: { id: response.data.categoryId },
-					select: { categoryName: true }
+					select: { categoryName: true },
 				});
 				if (cat) categoryName = cat.categoryName;
 			}
@@ -706,14 +707,17 @@ export const searchMarkets = async (c: Context) => {
 			}),
 		]);
 
-		return c.json({
-			success: true,
-			data: markets,
-			total,
-			page,
-			limit,
-			hasMore: skip + markets.length < total,
-		}, 200);
+		return c.json(
+			{
+				success: true,
+				data: markets,
+				total,
+				page,
+				limit,
+				hasMore: skip + markets.length < total,
+			},
+			200,
+		);
 	} catch (error: any) {
 		logger.error({ context: 'SEARCH_MARKETS', error: error.message });
 		return c.json({ success: false, message: 'Internal server error' }, 500);
@@ -743,21 +747,34 @@ export const getMarketKlines = async (c: Context) => {
 		const trades = await prisma.trade.findMany({
 			where: {
 				marketId: market.id,
-				...(Object.keys(timeFilter).length > 0 && { createdAt: timeFilter })
+				...(Object.keys(timeFilter).length > 0 && { createdAt: timeFilter }),
 			},
 			orderBy: { createdAt: 'asc' },
-			select: { price: true, quantity: true, createdAt: true }
+			select: { price: true, quantity: true, createdAt: true },
 		});
 
 		let bucketMs = 60 * 1000;
 		switch (resolution) {
-			case '1m': bucketMs = 60 * 1000; break;
-			case '5m': bucketMs = 5 * 60 * 1000; break;
-			case '15m': bucketMs = 15 * 60 * 1000; break;
-			case '1h': bucketMs = 60 * 60 * 1000; break;
-			case '4h': bucketMs = 4 * 60 * 60 * 1000; break;
-			case '1d': bucketMs = 24 * 60 * 60 * 1000; break;
-			default: bucketMs = 60 * 1000;
+			case '1m':
+				bucketMs = 60 * 1000;
+				break;
+			case '5m':
+				bucketMs = 5 * 60 * 1000;
+				break;
+			case '15m':
+				bucketMs = 15 * 60 * 1000;
+				break;
+			case '1h':
+				bucketMs = 60 * 60 * 1000;
+				break;
+			case '4h':
+				bucketMs = 4 * 60 * 60 * 1000;
+				break;
+			case '1d':
+				bucketMs = 24 * 60 * 60 * 1000;
+				break;
+			default:
+				bucketMs = 60 * 1000;
 		}
 
 		const klinesMap = new Map<number, any>();
@@ -771,7 +788,7 @@ export const getMarketKlines = async (c: Context) => {
 					high: price,
 					low: price,
 					close: price,
-					volume: trade.quantity
+					volume: trade.quantity,
 				});
 			} else {
 				const bucket = klinesMap.get(time);
@@ -824,7 +841,7 @@ export const getMarketTrades = async (c: Context) => {
 				createdAt: true,
 				maker: { select: { username: true } },
 				taker: { select: { username: true } },
-			}
+			},
 		});
 
 		const formattedTrades = trades.map((trade) => ({

@@ -1,5 +1,5 @@
 import { Context, Hono } from 'hono';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
 
 export const categoriesRoutes = new Hono();

@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
 
 export const getPortfolio = async (c: Context) => {

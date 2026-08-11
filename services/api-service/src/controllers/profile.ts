@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { prisma } from '@probo/database';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 
 export const getProfile = async (c: Context) => {
 	try {
@@ -152,10 +152,7 @@ export const getUserTrades = async (c: Context) => {
 
 		const trades = await prisma.trade.findMany({
 			where: {
-				OR: [
-					{ makerId: user.id },
-					{ takerId: user.id }
-				]
+				OR: [{ makerId: user.id }, { takerId: user.id }],
 			},
 			orderBy: { createdAt: 'desc' },
 			take: limit > 100 ? 100 : limit,
@@ -170,7 +167,7 @@ export const getUserTrades = async (c: Context) => {
 				quantity: true,
 				matchType: true,
 				createdAt: true,
-			}
+			},
 		});
 
 		return c.json({ success: true, data: trades });

@@ -1,6 +1,6 @@
 import app from '@/app';
 import { ENV } from '@/config/env';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 
 Bun.serve({
 	fetch: app.fetch,

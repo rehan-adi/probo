@@ -1,24 +1,20 @@
-# API Service
+# api-service
 
-The primary HTTP backend for Probo, built with [Bun](https://bun.sh/) and [Hono](https://hono.dev/).
+The primary HTTP backend service for Probo, built with [Bun](https://bun.sh/) and [Hono](https://hono.dev/).
 
-This service is responsible for handling user authentication (via Twilio OTP), wallet operations, market data queries, and pushing trade orders to the matching engine via Redis queues. **Crucially, it does not write trades directly to the database** to maintain extreme low latency.
+It handles user authentication, wallet operations, market queries, and admin operations. Endpoints are structured into client (`/capi`) and admin (`/aapi`) routes. It delegates order execution and state sync to the matching engine via Redis queues to maintain low latency.
 
-## Setup
+## Running the Service
 
-1. Install dependencies from the repository root (`bun install`).
-2. Set up the `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
-3. Run the service (usually via the root command `bun run start:all` or individually):
-   ```bash
-   bun start
-   ```
+Make sure your background infrastructure (Redis, Postgres) is running first.
 
-## Key Technologies
+```bash
+bun install
+bun run dev
+```
 
-- **Framework:** Hono
-- **Runtime:** Bun
-- **Caching & Queues:** Redis (via `ioredis`)
-- **Validation:** Zod
+## Key Modules
+
+- **Client API (`/capi`):** Authentication, wallet, user profiles, market queries, and order submission.
+- **Admin API (`/aapi`):** Market creation, event resolution, user management, and verification approvals.
+- **Public API (`/papi`):** Public APIs for api service

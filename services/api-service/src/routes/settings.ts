@@ -1,6 +1,11 @@
 import { Hono } from 'hono';
 import { authorization } from '@/middlewares/authorization';
-import { getSettings, updateProfile, updateNotifications, deleteAccount } from '../controllers/settings';
+import {
+	getSettings,
+	updateProfile,
+	updateNotifications,
+	deleteAccount,
+} from '../controllers/settings';
 
 export const settingsRoutes = new Hono();
 

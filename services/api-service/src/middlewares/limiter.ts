@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono';
-import { client } from '@/lib/redis/connection';
+import { client } from '@/libs/redis/connection';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 
 type BlockOptions = {

@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import { logger } from '@/utils/logger';
-import { client, pubsubClient } from '@/lib/redis/connection';
+import { logger } from '@/libs/logger';
+import { client, pubsubClient } from '@/libs/redis/connection';
 
 /**
  * Pushes an event payload to the Redis queue and waits for a response.

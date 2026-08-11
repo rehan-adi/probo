@@ -1,8 +1,8 @@
 import { Context } from 'hono';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
 import { referralCodeSchema } from '@/validations/referral';
 
 /**
@@ -228,7 +228,7 @@ export const submitReferral = async (c: Context) => {
 						type: 'REFERRAL_REWARD',
 						status: 'SUCCESS',
 						amount: '20.00',
-						remarks: `Referral bonus from +91-XXXXXX${(referrer.phone || "0000").slice(-4)}`,
+						remarks: `Referral bonus from +91-XXXXXX${(referrer.phone || '0000').slice(-4)}`,
 					},
 				});
 

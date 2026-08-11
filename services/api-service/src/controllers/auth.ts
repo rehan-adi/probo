@@ -1,18 +1,18 @@
 import crypto from 'crypto';
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { getClientInfo } from '@/utils/client';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
 import { deleteCookie, getCookie } from 'hono/cookie';
 import { prisma, AuthProvider } from '@probo/database';
-import { client as redis } from '@/lib/redis/connection';
+import { client as redis } from '@/libs/redis/connection';
 import {
 	generateAccessToken,
 	generateRefreshTokenString,
 	hashRefreshToken,
-	setAuthCookies
+	setAuthCookies,
 } from '@/utils/token';
 import {
 	sendEmailOtpSchema,
@@ -21,7 +21,6 @@ import {
 	verifyDiscordSchema,
 	verifyTelegramSchema,
 } from '@/validations/auth';
-
 
 const logAudit = async (
 	action: string,
@@ -37,18 +36,26 @@ const logAudit = async (
 				userId,
 				ip,
 				userAgent,
-				metadata: metadata ? metadata : undefined
+				metadata: metadata ? metadata : undefined,
 			},
 		});
 	} catch (error) {
-		logger.error({
-			error, action, userId
-		}, 'Failed to write audit log');
+		logger.error(
+			{
+				error,
+				action,
+				userId,
+			},
+			'Failed to write audit log',
+		);
 	}
 };
 
-const resolveOrCreateUser = async (email: string, provider: AuthProvider, providerUserId: string) => {
-
+const resolveOrCreateUser = async (
+	email: string,
+	provider: AuthProvider,
+	providerUserId: string,
+) => {
 	const existingLink = await prisma.linkedAccount.findUnique({
 		where: { provider_providerUserId: { provider, providerUserId } },
 		include: { user: true },
@@ -89,7 +96,7 @@ const resolveOrCreateUser = async (email: string, provider: AuthProvider, provid
 					type: 'SIGNUP_BONUS',
 					status: 'SUCCESS',
 					amount: '15.00',
-					remarks: 'Signup Bonus'
+					remarks: 'Signup Bonus',
 				},
 			});
 		});
@@ -101,7 +108,7 @@ const resolveOrCreateUser = async (email: string, provider: AuthProvider, provid
 	if (!user) throw new Error('User creation failed');
 
 	try {
-		await pushToQueue(EVENTS.CREATE_USER, { userId: user.id });
+		await pushToQueue(EVENTS.CREATE_USER, { id: user.id, name: user.name });
 		await pushToQueue(EVENTS.INIT_BALANCE, { userId: user.id, amount: 15.0 });
 	} catch (error) {
 		logger.error({ error, userId: user.id }, 'Failed to queue events for new user');
@@ -115,8 +122,8 @@ const createSession = async (
 	role: string,
 	email?: string | null,
 	userAgent?: string,
-	ipAddress?: string) => {
-
+	ipAddress?: string,
+) => {
 	const accessToken = await generateAccessToken(userId, role, email);
 	const refreshTokenString = generateRefreshTokenString();
 
@@ -125,7 +132,11 @@ const createSession = async (
 
 	await prisma.session.create({
 		data: {
-			userId, refreshToken: hashedRefreshToken, userAgent, ipAddress, expiresAt
+			userId,
+			refreshToken: hashedRefreshToken,
+			userAgent,
+			ipAddress,
+			expiresAt,
 		},
 	});
 	return { accessToken, refreshToken: refreshTokenString };
@@ -142,10 +153,14 @@ export const initSignin = async (c: Context) => {
 
 		const result = sendEmailOtpSchema.safeParse(body);
 
-		if (!result.success) return c.json({
-			success: false,
-			error: result.error.issues
-		}, 400);
+		if (!result.success)
+			return c.json(
+				{
+					success: false,
+					error: result.error.issues,
+				},
+				400,
+			);
 
 		const { email } = result.data;
 
@@ -155,7 +170,10 @@ export const initSignin = async (c: Context) => {
 		const attempts = await redis.get(attemptsKey);
 
 		if (attempts && parseInt(attempts) >= 5) {
-			return c.json({ success: false, error: 'Too many failed attempts. Please wait 15 minutes.' }, 400);
+			return c.json(
+				{ success: false, error: 'Too many failed attempts. Please wait 15 minutes.' },
+				400,
+			);
 		}
 
 		const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -168,14 +186,17 @@ export const initSignin = async (c: Context) => {
 
 		return c.json({
 			success: true,
-			message: 'OTP sent successfully'
+			message: 'OTP sent successfully',
 		});
 	} catch (error: any) {
 		logger.error({ error }, 'Failed to send email OTP');
-		return c.json({
-			success: false,
-			error: error.message || 'Failed to send OTP'
-		}, 400);
+		return c.json(
+			{
+				success: false,
+				error: error.message || 'Failed to send OTP',
+			},
+			400,
+		);
 	}
 };
 
@@ -190,9 +211,14 @@ export const verifyOtp = async (c: Context) => {
 
 		const result = verifyEmailOtpSchema.safeParse(body);
 
-		if (!result.success) return c.json({
-			success: false, error: result.error.issues
-		}, 400);
+		if (!result.success)
+			return c.json(
+				{
+					success: false,
+					error: result.error.issues,
+				},
+				400,
+			);
 
 		const { email, otp } = result.data;
 		const { ip, userAgent } = getClientInfo(c);
@@ -202,7 +228,11 @@ export const verifyOtp = async (c: Context) => {
 
 		const attempts = await redis.get(attemptsKey);
 
-		if (attempts && parseInt(attempts) >= 5) return c.json({ success: false, error: 'Too many failed attempts. Please wait 15 minutes.' }, 400);
+		if (attempts && parseInt(attempts) >= 5)
+			return c.json(
+				{ success: false, error: 'Too many failed attempts. Please wait 15 minutes.' },
+				400,
+			);
 
 		const storedOtp = await redis.get(otpKey);
 
@@ -220,10 +250,16 @@ export const verifyOtp = async (c: Context) => {
 
 		await prisma.user.update({
 			where: { id: user.id },
-			data: { lastProvider: 'EMAIL' }
+			data: { lastProvider: 'EMAIL' },
 		});
 
-		const { accessToken, refreshToken } = await createSession(user.id, user.role, user.email, userAgent, ip);
+		const { accessToken, refreshToken } = await createSession(
+			user.id,
+			user.role,
+			user.email,
+			userAgent,
+			ip,
+		);
 
 		setAuthCookies(c, accessToken, refreshToken);
 		await logAudit('LOGIN_EMAIL', user.id, ip, userAgent);
@@ -231,17 +267,26 @@ export const verifyOtp = async (c: Context) => {
 		return c.json({
 			success: true,
 			data: {
-				id: user.id, email: user.email, username: user.username,
-				avatarUrl: user.avatarUrl, phone: user.phone, role: user.role,
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				avatarUrl: user.avatarUrl,
+				phone: user.phone,
+				role: user.role,
 				isNewUser,
-				onboardingStatus: user.onboardingStatus, referralCode: user.referralCode,
+				onboardingStatus: user.onboardingStatus,
+				referralCode: user.referralCode,
 			},
 		});
 	} catch (error: any) {
 		logger.error({ error }, 'Failed to verify email OTP');
-		return c.json({
-			success: false, error: error.message || 'Invalid OTP'
-		}, 401);
+		return c.json(
+			{
+				success: false,
+				error: error.message || 'Invalid OTP',
+			},
+			401,
+		);
 	}
 };
 
@@ -255,13 +300,19 @@ export const googleCallback = async (c: Context) => {
 		const body = await c.req.json();
 		const result = verifyGoogleSchema.safeParse(body);
 
-		if (!result.success) return c.json({
-			success: false, error: result.error.issues
-		}, 400);
+		if (!result.success)
+			return c.json(
+				{
+					success: false,
+					error: result.error.issues,
+				},
+				400,
+			);
 
 		const { ip, userAgent } = getClientInfo(c);
 
-		if (!ENV.GOOGLE_CLIENT_ID) return c.json({ success: false, error: 'Google Auth not configured' }, 400);
+		if (!ENV.GOOGLE_CLIENT_ID)
+			return c.json({ success: false, error: 'Google Auth not configured' }, 400);
 
 		const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
 			headers: { Authorization: `Bearer ${result.data.idToken}` },
@@ -274,18 +325,30 @@ export const googleCallback = async (c: Context) => {
 		const email = googlePayload.email;
 
 		const { user, isNewUser } = await resolveOrCreateUser(email, 'GOOGLE', providerUserId);
-		
+
 		await prisma.user.update({ where: { id: user.id }, data: { lastProvider: 'GOOGLE' } });
-		const { accessToken, refreshToken } = await createSession(user.id, user.role, user.email, userAgent, ip);
+		const { accessToken, refreshToken } = await createSession(
+			user.id,
+			user.role,
+			user.email,
+			userAgent,
+			ip,
+		);
 		setAuthCookies(c, accessToken, refreshToken);
 		await logAudit('LOGIN_GOOGLE', user.id, ip, userAgent);
 
 		return c.json({
 			success: true,
 			data: {
-				id: user.id, email: user.email, username: user.username,
-				avatarUrl: user.avatarUrl, phone: user.phone, role: user.role,
-				isNewUser, onboardingStatus: user.onboardingStatus, referralCode: user.referralCode,
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				avatarUrl: user.avatarUrl,
+				phone: user.phone,
+				role: user.role,
+				isNewUser,
+				onboardingStatus: user.onboardingStatus,
+				referralCode: user.referralCode,
 			},
 		});
 	} catch (error: any) {
@@ -306,27 +369,45 @@ export const discordCallback = async (c: Context) => {
 		if (!result.success) return c.json({ success: false, error: result.error.issues }, 400);
 
 		const { ip, userAgent } = getClientInfo(c);
-		if (!ENV.DISCORD_CLIENT_ID) return c.json({ success: false, error: 'Discord Auth not configured' }, 400);
+		if (!ENV.DISCORD_CLIENT_ID)
+			return c.json({ success: false, error: 'Discord Auth not configured' }, 400);
 
 		const response = await fetch('https://discord.com/api/users/@me', {
 			headers: { Authorization: `Bearer ${result.data.accessToken}` },
 		});
 		if (!response.ok) return c.json({ success: false, error: 'Invalid Discord Access Token' }, 400);
 		const discordPayload: any = await response.json();
-		if (!discordPayload.email) return c.json({ success: false, error: 'Discord sign in did not provide an email' }, 400);
+		if (!discordPayload.email)
+			return c.json({ success: false, error: 'Discord sign in did not provide an email' }, 400);
 
-		const { user, isNewUser } = await resolveOrCreateUser(discordPayload.email, 'DISCORD', discordPayload.id);
+		const { user, isNewUser } = await resolveOrCreateUser(
+			discordPayload.email,
+			'DISCORD',
+			discordPayload.id,
+		);
 		await prisma.user.update({ where: { id: user.id }, data: { lastProvider: 'DISCORD' } });
-		const { accessToken, refreshToken } = await createSession(user.id, user.role, user.email, userAgent, ip);
+		const { accessToken, refreshToken } = await createSession(
+			user.id,
+			user.role,
+			user.email,
+			userAgent,
+			ip,
+		);
 		setAuthCookies(c, accessToken, refreshToken);
 		await logAudit('LOGIN_DISCORD', user.id, ip, userAgent);
 
 		return c.json({
 			success: true,
 			data: {
-				id: user.id, email: user.email, username: user.username,
-				avatarUrl: user.avatarUrl, phone: user.phone, role: user.role,
-				isNewUser, onboardingStatus: user.onboardingStatus, referralCode: user.referralCode,
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				avatarUrl: user.avatarUrl,
+				phone: user.phone,
+				role: user.role,
+				isNewUser,
+				onboardingStatus: user.onboardingStatus,
+				referralCode: user.referralCode,
 			},
 		});
 	} catch (error: any) {
@@ -347,7 +428,8 @@ export const telegramCallback = async (c: Context) => {
 		if (!result.success) return c.json({ success: false, error: result.error.issues }, 400);
 
 		const { ip, userAgent } = getClientInfo(c);
-		if (!ENV.TELEGRAM_BOT_TOKEN) return c.json({ success: false, error: 'Telegram Auth not configured' }, 400);
+		if (!ENV.TELEGRAM_BOT_TOKEN)
+			return c.json({ success: false, error: 'Telegram Auth not configured' }, 400);
 
 		let providerUserId = '';
 		if (result.data.initData) {
@@ -361,19 +443,35 @@ export const telegramCallback = async (c: Context) => {
 `;
 			}
 			dataCheckString = dataCheckString.slice(0, -1);
-			const secretKey = crypto.createHmac('sha256', 'WebAppData').update(ENV.TELEGRAM_BOT_TOKEN).digest();
-			const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-			if (calculatedHash !== hash) return c.json({ success: false, error: 'Invalid Telegram Data' }, 400);
+			const secretKey = crypto
+				.createHmac('sha256', 'WebAppData')
+				.update(ENV.TELEGRAM_BOT_TOKEN)
+				.digest();
+			const calculatedHash = crypto
+				.createHmac('sha256', secretKey)
+				.update(dataCheckString)
+				.digest('hex');
+			if (calculatedHash !== hash)
+				return c.json({ success: false, error: 'Invalid Telegram Data' }, 400);
 			const telegramUser = JSON.parse(urlParams.get('user') || '{}');
-			if (!telegramUser.id) return c.json({ success: false, error: 'No user data in Telegram payload' }, 400);
+			if (!telegramUser.id)
+				return c.json({ success: false, error: 'No user data in Telegram payload' }, 400);
 			providerUserId = telegramUser.id.toString();
 		} else if (result.data.widgetData) {
 			const { hash, ...data } = result.data.widgetData;
-			const dataCheckString = Object.keys(data).sort().map((key) => `${key}=${data[key]}`).join('\\n');
+			const dataCheckString = Object.keys(data)
+				.sort()
+				.map((key) => `${key}=${data[key]}`)
+				.join('\\n');
 			const secretKey = crypto.createHash('sha256').update(ENV.TELEGRAM_BOT_TOKEN).digest();
-			const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-			if (calculatedHash !== hash) return c.json({ success: false, error: 'Invalid Telegram Widget Data' }, 400);
-			if (!result.data.widgetData.id) return c.json({ success: false, error: 'No user data in Telegram payload' }, 400);
+			const calculatedHash = crypto
+				.createHmac('sha256', secretKey)
+				.update(dataCheckString)
+				.digest('hex');
+			if (calculatedHash !== hash)
+				return c.json({ success: false, error: 'Invalid Telegram Widget Data' }, 400);
+			if (!result.data.widgetData.id)
+				return c.json({ success: false, error: 'No user data in Telegram payload' }, 400);
 			providerUserId = result.data.widgetData.id.toString();
 		} else {
 			return c.json({ success: false, error: 'No Telegram data provided' }, 400);
@@ -382,16 +480,28 @@ export const telegramCallback = async (c: Context) => {
 		const email = `${providerUserId}@telegram.probo.local`;
 		const { user, isNewUser } = await resolveOrCreateUser(email, 'TELEGRAM', providerUserId);
 		await prisma.user.update({ where: { id: user.id }, data: { lastProvider: 'TELEGRAM' } });
-		const { accessToken, refreshToken } = await createSession(user.id, user.role, user.email, userAgent, ip);
+		const { accessToken, refreshToken } = await createSession(
+			user.id,
+			user.role,
+			user.email,
+			userAgent,
+			ip,
+		);
 		setAuthCookies(c, accessToken, refreshToken);
 		await logAudit('LOGIN_TELEGRAM', user.id, ip, userAgent);
 
 		return c.json({
 			success: true,
 			data: {
-				id: user.id, email: user.email, username: user.username,
-				avatarUrl: user.avatarUrl, phone: user.phone, role: user.role,
-				isNewUser, onboardingStatus: user.onboardingStatus, referralCode: user.referralCode,
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				avatarUrl: user.avatarUrl,
+				phone: user.phone,
+				role: user.role,
+				isNewUser,
+				onboardingStatus: user.onboardingStatus,
+				referralCode: user.referralCode,
 			},
 		});
 	} catch (error: any) {
@@ -411,19 +521,27 @@ export const logout = async (c: Context) => {
 
 		if (token) {
 			const hashedToken = hashRefreshToken(token);
-			await prisma.session.updateMany({ where: { refreshToken: hashedToken }, data: { isRevoked: true } });
+			await prisma.session.updateMany({
+				where: { refreshToken: hashedToken },
+				data: { isRevoked: true },
+			});
 		}
 
 		deleteCookie(c, 'accessToken', { path: '/' });
 		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
 		return c.json({
-			success: true, message: 'Logged out successfully'
+			success: true,
+			message: 'Logged out successfully',
 		});
 	} catch (error) {
 		logger.error({ error }, 'Logout failed');
-		return c.json({
-			success: false, error: 'Internal server error'
-		}, 500);
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
 	}
 };
 
@@ -439,7 +557,10 @@ export const refresh = async (c: Context) => {
 
 		const { ip, userAgent } = getClientInfo(c);
 		const hashedOldToken = hashRefreshToken(token);
-		const session = await prisma.session.findUnique({ where: { refreshToken: hashedOldToken }, include: { user: true } });
+		const session = await prisma.session.findUnique({
+			where: { refreshToken: hashedOldToken },
+			include: { user: true },
+		});
 
 		if (!session || session.isRevoked || session.expiresAt < new Date()) {
 			if (session && !session.isRevoked) {
@@ -453,10 +574,20 @@ export const refresh = async (c: Context) => {
 		const expiresAt = new Date(Date.now() + Number(ENV.REFRESH_TOKEN_EXPIRY) * 1000);
 		await prisma.session.update({
 			where: { id: session.id },
-			data: { refreshToken: hashedNewToken, lastActiveAt: new Date(), expiresAt, userAgent, ipAddress: ip },
+			data: {
+				refreshToken: hashedNewToken,
+				lastActiveAt: new Date(),
+				expiresAt,
+				userAgent,
+				ipAddress: ip,
+			},
 		});
 
-		const accessToken = await generateAccessToken(session.userId, session.user.role, session.user.email);
+		const accessToken = await generateAccessToken(
+			session.userId,
+			session.user.role,
+			session.user.email,
+		);
 		setAuthCookies(c, accessToken, newRefreshTokenString);
 
 		return c.json({ success: true, message: 'Token refreshed' });
@@ -479,7 +610,18 @@ export const getMe = async (c: Context) => {
 		if (!authUser) return c.json({ success: false, error: 'Unauthorized' }, 401);
 		const user = await prisma.user.findUnique({
 			where: { id: authUser.id },
-			select: { id: true, email: true, phone: true, username: true, avatarUrl: true, role: true, isNewUser: true, onboardingStatus: true, referralCode: true, createdAt: true },
+			select: {
+				id: true,
+				email: true,
+				phone: true,
+				username: true,
+				avatarUrl: true,
+				role: true,
+				isNewUser: true,
+				onboardingStatus: true,
+				referralCode: true,
+				createdAt: true,
+			},
 		});
 		if (!user) return c.json({ success: false, error: 'User not found' }, 404);
 		return c.json({ success: true, data: user });
@@ -500,7 +642,14 @@ export const getSessions = async (c: Context) => {
 		if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
 		const sessions = await prisma.session.findMany({
 			where: { userId: user.id, isRevoked: false, expiresAt: { gt: new Date() } },
-			select: { id: true, userAgent: true, ipAddress: true, deviceName: true, lastActiveAt: true, createdAt: true },
+			select: {
+				id: true,
+				userAgent: true,
+				ipAddress: true,
+				deviceName: true,
+				lastActiveAt: true,
+				createdAt: true,
+			},
 			orderBy: { lastActiveAt: 'desc' },
 		});
 		return c.json({ success: true, data: sessions });
@@ -519,7 +668,10 @@ export const logoutAll = async (c: Context) => {
 	try {
 		const user = c.get('user');
 		if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
-		await prisma.session.updateMany({ where: { userId: user.id, isRevoked: false }, data: { isRevoked: true } });
+		await prisma.session.updateMany({
+			where: { userId: user.id, isRevoked: false },
+			data: { isRevoked: true },
+		});
 		deleteCookie(c, 'accessToken', { path: '/' });
 		deleteCookie(c, 'refreshToken', { path: '/api/v1/auth' });
 		return c.json({ success: true, message: 'Logged out of all devices' });
@@ -528,4 +680,3 @@ export const logoutAll = async (c: Context) => {
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 };
-

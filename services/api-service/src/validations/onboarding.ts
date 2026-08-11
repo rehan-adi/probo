@@ -1,14 +1,35 @@
 import z from 'zod';
 
 export const usernameSchema = z.object({
-	username: z.string()
+	username: z
+		.string()
 		.min(3, 'Username must be at least 3 characters')
 		.max(20, 'Username cannot exceed 20 characters')
 		.regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
-		.refine((val) => {
-			const RESERVED = ['admin', 'support', 'help', 'api', 'www', 'settings', 'profile', 'login', 'signup', 'auth', 'system', 'bot', 'official', 'mod', 'root', 'test'];
-			return !RESERVED.includes(val.toLowerCase());
-		}, { message: 'This username is reserved' }),
+		.refine(
+			(val) => {
+				const RESERVED = [
+					'admin',
+					'support',
+					'help',
+					'api',
+					'www',
+					'settings',
+					'profile',
+					'login',
+					'signup',
+					'auth',
+					'system',
+					'bot',
+					'official',
+					'mod',
+					'root',
+					'test',
+				];
+				return !RESERVED.includes(val.toLowerCase());
+			},
+			{ message: 'This username is reserved' },
+		),
 });
 
 export const referralSchema = z.object({

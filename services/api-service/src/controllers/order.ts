@@ -1,7 +1,7 @@
 import { Context } from 'hono';
-import { logger } from '@/utils/logger';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
+import { logger } from '@/libs/logger';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
 import { prisma } from '@probo/database';
 
 /**
@@ -44,21 +44,21 @@ export const buy = async (c: Context) => {
 				userId: userId,
 				marketId: body.marketId,
 				stockSymbol: body.symbol,
-				stockType: body.side === 'Yes' ? 'YES' : 'NO',
+				stockType: body.side === 'YES' ? 'YES' : 'NO',
 				quantity: Number(body.quantity),
 				price: Number(body.price),
 				orderType: 'BUY',
 				totalPrice: Number(body.price) * Number(body.quantity),
 				status: 'PENDING',
-			}
+			},
 		});
 
 		const response = await pushToQueue(EVENTS.PLACE_ORDER, {
 			orderId: order.id,
 			userId: userId,
 			marketId: body.marketId,
-			side: body.side,
 			symbol: body.symbol,
+			side: body.side,
 			price: Number(body.price),
 			action: 'BUY',
 			orderType: body.orderType,
@@ -66,6 +66,10 @@ export const buy = async (c: Context) => {
 		});
 
 		if (!response.success) {
+			await prisma.order.update({
+				where: { id: order.id },
+				data: { status: 'FAILED' },
+			});
 			logger.error(
 				{
 					alert: true,
@@ -153,13 +157,13 @@ export const sell = async (c: Context) => {
 				userId: userId,
 				marketId: body.marketId,
 				stockSymbol: body.symbol,
-				stockType: body.side === 'Yes' ? 'YES' : 'NO',
+				stockType: body.side === 'YES' ? 'YES' : 'NO',
 				quantity: Number(body.quantity),
 				price: Number(body.price),
 				orderType: 'SELL',
 				totalPrice: Number(body.price) * Number(body.quantity),
 				status: 'PENDING',
-			}
+			},
 		});
 
 		const response = await pushToQueue(EVENTS.SELL_ORDER, {
@@ -175,6 +179,10 @@ export const sell = async (c: Context) => {
 		});
 
 		if (!response.success) {
+			await prisma.order.update({
+				where: { id: order.id },
+				data: { status: 'FAILED' },
+			});
 			logger.error(
 				{
 					alert: true,
@@ -219,5 +227,38 @@ export const sell = async (c: Context) => {
 			},
 			500,
 		);
+	}
+};
+
+export const cancel = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+		if (!userId) return c.json({ success: false, error: 'Unauthorized' }, 401);
+
+		const body = await c.req.json<{ orderId: string; marketId: string }>();
+		if (!body.orderId || !body.marketId) {
+			return c.json({ success: false, error: 'Missing orderId or marketId' }, 400);
+		}
+
+		// Check if order exists
+		const order = await prisma.order.findUnique({ where: { id: body.orderId } });
+		if (!order || order.userId !== userId) {
+			return c.json({ success: false, error: 'Order not found or unauthorized' }, 404);
+		}
+
+		const response = await pushToQueue('CANCEL_ORDER', {
+			orderId: body.orderId,
+			userId: userId,
+			marketId: body.marketId,
+			symbol: order.stockSymbol,
+		});
+
+		if (!response.success) {
+			return c.json({ success: false, error: response.message }, 400);
+		}
+
+		return c.json({ success: true, message: 'Order cancelled successfully' });
+	} catch (error) {
+		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 };

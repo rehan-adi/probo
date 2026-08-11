@@ -1,15 +1,12 @@
 import { Hono } from 'hono';
+import { rateLimiter } from '@/middlewares/limiter';
 import { authorization } from '@/middlewares/authorization';
 import {
-	getPendingVerifications,
-	getUserVerificationDetailsForAdmin,
 	getVerificationDetails,
 	getVerificationStatus,
 	submitKyc,
 	submitPaymentMethods,
-	updatePendingVerification,
 } from '@/controllers/verification';
-import { rateLimiter } from '@/middlewares/limiter';
 
 export const verificationRoutes = new Hono();
 
@@ -39,9 +36,3 @@ verificationRoutes.post(
 	rateLimiter({ points: 5, duration: 300 }),
 	submitPaymentMethods,
 );
-
-// admin routes
-verificationRoutes.get('/pending', authorization, getPendingVerifications);
-verificationRoutes.post('/verify', authorization, updatePendingVerification);
-
-verificationRoutes.get('/:userId', authorization, getUserVerificationDetailsForAdmin);

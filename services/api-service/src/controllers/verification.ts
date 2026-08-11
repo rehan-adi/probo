@@ -1,9 +1,9 @@
 import { Context } from 'hono';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
 import { kycVerificationSchema, paymentVerificationSchema } from '@/validations/verification';
-import { pushToQueue } from '@/lib/redis/queue';
-import { EVENTS } from '@/constants/constants';
+import { pushToQueue } from '@/libs/redis/queue';
+import { EVENTS } from '@/config/constants';
 
 /**
  * This controller is for submit kyc

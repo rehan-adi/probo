@@ -1,8 +1,8 @@
 import { Context } from 'hono';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
 import { balanceSchema } from '@/validations/balance';
 
 /**
@@ -37,13 +37,14 @@ export const getBalance = async (c: Context) => {
 			logger.warn({ userId }, 'User not found in engine, attempting to sync from DB');
 			const dbUser = await prisma.user.findUnique({
 				where: { id: userId },
-				include: { wallet: true }
+				include: { wallet: true },
 			});
 
 			if (dbUser) {
 				// Sync user to engine
 				await pushToQueue(EVENTS.CREATE_USER, {
 					id: dbUser.id,
+					name: dbUser.name,
 					phone: dbUser.phone,
 					kycVerificationStatus: dbUser.kycVerificationStatus,
 					paymentVerificationStatus: dbUser.paymentVerificationStatus,
@@ -396,19 +397,24 @@ export const withdraw = async (c: Context) => {
 		const amount = Number(reqBody.amount);
 		const currentWalletAmount = Number(reqBody.currentWalletAmount);
 
-		if (amount > currentWalletAmount) {
+		const calculatedFee = amount * 0.0025;
+		const fee = Math.min(Math.max(calculatedFee, 5), 100);
+		const totalDeduction = amount + fee;
+
+		if (totalDeduction > currentWalletAmount) {
 			return c.json(
 				{
 					success: false,
-					message: 'Insufficient balance for withdrawal',
+					message: 'Insufficient balance for withdrawal including fees',
 				},
 				400,
 			);
 		}
 
+		// Pass totalDeduction to engine so its memory state reflects the full deduction
 		const response = await pushToQueue(EVENTS.WITHDRAW_BALANCE, {
 			userId: userId,
-			amount: amount,
+			amount: totalDeduction,
 		});
 
 		if (!response.success) {
@@ -427,9 +433,10 @@ export const withdraw = async (c: Context) => {
 				await prisma.$transaction(async (tx) => {
 					await tx.wallet.update({
 						where: { userId },
-						data: { balance: { decrement: amount } },
+						data: { balance: { decrement: totalDeduction } },
 					});
 
+					// Record Withdrawal Transaction
 					await tx.transaction.create({
 						data: {
 							userId,
@@ -439,6 +446,16 @@ export const withdraw = async (c: Context) => {
 							remarks: 'Withdrawal processed successfully',
 						},
 					});
+
+					// Record Withdrawal Fee
+					await tx.platformRevenue.create({
+						data: {
+							userId,
+							amount: fee,
+							type: 'WITHDRAWAL_FEE',
+							remarks: `0.25% Withdrawal Fee (min 5, max 100) on ${amount}`,
+						},
+					});
 				});
 			} catch (error) {
 				logger.error(
@@ -446,7 +463,7 @@ export const withdraw = async (c: Context) => {
 						alert: true,
 						error,
 						userId,
-						amount,
+						amount: totalDeduction,
 					},
 					'Failed to update DB after withdrawal',
 				);

@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { ENV } from '@/config/env';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 
 /**
  * General Redis client for cache, rate-limit, queue push.

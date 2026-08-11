@@ -1,5 +1,12 @@
 import { Hono } from 'hono';
-import { getProfile, updateProfile, addToWatchlist, removeFromWatchlist, getWatchlist, getUserTrades } from '@/controllers/profile';
+import {
+	getProfile,
+	updateProfile,
+	addToWatchlist,
+	removeFromWatchlist,
+	getWatchlist,
+	getUserTrades,
+} from '@/controllers/profile';
 import { authorization } from '@/middlewares/authorization';
 
 export const profileRoutes = new Hono();

@@ -1,10 +1,10 @@
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { prisma } from '@probo/database';
-import { EVENTS } from '@/constants/constants';
-import { pushToQueue } from '@/lib/redis/queue';
-import { cashfree } from '@/lib/cashfree/client';
+import { EVENTS } from '@/config/constants';
+import { pushToQueue } from '@/libs/redis/queue';
+import { cashfree } from '@/libs/cashfree/client';
 
 export const initPayment = async (c: Context) => {
 	try {
@@ -27,24 +27,27 @@ export const initPayment = async (c: Context) => {
 
 		const response = await cashfree.PGCreateOrder({
 			order_amount: amount,
-			order_currency: "INR",
+			order_currency: 'INR',
 			order_id: orderId,
 			customer_details: {
 				customer_id: userId,
-				customer_phone: user.phone || "9999999999",
-				customer_email: user.email || "test@probo.com",
-				customer_name: "Probo User"
+				customer_phone: user.phone || '9999999999',
+				customer_email: user.email || 'test@probo.com',
+				customer_name: 'Probo User',
 			},
 			order_meta: {
 				return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wallet?order_id={order_id}`,
 				notify_url: `${ENV.BACKEND_ORIGIN}/api/v1/payments/webhook`,
-			}
+			},
 		});
 
-		return c.json({
-			success: true,
-			data: response.data
-		}, 200);
+		return c.json(
+			{
+				success: true,
+				data: response.data,
+			},
+			200,
+		);
 	} catch (error) {
 		logger.error({ error }, 'Failed to initialize payment');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
@@ -61,19 +64,20 @@ export const paymentVerify = async (c: Context) => {
 
 		const response = await cashfree.PGOrderFetchPayments(orderId);
 
-		const isSuccess = response.data?.some(payment => payment.payment_status === 'SUCCESS');
+		const isSuccess = response.data?.some((payment) => payment.payment_status === 'SUCCESS');
 
-		return c.json({
-			success: true,
-			paymentStatus: isSuccess ? 'SUCCESS' : 'PENDING'
-		}, 200);
-
+		return c.json(
+			{
+				success: true,
+				paymentStatus: isSuccess ? 'SUCCESS' : 'PENDING',
+			},
+			200,
+		);
 	} catch (error) {
 		logger.error({ error }, 'Failed to verify payment');
 		return c.json({ success: false, error: 'Internal server error' }, 500);
 	}
 };
-
 
 export const paymentWebhook = async (c: Context) => {
 	try {
@@ -97,7 +101,7 @@ export const paymentWebhook = async (c: Context) => {
 
 			await prisma.$transaction(async (tx) => {
 				const existing = await tx.ledgerEntry.findFirst({
-					where: { referenceId: String(payment.cf_payment_id) }
+					where: { referenceId: String(payment.cf_payment_id) },
 				});
 
 				if (existing) {
@@ -105,13 +109,11 @@ export const paymentWebhook = async (c: Context) => {
 					return;
 				}
 
-
 				await tx.wallet.upsert({
 					where: { userId: customerId },
 					update: { balance: { increment: amount } },
-					create: { userId: customerId, balance: amount, locked: 0 }
+					create: { userId: customerId, balance: amount, locked: 0 },
 				});
-
 
 				await tx.ledgerEntry.create({
 					data: {
@@ -119,8 +121,8 @@ export const paymentWebhook = async (c: Context) => {
 						toAccount: customerId,
 						amount: amount,
 						type: 'DEPOSIT',
-						referenceId: String(payment.cf_payment_id)
-					}
+						referenceId: String(payment.cf_payment_id),
+					},
 				});
 
 				await tx.transaction.create({
@@ -128,22 +130,22 @@ export const paymentWebhook = async (c: Context) => {
 						userId: customerId,
 						type: 'DEPOSIT',
 						amount: amount,
-						status: 'SUCCESS'
-					}
+						status: 'SUCCESS',
+					},
 				});
 
 				if (amount >= 50.0) {
 					const pendingReferrals = await tx.referral.findMany({
 						where: {
 							referredId: customerId,
-							status: 'PENDING'
-						}
+							status: 'PENDING',
+						},
 					});
 
 					for (const ref of pendingReferrals) {
 						await tx.referral.update({
 							where: { id: ref.id },
-							data: { status: 'COMPLETED' }
+							data: { status: 'COMPLETED' },
 						});
 
 						const targetUserId = ref.isReferrer ? ref.referrerId : ref.referredId;
@@ -151,7 +153,7 @@ export const paymentWebhook = async (c: Context) => {
 						if (targetUserId) {
 							await tx.wallet.update({
 								where: { userId: targetUserId },
-								data: { balance: { increment: ref.amount } }
+								data: { balance: { increment: ref.amount } },
 							});
 
 							await tx.transaction.create({
@@ -162,14 +164,14 @@ export const paymentWebhook = async (c: Context) => {
 									status: 'SUCCESS',
 									remarks: ref.isReferrer
 										? `Referral reward for user ${customerId} depositing`
-										: `Bonus for using a referral code and making first deposit`
-								}
+										: `Bonus for using a referral code and making first deposit`,
+								},
 							});
 
 							if (ref.isReferrer) {
 								await tx.user.update({
 									where: { id: targetUserId },
-									data: { totalReferralReward: { increment: Number(ref.amount) } }
+									data: { totalReferralReward: { increment: Number(ref.amount) } },
 								});
 							}
 						}
@@ -179,7 +181,7 @@ export const paymentWebhook = async (c: Context) => {
 
 			await pushToQueue(EVENTS.DEPOSIT_BALANCE, {
 				userId: customerId,
-				amount: amount
+				amount: amount,
 			});
 
 			logger.info({ customerId, amount }, 'Payment processed successfully');

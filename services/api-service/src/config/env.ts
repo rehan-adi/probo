@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 
 const checkEnv = (key: string) => {
 	const value = Bun.env[key];

@@ -17,9 +17,11 @@ export const verifyDiscordSchema = z.object({
 	accessToken: z.string().min(1, 'Discord Access Token is required'),
 });
 
-export const verifyTelegramSchema = z.object({
-	initData: z.string().optional(),
-	widgetData: z.any().optional(),
-}).refine(data => data.initData || data.widgetData, {
-	message: 'Either initData or widgetData is required'
-});
+export const verifyTelegramSchema = z
+	.object({
+		initData: z.string().optional(),
+		widgetData: z.any().optional(),
+	})
+	.refine((data) => data.initData || data.widgetData, {
+		message: 'Either initData or widgetData is required',
+	});

@@ -1,5 +1,5 @@
 import { ENV } from '@/config/env';
-import { logger } from '@/utils/logger';
+import { logger } from '@/libs/logger';
 import { twilioClient } from './client';
 
 /**

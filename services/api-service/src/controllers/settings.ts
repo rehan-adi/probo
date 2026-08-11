@@ -19,9 +19,12 @@ export async function getSettings(c: Context) {
 		});
 
 		if (!settings) {
-			return c.json({
-				error: 'User not found'
-			}, 404);
+			return c.json(
+				{
+					error: 'User not found',
+				},
+				404,
+			);
 		}
 
 		return c.json(settings);
@@ -68,7 +71,8 @@ export async function updateProfile(c: Context) {
 				},
 			});
 			return c.json({
-				user: updatedUser, message: 'Profile updated successfully'
+				user: updatedUser,
+				message: 'Profile updated successfully',
 			});
 		} else if (bio !== undefined && bio !== user.bio) {
 			// Update bio only
@@ -95,7 +99,14 @@ export async function updateProfile(c: Context) {
 export async function updateNotifications(c: Context) {
 	const user = c.get('user');
 	const body = await c.req.json();
-	const { emailNewMarket, emailOrderFills, emailTradeExecuted, inAppNewMarket, inAppTradeExecuted, inAppPriceAlerts } = body;
+	const {
+		emailNewMarket,
+		emailOrderFills,
+		emailTradeExecuted,
+		inAppNewMarket,
+		inAppTradeExecuted,
+		inAppPriceAlerts,
+	} = body;
 
 	try {
 		const updatedPrefs = await prisma.notificationSettings.upsert({
