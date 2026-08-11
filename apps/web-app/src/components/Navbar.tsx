@@ -19,6 +19,7 @@ import walletIcon from '@/assets/images/wallet.svg';
 import HowItWorksModal from './modals/HowItWorksModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBalanceQuery } from '@/hooks/queries/balance';
+import { formatAmount } from '@/lib/format';
 
 export default function Navbar() {
 	const { t, i18n } = useTranslation();
@@ -66,11 +67,23 @@ export default function Navbar() {
 								<img src={logo} className="w-[112px] md:w-[130px] object-contain" alt="Logo" />
 							</Link>
 
-							<div className="hidden md:flex items-center gap-4 flex-1 max-w-[500px]">
-								<div className="w-full">
-									<SearchInput />
+							{user?.role !== 'ADMIN' && (
+								<div className="hidden md:flex items-center gap-4 flex-1 max-w-[500px]">
+									<div className="w-full">
+										<SearchInput />
+									</div>
 								</div>
-							</div>
+							)}
+							{user?.role === 'ADMIN' && (
+								<div className="hidden md:flex items-center gap-6 ml-8">
+									<Link to="/dashboard/home" className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+										Admin
+									</Link>
+									<Link to="/verifications" className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+										Verifications
+									</Link>
+								</div>
+							)}
 						</div>
 
 						<div className="flex items-center gap-2 lg:gap-2 shrink-0">
@@ -161,7 +174,7 @@ export default function Navbar() {
 									>
 										<img src={walletIcon} alt="Wallet" className="w-4 h-4 dark:invert" />
 										<span className="font-semibold text-sm text-gray-900 dark:text-white">
-											₹{balanceLoading ? '0' : balance?.data?.data?.amount ?? 0}
+											₹{balanceLoading ? '0' : formatAmount(balance?.data?.data?.amount)}
 										</span>
 									</Link>
 
@@ -263,6 +276,66 @@ export default function Navbar() {
 																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium text-red-600 dark:text-red-400 transition-colors w-full text-left"
 															>
 																<LogOut size={16} /> Logout
+															</button>
+														</div>
+													</motion.div>
+												</div>
+											)}
+										</AnimatePresence>
+									</div>
+								</div>
+							)}
+
+							{user?.role === 'ADMIN' && (
+								<div className="flex items-center gap-2 lg:gap-2">
+									<div ref={profileRef} className="relative">
+										<div
+											onMouseEnter={() => setIsProfileOpen(true)}
+											className="flex items-center cursor-pointer p-0.5 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+										>
+											<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10" />
+										</div>
+
+										<AnimatePresence>
+											{isProfileOpen && (
+												<div onMouseLeave={() => setIsProfileOpen(false)}>
+													<motion.div
+														initial={{ opacity: 0, y: 10 }}
+														animate={{ opacity: 1, y: 0 }}
+														exit={{ opacity: 0, y: 10 }}
+														className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1C1C1E] shadow-xl rounded-xl py-2 border border-gray-100 dark:border-white/10 z-50"
+													>
+														<div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-white/5 mb-1">
+															<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+															<div className="flex flex-col">
+																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">Admin</span>
+															</div>
+														</div>
+														<div className="px-2">
+															<button
+																onClick={toggleTheme}
+																className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+																role="switch"
+																aria-checked={theme === 'dark'}
+															>
+																<div className="flex items-center gap-3">
+																	<Moon size={16} className="text-black dark:text-white" />
+																	<span>{t('Dark Mode')}</span>
+																</div>
+																<div className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+																	<span className="sr-only">Toggle Dark Mode</span>
+																	<span
+																		aria-hidden="true"
+																		className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
+																	/>
+																</div>
+															</button>
+															<div className="h-px bg-gray-100 dark:bg-white/5 my-1 mx-2" />
+															<button
+																onClick={handleLogout}
+																className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+															>
+																<LogOut size={16} /> {t('Logout')}
 															</button>
 														</div>
 													</motion.div>

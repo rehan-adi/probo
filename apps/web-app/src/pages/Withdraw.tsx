@@ -35,11 +35,11 @@ export default function WithdrawPage() {
 	return (
 		<div className="w-full flex justify-center items-center bg-[#f4f4f5] md:py-24 py-20">
 			<div className="max-w-[910px] w-full px-4">
-				<h1 className="text-4xl font-semibold md:mb-8 mb-4">Deposit</h1>
+				<h1 className="text-4xl font-semibold md:mb-8 mb-4">Withdraw</h1>
 
 				<div className="bg-white max-w-[550px] rounded-xl py-6 px-4 space-y-6">
 					<div className="space-y-2">
-						<div className="text-base font-semibold">Deposit amount</div>
+						<div className="text-base font-semibold">Withdraw amount</div>
 						<input
 							type="number"
 							placeholder="0"
@@ -54,10 +54,10 @@ export default function WithdrawPage() {
 						<button
 							onClick={handleSubmit}
 							disabled={!amount || amount <= 0 || isPending}
-							className={`w-full py-3 rounded-xl text-sm font-semibold transition flex items-center justify-center ${
+							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${
 								!amount || amount <= 0 || isPending
-									? 'bg-[#ABABAB] text-white cursor-not-allowed'
-									: 'bg-[#262626] cursor-pointer text-white'
+									? 'bg-[#ABABAB] text-white cursor-not-allowed disabled:opacity-50'
+									: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
 							}`}
 						>
 							{isPending ? (
@@ -65,7 +65,7 @@ export default function WithdrawPage() {
 									<Loader2 className="animate-spin w-5 h-5" />
 								</>
 							) : (
-								'Recharge'
+								'Withdraw'
 							)}
 						</button>
 					</div>

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 
 const api = axios.create({
-	baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1',
+	baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1/capi',
 	withCredentials: true, // Crucial for sending cookies
 });
 
@@ -46,3 +46,28 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const adminApi = axios.create({
+	baseURL: import.meta.env.VITE_API_BASE_URL?.replace('/capi', '/aapi') || 'http://localhost:3000/api/v1/aapi',
+	withCredentials: true,
+});
+
+// Response interceptor for adminApi for handling 401s (token refresh)
+adminApi.interceptors.response.use(
+	(response) => response,
+	async (error) => {
+		const originalRequest = error.config;
+
+		if (error.response?.status === 401 && !originalRequest._retry) {
+			originalRequest._retry = true;
+			try {
+				await api.post('/auth/refresh');
+				return adminApi(originalRequest);
+			} catch (refreshError) {
+				useAuthStore.getState().logout();
+				return Promise.reject(refreshError);
+			}
+		}
+		return Promise.reject(error);
+	}
+);

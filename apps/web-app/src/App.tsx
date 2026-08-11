@@ -19,27 +19,83 @@ import WithdrawPage from '@/pages/Withdraw';
 import SettingsPage from '@/pages/Settings';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
+import AdminUsers from '@/pages/admin/Users';
 import EventDetails from '@/pages/EventDetails';
+import AdminMarkets from '@/pages/admin/Markets';
 import CreateEvent from '@/pages/admin/CreateEvent';
 import VerificationgePage from '@/pages/Verification';
 import AuthModal from '@/components/modals/AuthModal';
+import AdminTransactions from '@/pages/admin/Transactions';
+import AdminVerifications from '@/pages/admin/Verifications';
 import TransactionHistoryPage from '@/pages/TransactionHistory';
-import VerificationListsPage from '@/pages/admin/VerificationLists';
-import VerificationDetailsPage from '@/pages/admin/VerificationDetails';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { useThemeStore } from '@/store/theme';
 import { useModalStore } from '@/store/modal';
 
+function AppContent() {
+	const location = useLocation();
+	const isAdminRoute = location.pathname.startsWith('/dashboard');
+	const user = useAuthStore((state) => state.user);
+
+	if (user?.role === 'ADMIN' && !isAdminRoute) {
+		return <Navigate to="/dashboard/home" replace />;
+	}
+
+	return (
+		<div className={`flex flex-col ${isAdminRoute ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+			{!isAdminRoute && <Navbar />}
+			<AuthModal />
+			<main className={!isAdminRoute ? "flex-grow pt-[64px]" : "flex-grow h-full overflow-hidden"}>
+				<Routes>
+					{/* public routes  */}
+					<Route path="/" element={<Navigate to={user?.role === 'ADMIN' ? "/dashboard/home" : "/events"} replace />} />
+					<Route path="/events" element={<EventsPage />} />
+					<Route path="/events/:symbol" element={<EventDetails />} />
+					<Route path="/search" element={<SearchPage />} />
+
+					<Route path="/about" element={<AboutPage />} />
+					<Route path="/blog" element={<BlogPage />} />
+					<Route path="/privacy" element={<PrivacyPage />} />
+					<Route path="/terms" element={<TermsPage />} />
+
+					{/* all private routes */}
+					<Route element={<PrivateRoute />}>
+						<Route path="/wallet">
+							<Route index element={<WalletPage />} />
+							<Route path="recharge" element={<RechargePage />} />
+							<Route path="withdraw" element={<WithdrawPage />} />
+						</Route>
+						<Route path="/portfolio" element={<Portfolio />} />
+						<Route path="/settings" element={<SettingsPage />} />
+						<Route path="/profile/:username" element={<ProfilePage />} />
+						<Route path="/profile" element={<Navigate to="/settings" replace />} />
+						<Route path="/verification" element={<VerificationgePage />} />
+						<Route path="/transaction-history" element={<TransactionHistoryPage />} />
+
+						{/* Admin Routes */}
+						<Route path="/dashboard/home" element={<AdminDashboard />} />
+						<Route path="/dashboard/verifications" element={<AdminVerifications />} />
+						<Route path="/dashboard/markets" element={<AdminMarkets />} />
+						<Route path="/dashboard/markets/create" element={<CreateEvent />} />
+						<Route path="/dashboard/users" element={<AdminUsers />} />
+						<Route path="/dashboard/transactions" element={<AdminTransactions />} />
+					</Route>
+					<Route path="*" element={<NotFoundPage />} />
+				</Routes>
+			</main>
+			{!isAdminRoute && <Footer />}
+		</div>
+	);
+}
+
 function App() {
 	const hydrate = useAuthStore((state) => state.hydrate);
 	const isHydrated = useAuthStore((state) => state.isHydrated);
-
 	const theme = useThemeStore((state) => state.theme);
 
 	useEffect(() => {
 		hydrate();
-
 		if (theme === 'dark') {
 			document.documentElement.classList.add('dark');
 		} else {
@@ -65,46 +121,7 @@ function App() {
 	return (
 		<BrowserRouter>
 			<Toaster position="bottom-center" richColors />
-			<div className="flex flex-col min-h-screen">
-				<Navbar />
-				<AuthModal />
-				<main className="flex-grow pt-[64px]">
-					<Routes>
-						{/* public routes  */}
-						<Route path="/" element={<Navigate to="/events" replace />} />
-						<Route path="/events" element={<EventsPage />} />
-						<Route path="/events/:symbol" element={<EventDetails />} />
-						<Route path="/search" element={<SearchPage />} />
-
-						<Route path="/about" element={<AboutPage />} />
-						<Route path="/blog" element={<BlogPage />} />
-						<Route path="/privacy" element={<PrivacyPage />} />
-						<Route path="/terms" element={<TermsPage />} />
-
-						{/* all private routes */}
-						<Route element={<PrivateRoute />}>
-							<Route path="/wallet">
-								<Route index element={<WalletPage />} />
-								<Route path="recharge" element={<RechargePage />} />
-								<Route path="withdraw" element={<WithdrawPage />} />
-							</Route>
-							<Route path="/portfolio" element={<Portfolio />} />
-							<Route path="/settings" element={<SettingsPage />} />
-							<Route path="/profile/:username" element={<ProfilePage />} />
-							<Route path="/profile" element={<Navigate to="/settings" replace />} />
-							<Route path="/verification" element={<VerificationgePage />} />
-							<Route path="/transaction-history" element={<TransactionHistoryPage />} />
-
-							<Route path="/admin" element={<AdminDashboard />} />
-							<Route path="/events/create" element={<CreateEvent />} />
-							<Route path="/verifications" element={<VerificationListsPage />} />
-							<Route path="/verifications/:id" element={<VerificationDetailsPage />} />
-						</Route>
-						<Route path="*" element={<NotFoundPage />} />
-					</Routes>
-				</main>
-				<Footer />
-			</div>
+			<AppContent />
 		</BrowserRouter>
 	);
 }

@@ -1,10 +1,10 @@
 import { api } from '@/lib/axios';
 import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
-import { ChevronRight, Bookmark, Share2, RefreshCcw } from 'lucide-react';
+import { Bookmark, Share2, RefreshCcw } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import pfpIcon from '@/assets/images/pfp.avif';
-import { formatDistanceToNow } from 'date-fns';
+
 import PlaceOrder from '@/components/PlaceOrder';
 import TimelineSection from '@/components/Timeline';
 import downloadIcon from '@/assets/images/download.avif';
@@ -75,6 +75,7 @@ export default function EventDetails() {
 	const { symbol } = useParams<{ symbol: string }>();
 
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const user = useAuthStore((s) => s.user);
 
 	const [market, setMarket] = useState<Market | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -345,9 +346,9 @@ export default function EventDetails() {
 												<button
 													key={tab}
 													onClick={() => {
-												setInnerTab(tab as any);
-												setTimeout(() => setResetScrollToken(prev => prev + 1), 60);
-											}}
+														setInnerTab(tab as any);
+														setTimeout(() => setResetScrollToken(prev => prev + 1), 60);
+													}}
 													className={`py-2 text-sm font-bold relative transition-colors ${innerTab === tab
 														? 'text-foreground'
 														: 'text-muted-foreground hover:text-foreground'
@@ -382,7 +383,7 @@ export default function EventDetails() {
 										<OrderbookLadder
 											bids={bids}
 											asks={asks}
-															onPriceSelect={() => {
+											onPriceSelect={() => {
 												// Select price in order form
 											}}
 											isLocked={isOrderbookLocked}
@@ -401,9 +402,12 @@ export default function EventDetails() {
 											<div className="space-y-4">
 												{market.trades.map((trade, idx) => {
 													const realName = trade.takerName || trade.makerName;
-													
+
 													let userMock;
-													if (realName) {
+
+													if (user && (trade.takerId === user.id || trade.makerId === user.id)) {
+														userMock = { name: 'You', color: 'from-emerald-500 to-teal-500', initial: 'Y' };
+													} else if (realName) {
 														const found = MOCK_USERS.find(m => m.name === realName);
 														userMock = found ? found : { name: realName, color: MOCK_USERS[0].color, initial: realName.charAt(0).toUpperCase() };
 													} else {
@@ -413,7 +417,7 @@ export default function EventDetails() {
 													const actionText = trade.takerAction ? (trade.takerAction.toLowerCase() === 'buy' ? 'bought' : 'sold') : 'traded';
 													const price = Number(trade.price);
 													const total = (trade.quantity * price).toFixed(1);
-													
+
 													return (
 														<div
 															key={idx}

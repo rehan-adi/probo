@@ -25,7 +25,7 @@ export default function RechargePage() {
 						const cashfree = await load({ mode: 'sandbox' });
 						cashfree.checkout({
 							paymentSessionId: res.data.payment_session_id,
-							redirectTarget: '_self'
+							redirectTarget: '_self',
 						});
 					} catch (err) {
 						console.error('Failed to load Cashfree SDK', err);
@@ -36,36 +36,36 @@ export default function RechargePage() {
 			onError: (err) => {
 				console.error(err);
 				alert('Failed to create payment order');
-			}
+			},
 		});
 	};
 
 	return (
-		<div className="w-full flex justify-center items-center bg-[#f4f4f5] md:py-24 py-20">
+		<div className="w-full flex justify-center items-center bg-[#f4f4f5] dark:bg-[#090C1A] md:py-36 py-14 px-2 md:px-0 transition-colors">
 			<div className="max-w-[910px] w-full px-4">
-				<h1 className="text-4xl font-semibold md:mb-8 mb-4">Deposit</h1>
+				<h1 className="text-2xl md:text-4xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">Deposit</h1>
 
-				<div className="bg-white max-w-[550px] rounded-xl py-6 px-4 space-y-6">
+				<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 max-w-[550px] rounded-xl py-6 px-4 space-y-6 transition-colors">
 					<div className="space-y-2">
-						<div className="text-base font-semibold">Deposit amount</div>
+						<div className="text-base font-semibold text-gray-900 dark:text-white">Deposit amount</div>
 						<input
 							type="number"
 							placeholder="0"
 							value={amount ?? ''}
 							disabled={isPending}
-							onChange={(e) => setAmount(parseFloat(e.target.value))}
-							className="w-full border rounded-lg px-4 py-2 focus:outline-none border-blue-600 text-black text-2xl placeholder:text-2xl disabled:opacity-60"
+							onChange={(e) => setAmount(e.target.value ? parseFloat(e.target.value) : null)}
+							className="w-full border rounded-md px-4 md:py-2 py-1 focus:outline-none border-blue-600 dark:border-blue-500 bg-white dark:bg-[#090C1A] text-black dark:text-white text-2xl placeholder:text-2xl disabled:opacity-60"
 						/>
 					</div>
 
 					<div className="flex gap-2">
-						{[250, 500, 1000].map((preset) => (
+						{[50, 100, 500, 1000].map((preset) => (
 							<button
 								key={preset}
 								type="button"
 								disabled={isPending}
 								onClick={() => handleQuickSelect(preset)}
-								className="bg-white text-black border border-gray-400/20 px-4 py-2 text-sm font-semibold rounded-[10px] transition disabled:opacity-60"
+								className="bg-white dark:bg-white/10 text-black dark:text-white border border-gray-400/20 dark:border-white/10 md:px-4 px-3 md:py-2 py-1 text-sm font-semibold rounded-md transition disabled:opacity-60 cursor-pointer"
 							>
 								+{preset}
 							</button>
@@ -76,11 +76,10 @@ export default function RechargePage() {
 						<button
 							onClick={handleSubmit}
 							disabled={!amount || amount <= 0 || isPending}
-							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${
-								!amount || amount <= 0 || isPending
-									? 'bg-[#ABABAB] text-white cursor-not-allowed disabled:opacity-50'
-									: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
-							}`}
+							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${!amount || amount <= 0 || isPending
+								? 'bg-[#ABABAB] dark:bg-white/10 text-white dark:text-gray-500 cursor-not-allowed disabled:opacity-50'
+								: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
+								}`}
 						>
 							{isPending ? (
 								<>

@@ -101,7 +101,7 @@ const OrderRow = React.memo(({
 	);
 });
 
-export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, onToggleLock, tradersCount, resetScrollToken }: OrderbookLadderProps) {
+export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, resetScrollToken }: OrderbookLadderProps) {
 	const [hoveredAskIndex, setHoveredAskIndex] = useState<number | null>(null);
 	const [hoveredBidIndex, setHoveredBidIndex] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);

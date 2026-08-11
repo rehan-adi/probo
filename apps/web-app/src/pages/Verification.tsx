@@ -59,68 +59,64 @@ export default function KycVerificationPage() {
 
 	if (isLoading) {
 		return (
-			<div className="flex justify-center bg-[#f4f4f5] items-center h-screen">
-				<Loader2 className="animate-spin w-6 h-6" />
+			<div className="flex justify-center bg-[#f4f4f5] dark:bg-[#090C1A] items-center h-screen transition-colors">
+				<Loader2 className="animate-spin w-6 h-6 text-gray-600 dark:text-gray-400" />
 			</div>
 		);
 	}
 
 	const { kycVerificationStatus, paymentVerificationStatus } = statusData?.data.data || {};
 
-	console.log(verificationData);
-	console.log(kycVerificationStatus);
-	console.log(paymentVerificationStatus);
-
 	return (
-		<div className="w-full bg-[#f4f4f5] flex justify-center items-start">
-			<div className="max-w-[950px] flex flex-col items-start px-3 md:py-2 w-full pt-20 md:pt-[90px]">
-				<div className="flex items-center mb-4 gap-4">
-					<img src={kycTitleIcon} alt="KYC Illustration" className="w-16 h-16 object-contain" />
+		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center items-start text-gray-900 dark:text-white transition-colors pb-12">
+			<div className="max-w-[950px] flex flex-col items-start px-4 md:py-2 w-full pt-20 md:pt-[90px]">
+				<div className="flex items-center mb-6 gap-4">
+					<img src={kycTitleIcon} alt="KYC Illustration" className="w-16 h-16 object-contain dark:invert" />
 					<div>
-						<h2 className="text-2xl font-semibold">KYC verification</h2>
-						<p className="text-[#545454] text-base">It takes just 5 minutes</p>
+						<h2 className="text-2xl font-semibold text-gray-900 dark:text-white">KYC verification</h2>
+						<p className="text-gray-600 dark:text-gray-400 text-base">It takes just 5 minutes</p>
 					</div>
 				</div>
 
 				<div className="w-full rounded-xl">
 					{(kycVerificationStatus === 'NOT_VERIFIED' || kycVerificationStatus === 'REJECTED') && (
-						<div className="w-full bg-white rounded-xl py-4 px-4">
+						<div className="w-full bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 rounded-xl py-6 px-6 shadow-sm transition-colors">
 							<div className="text-sm max-w-[357px] rounded-lg mb-6">
-								<h3 className="text-[10px] mb-1.5 font-semibold text-[#B32306] tracking-wide">
-									IMPORTAMT
+								<h3 className="text-[10px] mb-1.5 font-semibold text-red-600 dark:text-red-400 tracking-wide uppercase">
+									IMPORTANT
 								</h3>
-								<p className="text-[#545454] text-sm">
+								<p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
 									Bank and PAN card details should be of the same person. Incorrect or different
 									details may lead to permanent block.
 								</p>
 							</div>
 
-							<div className="space-y-10 max-w-[357px]">
+							<div className="space-y-6 max-w-[357px]">
 								<div>
-									<label className="block text-[#262626] mb-1">Name (as in PAN card)</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Name (as in PAN card)</label>
 									<input
 										type="text"
 										placeholder="Type the full name"
 										value={panName}
 										onChange={(e) => setPanName(e.target.value)}
-										className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
+										className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
 									/>
 								</div>
 
 								<div>
-									<label className="block text-[#262626] mb-1">PAN card number</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">PAN card number</label>
 									<input
 										type="text"
 										placeholder="PAN number (10 digits)"
 										maxLength={10}
 										value={panNumber}
 										onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-										className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
+										className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
 									/>
 								</div>
 
 								<div>
-									<label className="block text-[#262626] mb-1">Date of Birth</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Date of Birth</label>
 									<DatePicker
 										onChange={(date: Date | null) => setDOB(date)}
 										dateFormat="dd/MM/yyyy"
@@ -130,17 +126,17 @@ export default function KycVerificationPage() {
 										showYearDropdown
 										dropdownMode="select"
 										wrapperClassName="w-full"
-										className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
+										className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
 									/>
 								</div>
 
 								<button
 									onClick={handleSubmitKyc}
 									disabled={!isFormValid || kycPending}
-									className={`w-full py-3 text-sm font-semibold rounded-lg ${
+									className={`w-full py-3 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center ${
 										!isFormValid
-											? 'bg-[#EDEDED] text-[#B0B0B0] cursor-not-allowed'
-											: 'bg-[#262626] text-white cursor-pointer'
+											? 'bg-gray-200 dark:bg-white/5 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+											: 'bg-black dark:bg-white text-white dark:text-black cursor-pointer hover:opacity-90'
 									}`}
 								>
 									{kycPending ? <Loader2 className="animate-spin w-4 h-4" /> : 'Continue'}
@@ -149,197 +145,102 @@ export default function KycVerificationPage() {
 						</div>
 					)}
 
-					{kycVerificationStatus === 'PENDING' &&
-						(paymentVerificationStatus === 'NOT_VERIFIED' ||
-							paymentVerificationStatus === 'REJECTED') && (
-							<div className="w-full rounded-xl bg-white min-h-[50vh] py-4 px-4">
-								<div className="text-sm max-w-[357px] rounded-lg mb-6">
-									<h3 className="text-[10px] mb-2 font-semibold text-green-700">PAYMENT DETAILS</h3>
-									<p className="text-[#545454] text-sm">
-										Please provide your payment method. Make sure the details are correct to avoid
-										failed transactions.
-									</p>
+					{((kycVerificationStatus === 'PENDING' &&
+						(paymentVerificationStatus === 'NOT_VERIFIED' || paymentVerificationStatus === 'REJECTED')) ||
+						(kycVerificationStatus === 'VERIFIED' &&
+							(paymentVerificationStatus === 'NOT_VERIFIED' || paymentVerificationStatus === 'REJECTED'))) && (
+						<div className="w-full rounded-xl bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 min-h-[40vh] py-6 px-6 shadow-sm transition-colors">
+							<div className="text-sm max-w-[357px] rounded-lg mb-6">
+								<h3 className="text-[10px] mb-2 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">PAYMENT DETAILS</h3>
+								<p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+									Please provide your payment method. Make sure the details are correct to avoid
+									failed transactions.
+								</p>
+							</div>
+
+							<div className="space-y-6 max-w-[350px]">
+								<div>
+									<label className="block text-gray-800 dark:text-gray-200 mb-2 font-medium text-sm">
+										Select Payment Method
+									</label>
+									<div className="flex items-center gap-6">
+										<label className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-gray-200">
+											<input
+												type="radio"
+												checked={paymentMethod === 'BANK'}
+												onChange={() => setPaymentMethod('BANK')}
+												className="accent-black dark:accent-white"
+											/>
+											Bank Account
+										</label>
+										<label className="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-gray-200">
+											<input
+												type="radio"
+												checked={paymentMethod === 'UPI'}
+												onChange={() => setPaymentMethod('UPI')}
+												className="accent-black dark:accent-white"
+											/>
+											UPI ID
+										</label>
+									</div>
 								</div>
 
-								<div className="space-y-10 max-w-[350px]">
+								{paymentMethod === 'UPI' && (
 									<div>
-										<label className="block text-[#262626] mb-2 font-medium">
-											Select Payment Method
-										</label>
-										<div className="flex items-center gap-6">
-											<label className="flex items-center gap-2 cursor-pointer">
-												<input
-													type="radio"
-													checked={paymentMethod === 'BANK'}
-													onChange={() => setPaymentMethod('BANK')}
-													className="accent-[#262626]"
-												/>
-												Bank
-											</label>
-											<label className="flex items-center gap-2 cursor-pointer">
-												<input
-													type="radio"
-													checked={paymentMethod === 'UPI'}
-													onChange={() => setPaymentMethod('UPI')}
-													className="accent-[#262626]"
-												/>
-												UPI
-											</label>
-										</div>
+										<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">UPI ID</label>
+										<input
+											type="text"
+											placeholder="example@upi"
+											value={upiId}
+											onChange={(e) => setUpiId(e.target.value)}
+											className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
+										/>
 									</div>
+								)}
 
-									{paymentMethod === 'UPI' && (
+								{paymentMethod === 'BANK' && (
+									<>
 										<div>
-											<label className="block text-[#262626] mb-1">UPI ID</label>
+											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Bank Account Number</label>
 											<input
 												type="text"
-												placeholder="example@upi"
-												value={upiId}
-												onChange={(e) => setUpiId(e.target.value)}
-												className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
+												placeholder="Enter account number"
+												value={bankAccountNumber}
+												onChange={(e) => setBankAccountNumber(e.target.value)}
+												className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
 											/>
 										</div>
-									)}
-
-									{paymentMethod === 'BANK' && (
-										<>
-											<div>
-												<label className="block text-[#262626] mb-1">Bank Account Number</label>
-												<input
-													type="text"
-													placeholder="Enter account number"
-													value={bankAccountNumber}
-													onChange={(e) => setBankAccountNumber(e.target.value)}
-													className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
-												/>
-											</div>
-											<div>
-												<label className="block text-[#262626] mb-1">IFSC Code</label>
-												<input
-													type="text"
-													placeholder="Enter IFSC code"
-													value={ifscCode}
-													onChange={(e) => setIfscCode(e.target.value)}
-													className="w-full px-4 py-3 border border-gray-400/40 rounded-lg focus:outline-none"
-												/>
-											</div>
-										</>
-									)}
-
-									<button
-										onClick={handleSubmitPayment}
-										disabled={paymentPending}
-										className={`w-full py-3 text-sm font-semibold rounded-lg ${
-											paymentPending
-												? 'bg-[#EDEDED] text-[#B0B0B0] cursor-not-allowed'
-												: 'bg-[#262626] text-white cursor-pointer'
-										}`}
-									>
-										{paymentPending ? (
-											<Loader2 className="animate-spin w-4 h-4" />
-										) : (
-											'Submit Payment'
-										)}
-									</button>
-								</div>
-							</div>
-						)}
-
-					{kycVerificationStatus === 'VERIFIED' &&
-						(paymentVerificationStatus === 'NOT_VERIFIED' ||
-							paymentVerificationStatus === 'REJECTED') && (
-							<div className="w-full rounded-xl bg-white min-h-[50vh] py-4 px-4">
-								<div className="text-sm max-w-[357px] rounded-lg mb-6">
-									<h3 className="text-[10px] mb-2 font-semibold text-green-700">PAYMENT DETAILS</h3>
-									<p className="text-[#545454] text-sm">
-										Please provide your payment method. Make sure the details are correct to avoid
-										failed transactions.
-									</p>
-								</div>
-
-								<div className="space-y-10 max-w-[350px]">
-									<div>
-										<label className="block text-[#262626] mb-2 font-medium">
-											Select Payment Method
-										</label>
-										<div className="flex items-center gap-6">
-											<label className="flex items-center gap-2 cursor-pointer">
-												<input
-													type="radio"
-													checked={paymentMethod === 'BANK'}
-													onChange={() => setPaymentMethod('BANK')}
-													className="accent-[#262626]"
-												/>
-												Bank
-											</label>
-											<label className="flex items-center gap-2 cursor-pointer">
-												<input
-													type="radio"
-													checked={paymentMethod === 'UPI'}
-													onChange={() => setPaymentMethod('UPI')}
-													className="accent-[#262626]"
-												/>
-												UPI
-											</label>
-										</div>
-									</div>
-
-									{paymentMethod === 'UPI' && (
 										<div>
-											<label className="block text-[#262626] mb-1">UPI ID</label>
+											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">IFSC Code</label>
 											<input
 												type="text"
-												placeholder="example@upi"
-												value={upiId}
-												onChange={(e) => setUpiId(e.target.value)}
-												className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
+												placeholder="Enter IFSC code"
+												value={ifscCode}
+												onChange={(e) => setIfscCode(e.target.value)}
+												className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-white/10 bg-white dark:bg-[#090C1A] text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all"
 											/>
 										</div>
-									)}
+									</>
+								)}
 
-									{paymentMethod === 'BANK' && (
-										<>
-											<div>
-												<label className="block text-[#262626] mb-1">Bank Account Number</label>
-												<input
-													type="text"
-													placeholder="Enter account number"
-													value={bankAccountNumber}
-													onChange={(e) => setBankAccountNumber(e.target.value)}
-													className="w-full px-3 py-3 border border-gray-400/30 rounded-lg focus:outline-none"
-												/>
-											</div>
-											<div>
-												<label className="block text-[#262626] mb-1">IFSC Code</label>
-												<input
-													type="text"
-													placeholder="Enter IFSC code"
-													value={ifscCode}
-													onChange={(e) => setIfscCode(e.target.value)}
-													className="w-full px-4 py-3 border border-gray-400/40 rounded-lg focus:outline-none"
-												/>
-											</div>
-										</>
+								<button
+									onClick={handleSubmitPayment}
+									disabled={paymentPending}
+									className={`w-full py-3 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center ${
+										paymentPending
+											? 'bg-gray-200 dark:bg-white/5 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+											: 'bg-black dark:bg-white text-white dark:text-black cursor-pointer hover:opacity-90'
+									}`}
+								>
+									{paymentPending ? (
+										<Loader2 className="animate-spin w-4 h-4" />
+									) : (
+										'Submit Payment'
 									)}
-
-									<button
-										onClick={handleSubmitPayment}
-										disabled={paymentPending}
-										className={`w-full py-3 text-sm font-semibold rounded-lg ${
-											paymentPending
-												? 'bg-[#EDEDED] text-[#B0B0B0] cursor-not-allowed'
-												: 'bg-[#262626] text-white cursor-pointer'
-										}`}
-									>
-										{paymentPending ? (
-											<Loader2 className="animate-spin w-4 h-4" />
-										) : (
-											'Submit Payment'
-										)}
-									</button>
-								</div>
+								</button>
 							</div>
-						)}
+						</div>
+					)}
 
 					{((kycVerificationStatus === 'PENDING' && paymentVerificationStatus === 'PENDING') ||
 						(kycVerificationStatus === 'VERIFIED' && paymentVerificationStatus === 'VERIFIED')) && (

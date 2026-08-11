@@ -6,6 +6,8 @@ import logo from '@/assets/images/logo.avif';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { Loader2, Eye, EyeOff, TrendingUp, Search, SlidersHorizontal, ChevronDown, Download } from 'lucide-react';
+import { placeOrder, cancelOrder } from '@/api/order';
+import { toast } from 'sonner';
 
 interface PortfolioData {
 	positions: any[];
@@ -35,7 +37,41 @@ export default function Portfolio() {
 	const [activeTab, setActiveTab] = useState('positions');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [statusFilter, setStatusFilter] = useState('All');
-	const [showStatusFilter, setShowStatusFilter] = useState(false);
+	const [processing, setProcessing] = useState<string | null>(null);
+	
+	const handleSell = async (row: any) => {
+		try {
+			setProcessing(`sell-${row.uniqueId}`);
+			// Default to limit order at current price to match the current engine implementation
+			// Or we could use market order if engine supports it. We'll use MARKET to dump positions quickly
+			await placeOrder(
+				row.side,
+				row.market.symbol,
+				'SELL',
+				row.currentPrice,
+				'LIMIT', // Engine handles LIMIT by default usually
+				row.qty,
+				row.marketId
+			);
+			toast.success(`Sell order placed for ${row.qty} ${row.side} shares!`);
+		} catch (err: any) {
+			toast.error(err.response?.data?.error || 'Failed to place sell order');
+		} finally {
+			setProcessing(null);
+		}
+	};
+
+	const handleCancel = async (order: any) => {
+		try {
+			setProcessing(`cancel-${order.id}`);
+			await cancelOrder(order.id, order.marketId);
+			toast.success('Order cancelled successfully!');
+		} catch (err: any) {
+			toast.error(err.response?.data?.error || 'Failed to cancel order');
+		} finally {
+			setProcessing(null);
+		}
+	};
 
 	const walletBalance = balanceData?.data?.data?.amount || 0;
 	
@@ -359,7 +395,13 @@ export default function Portfolio() {
 										</span>
 									</div>
 									<div className="flex justify-end">
-										<button className="text-xs bg-gray-900 text-white dark:bg-white dark:text-black rounded-md px-4 py-1.5 font-bold hover:opacity-80 transition-opacity cursor-pointer shadow-sm">Sell</button>
+										<button 
+											onClick={() => handleSell(row)}
+											disabled={processing === `sell-${row.uniqueId}`}
+											className="text-xs bg-gray-900 text-white dark:bg-white dark:text-black rounded-md px-4 py-1.5 font-bold hover:opacity-80 transition-opacity cursor-pointer shadow-sm disabled:opacity-50"
+										>
+											{processing === `sell-${row.uniqueId}` ? 'Selling...' : 'Sell'}
+										</button>
 									</div>
 								</div>
 							))}
@@ -400,7 +442,13 @@ export default function Portfolio() {
 										Until Cancelled
 									</div>
 									<div className="flex justify-end">
-										<button className="text-xs font-semibold text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer">Cancel</button>
+										<button 
+											onClick={() => handleCancel(order)}
+											disabled={processing === `cancel-${order.id}`}
+											className="text-xs font-semibold text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50"
+										>
+											{processing === `cancel-${order.id}` ? 'Cancelling...' : 'Cancel'}
+										</button>
 									</div>
 								</div>
 							))}

@@ -1,4 +1,4 @@
-import { api } from '@/lib/axios';
+import api, { adminApi } from '@/config/axios';
 
 export const getKycVerififcationStatus = () => {
 	return api.get('/verification/status');
@@ -17,11 +17,11 @@ export const submitPaymentMethod = (upiId: string, bankAccountNumber: string, if
 };
 
 export const getAllPendingVerifications = () => {
-	return api.get('/verification/pending');
+	return adminApi.get('/verification/pending');
 };
 
 export const getUserVerificationDetails = async (userId: string) => {
-	const response = await api.get(`/verification/${userId}`);
+	const response = await adminApi.get(`/verification/${userId}`);
 	return response.data;
 };
 
@@ -32,7 +32,7 @@ export const verify = (
 	kycRemark?: string,
 	paymentRemark?: string,
 ) => {
-	return api.post('/verification/verify', {
+	return adminApi.post('/verification/verify', {
 		userId,
 		kycStatus,
 		kycRemark,

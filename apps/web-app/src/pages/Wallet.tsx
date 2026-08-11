@@ -1,31 +1,29 @@
+import { formatAmount } from '@/lib/format';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, Gift } from 'lucide-react';
 import kycWalletIcon from '@/assets/images/kyc_v2.avif';
-import emailWalletIcon from '@/assets/images/email_v2.avif';
-import vaultWalletIcon from '@/assets/images/VaultIconV2.avif';
 import gaugeWalletIcon from '@/assets/images/gauge_icon_v2.avif';
-import { useGetReferralCodeQuery } from '@/hooks/queries/referral';
 import depositWalletIcon from '@/assets/images/deposit_wallet_icon.png';
 import { useGetVerificationStatus } from '@/hooks/queries/verification';
 import transactionWalletIcon from '@/assets/images/transaction_v2.avif';
 import winningsWalletIcon from '@/assets/images/winnings_wallet_icon.png';
-import promotionalWalletIcon from '@/assets/images/promotional_wallet_icon.avif';
 import { useBalanceQuery, useDepositAmountQuery } from '@/hooks/queries/balance';
 
 export default function WalletPage() {
 	const navigate = useNavigate();
 
 	const { data: balance, isLoading } = useBalanceQuery();
-	const { data: referralData } = useGetReferralCodeQuery();
 	const { data: verificationStatus } = useGetVerificationStatus();
 	const { data: depositeAmountData } = useDepositAmountQuery();
+
+	const isKycVerified = verificationStatus?.data?.data?.kycVerificationStatus === 'VERIFIED';
 
 	const goToRecharge = () => {
 		navigate('/wallet/recharge');
 	};
 
 	const goToWithdraw = () => {
-		navigate('/wallet/withdraw');
+		navigate('/withdraw');
 	};
 
 	const goToverification = () => {
@@ -37,144 +35,102 @@ export default function WalletPage() {
 	};
 
 	return (
-		<div className="w-full bg-[#f4f4f5] flex justify-center px-4 md:pt-24 pt-20">
+		<div className="w-full bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center px-4 md:pt-16 pt-16 pb-4 transition-colors min-h-screen">
 			<div className="w-full max-w-[910px] flex flex-col gap-8">
 				<div>
-					<h2 className="text-sm text-[#262626] font-normal">Total Balance</h2>
+					<h2 className="text-sm text-[#262626] dark:text-gray-400 font-normal">Total Balance</h2>
 					{isLoading ? (
-						<p className="text-5xl font-semibold mt-1">₹ 0</p>
+						<p className="text-5xl font-semibold mt-1 text-gray-900 dark:text-white">₹ 0</p>
 					) : (
-						<p className="text-5xl font-semibold mt-1">₹ {balance?.data?.data.amount ?? 0}</p>
+						<p className="text-5xl font-semibold mt-1 text-gray-900 dark:text-white">₹ {formatAmount(balance?.data?.data?.amount)}</p>
 					)}
 				</div>
 
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-					<div className="bg-white py-3.5 rounded-xl border border-gray-400/20 flex flex-col items-center justify-center gap-3">
-						<div className="flex flex-col px-4 items-center gap-4">
-							<img src={depositWalletIcon} alt="Deposite Icon" className="w-8 h-8" />
-							<h3 className="text-sm text-[#545454]">Deposit</h3>
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+
+					<div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col justify-between items-center text-center gap-4 transition-colors min-h-[220px]">
+						<div className="flex flex-col items-center gap-3">
+							<img src={depositWalletIcon} alt="Deposit Icon" className="w-8 h-8 dark:invert" />
+							<h3 className="text-sm text-[#545454] dark:text-gray-400">Deposit</h3>
 						</div>
-						{depositeAmountData ? (
-							<>
-								<p className="text-xl font-semibold">
-									₹{depositeAmountData?.data?.data?.totalDepositAmount ?? 0}
-								</p>
-							</>
-						) : (
-							<>
-								<p className="text-xl font-semibold">₹0</p>
-							</>
-						)}
-						<div className="w-full px-4">
+
+						<p className="text-2xl font-semibold text-gray-900 dark:text-white">
+							₹{formatAmount(depositeAmountData?.data?.data?.totalDepositAmount)}
+						</p>
+
+						<div className="w-full">
 							<button
 								onClick={goToRecharge}
-								className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-[#262626] text-white"
+								className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-black dark:bg-white text-white dark:text-black"
 							>
 								Recharge
 							</button>
 						</div>
-						<div className="w-full h-px bg-gray-400/20" />
-						<div className="px-4 w-full flex justify-between items-center">
-							<p className="text-xs text-gray-600">View breakdown</p>
-							<ChevronDown size={20} />
-						</div>
 					</div>
 
 					{/* Winnings */}
-					<div className="bg-white py-3.5 rounded-xl border border-gray-400/20 flex flex-col gap-2.5 items-center justify-start">
-						<div className="flex px-4 flex-col items-center gap-4">
-							<img src={winningsWalletIcon} alt="Deposite Icon" className="w-8 h-8" />
-							<h3 className="text-sm text-[#545454]">Winnings</h3>
+					<div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col justify-between items-center text-center gap-4 transition-colors min-h-[220px]">
+						<div className="flex flex-col items-center gap-3">
+							<img src={winningsWalletIcon} alt="Winnings Icon" className="w-8 h-8 dark:invert" />
+							<h3 className="text-sm text-[#545454] dark:text-gray-400">Winnings</h3>
 						</div>
 
 						<p
-							className={`text-xl px-4 font-semibold ${
-								verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED'
-									? 'text-black'
-									: 'text-[#B0B0B0]'
-							}`}
+							className={`text-2xl font-semibold ${isKycVerified ? 'text-black dark:text-white' : 'text-gray-900 dark:text-white'
+								}`}
 						>
-							₹{isLoading ? '0' : (balance?.data?.data.amount ?? 0)}
+							₹{isLoading ? '0' : formatAmount(balance?.data?.data?.amount)}
 						</p>
 
-						<div className="px-4 w-full">
+						<div className="w-full">
 							<button
 								onClick={() => {
-									if (verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED') {
+									if (isKycVerified) {
 										goToWithdraw();
+									} else {
+										goToverification();
 									}
 								}}
-								className={`px-4 py-2.5 mt-1 w-full text-xs font-semibold rounded-md ${
-									verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED'
-										? 'text-white cursor-pointer bg-[#262626]'
-										: 'text-[#B0B0B0] cursor-not-allowed bg-[#EDEDED]'
-								}`}
+								className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-black dark:bg-white text-white dark:text-black"
 							>
-								Withdraw
+								{isKycVerified ? 'Withdraw' : 'Verify KYC'}
 							</button>
 						</div>
-
-						{verificationStatus?.data.data.kycVerificationStatus !== 'VERIFIED' && (
-							<>
-								<div className="w-full mt-0.5 h-px bg-gray-400/20" />
-								<p className="text-xs mt-1 px-4 w-full text-start text-[#B32306]">
-									Complete KYC to withdraw funds
-								</p>
-							</>
-						)}
 					</div>
 
-					{/* Promotional */}
-					<div className="bg-white p-3.5 rounded-xl border border-gray-200 flex flex-col items-center gap-3">
-						<div className="flex flex-col items-center gap-4">
-							<img src={promotionalWalletIcon} alt="Deposite Icon" className="w-8 h-8" />
-							<h3 className="text-sm text-[#545454]">Promotional</h3>
+					{/* Transaction History */}
+					<div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col justify-between items-center text-center gap-4 transition-colors min-h-[220px]">
+						<div className="flex flex-col items-center gap-3">
+							<img src={transactionWalletIcon} alt="Transaction History Icon" className="w-8 h-8 dark:invert" />
+							<h3 className="text-sm text-[#545454] dark:text-gray-400">Transaction History</h3>
 						</div>
-						<p className="text-xl font-semibold">₹20</p>
-						<button
-							className="px-4 py-2.5 cursor-pointer w-full text-xs font-semibold rounded-md text-black border border-gray-400/30"
-							onClick={() => {
-								if (referralData?.data.data.referralCode) {
-									navigator.clipboard.writeText(referralData?.data.data.referralCode);
-								}
-							}}
-							disabled={!referralData?.data.data.referralCode}
-						>
-							Invite and earn
-						</button>
-					</div>
-				</div>
 
-				{/* Quick Actions */}
-				<div>
-					<h2 className="text-xl font-semibold mt-6 mb-4">Quick Actions</h2>
-					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
-							<img src={transactionWalletIcon} className="w-8 h-8" />
-							<h3 className="text-base mt-4 text-[#262626] font-normal">Transaction History</h3>
-							<p className="text-xs text-[#757575]">For all balance debits & credits</p>
+						<p className="text-xs text-[#757575] dark:text-gray-400 leading-relaxed px-2">
+							View debits, credits & payouts
+						</p>
+
+						<div className="w-full">
 							<button
 								onClick={goToTransactionHistory}
-								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition"
+								className="px-4 cursor-pointer py-2.5 w-full text-xs font-semibold rounded-md bg-black dark:bg-white text-white dark:text-black"
 							>
-								<ArrowRight className="w-6 h-6 text-black" />
+								View Transactions
 							</button>
 						</div>
+					</div>
 
-						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
-							<img src={vaultWalletIcon} className="w-8 h-8" />
-							<h3 className="text-base mt-4 font-normal">Probo Vault</h3>
-							<p className="text-xs text-[#757575]">For financial discipline</p>
-							<button className="w-36 h-9 cursor-pointer mt-4 flex items-center justify-center text-sm font-semibold rounded-full text-black border border-gray-400/60 transition">
-								Comming soon...
-							</button>
-						</div>
+				</div>
 
-						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
-							<img src={kycWalletIcon} className="w-8 h-8" />
-							<h3 className="text-base mt-4 font-normal">KYC verification</h3>
-							{verificationStatus?.data.data.kycVerificationStatus === 'VERIFIED' ? (
-								<p className="text-xs text-green-600">
+				<div>
+					<h2 className="text-xl font-semibold mt-2 mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+						{/* KYC Verification */}
+						<div className="bg-[#f4f4f5] dark:bg-[#1C1C1E] p-4 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col gap-1 transition-colors">
+							<img src={kycWalletIcon} className="w-8 h-8 dark:invert" alt="KYC Verification" />
+							<h3 className="text-base mt-4 text-[#262626] dark:text-gray-200 font-normal">KYC verification</h3>
+							{isKycVerified ? (
+								<p className="text-xs text-green-600 dark:text-green-400">
 									Verified on{' '}
 									{new Date(verificationStatus.data.data.kycVerifiedAt).toLocaleDateString(
 										'en-US',
@@ -186,33 +142,41 @@ export default function WalletPage() {
 									)}
 								</p>
 							) : (
-								<p className="text-xs text-[#D29822]">Tap to verify</p>
+								<p className="text-xs text-[#D29822] dark:text-yellow-500">Tap to verify</p>
 							)}
 							<button
 								onClick={goToverification}
-								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 transition"
+								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20"
 							>
-								<ArrowRight className="w-6 h-6 text-black" />
+								<ArrowRight className="w-6 h-6 text-black dark:text-white" />
 							</button>
 						</div>
 
-						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
-							<img src={gaugeWalletIcon} className="w-8 h-8" />
-							<h3 className="text-base mt-4 font-normal">Control Centre</h3>
-							<p className="text-xs text-[#757575]"> Limits for responsible trading</p>
-							<button className="w-36 h-9 cursor-pointer mt-4 flex items-center justify-center text-sm font-semibold rounded-full text-black border border-gray-400/60 transition">
-								Comming soon...
+						{/* Refer & Rewards */}
+						<div className="bg-[#f4f4f5] dark:bg-[#1C1C1E] p-4 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col gap-1 transition-colors">
+							<div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+								<Gift size={20} />
+							</div>
+							<h3 className="text-base mt-4 text-[#262626] dark:text-gray-200 font-normal">Refer & Rewards</h3>
+							<p className="text-xs text-[#757575] dark:text-gray-400">Invite friends & earn ₹20 bonus</p>
+							<button
+								onClick={() => navigate('/referral')}
+								className="w-16 h-9 cursor-pointer mt-4 flex items-center justify-center rounded-full border border-gray-400/60 dark:border-white/20"
+							>
+								<ArrowRight className="w-6 h-6 text-black dark:text-white" />
 							</button>
 						</div>
 
-						<div className="bg-[#f4f4f5] p-4 rounded-xl border border-gray-400/20 flex flex-col gap-1">
-							<img src={emailWalletIcon} className="w-8 h-8" />
-							<h3 className="text-base mt-4 font-normal">Statements & Certificate</h3>
-							<p className="text-xs text-[#757575]">For ledger and TDS certificates</p>
-							<button className="w-36 h-9 cursor-pointer mt-4 flex items-center justify-center text-sm font-semibold rounded-full text-black border border-gray-400/60 transition">
-								Comming soon...
+						{/* Control Centre */}
+						<div className="bg-[#f4f4f5] dark:bg-[#1C1C1E] p-4 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col gap-1 transition-colors">
+							<img src={gaugeWalletIcon} className="w-8 h-8 dark:invert" alt="Control Centre" />
+							<h3 className="text-base mt-4 text-[#262626] dark:text-gray-200 font-normal">Control Centre</h3>
+							<p className="text-xs text-[#757575] dark:text-gray-400"> Limits for responsible trading</p>
+							<button className="w-36 h-9 cursor-pointer mt-4 flex items-center justify-center text-sm font-semibold rounded-full text-black dark:text-white border border-gray-400/60 dark:border-white/20">
+								Coming soon...
 							</button>
 						</div>
+
 					</div>
 				</div>
 			</div>
