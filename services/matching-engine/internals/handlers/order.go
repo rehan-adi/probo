@@ -199,3 +199,65 @@ func SellOrder(payload types.QueuePayload) types.QueueResponse {
 	}
 
 }
+
+func CancelOrder(payload types.QueuePayload) types.QueueResponse {
+	var data types.CancelOrderPayload
+
+	if err := mapstructure.Decode(payload.Data, &data); err != nil {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "failed to validate payload data " + err.Error(),
+		}
+	}
+
+	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
+
+	if !ok {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Retryable:  false,
+			Message:    "Market not found",
+		}
+	}
+
+	if market.Status == types.Close {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Market is closed",
+		}
+	}
+
+	replyChannel := make(chan interface{})
+
+	market.Inbox <- types.MarketMessage{
+		Type:      types.MarketCancelOrder,
+		Payload:   data,
+		ReplyChan: replyChannel,
+	}
+
+	rawResp := <-replyChannel
+	resp, ok := rawResp.(types.OrderResponse)
+
+	if !ok {
+		return types.QueueResponse{
+			ResponseId: payload.ResponseId,
+			Status:     types.Error,
+			Message:    "Invalid response from market, having internal issues.",
+		}
+	}
+
+	status := types.Error
+	if resp.Success {
+		status = types.Success
+	}
+
+	return types.QueueResponse{
+		ResponseId: payload.ResponseId,
+		Status:     status,
+		Message:    resp.Message,
+	}
+}

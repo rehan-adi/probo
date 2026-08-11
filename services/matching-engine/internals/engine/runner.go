@@ -37,6 +37,9 @@ func (e *Engine) runMarket(market *types.Market) {
 		case types.MarketResolveMarket:
 			e.handleResolveMarket(msg, market)
 
+		case types.MarketCancelOrder:
+			e.handleCancelOrder(msg, market)
+
 		default:
 			log.Error().Str("marketId", market.MarketId).Msg("Unknown message type")
 		}

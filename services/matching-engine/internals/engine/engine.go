@@ -24,7 +24,7 @@ func InitEngine(r *redis.Client) {
 		Market: make(map[string]*types.Market),
 		Redis:  r,
 	}
-	
+
 	// Start background routines
 	EngineInstance.LoadLatestSnapshot()
 	EngineInstance.StartSnapshotRoutine()

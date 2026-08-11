@@ -10,6 +10,7 @@ import (
 
 type CreateUserDataRequest struct {
 	ID            string              `mapstructure:"id"`
+	Name          string              `mapstructure:"name"`
 	Phone         string              `mapstructure:"phone"`
 	KycStatus     types.KycStatus     `mapstructure:"kycVerificationStatus"`
 	PaymentStatus types.PaymentStatus `mapstructure:"paymentVerificationStatus"`
@@ -49,6 +50,7 @@ func CreateUser(payload types.QueuePayload) types.QueueResponse {
 
 	user := &types.User{
 		ID:                        data.ID,
+		Name:                      data.Name,
 		Phone:                     data.Phone,
 		KycVerificationStatus:     data.KycStatus,
 		PaymentVerificationStatus: data.PaymentStatus,

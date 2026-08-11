@@ -25,6 +25,7 @@ const (
 
 type User struct {
 	ID                        string
+	Name                      string
 	Phone                     string
 	KycVerificationStatus     KycStatus
 	PaymentVerificationStatus PaymentStatus

@@ -6,8 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -38,11 +38,11 @@ func (e *Engine) PerformSnapshot() {
 	log.Info().Msg("Starting state snapshot and memory eviction routine...")
 
 	e.UM.Lock()
-	
+
 	// 1. Evict inactive users (> 7 days)
 	evictionThreshold := time.Now().Add(-7 * 24 * time.Hour)
 	evictedCount := 0
-	
+
 	for userId, user := range e.User {
 		// If LastActive is zero, it might be a new user or pre-existing without activity
 		if !user.LastActive.IsZero() && user.LastActive.Before(evictionThreshold) {
@@ -50,7 +50,7 @@ func (e *Engine) PerformSnapshot() {
 			evictedCount++
 		}
 	}
-	
+
 	log.Info().Int("evicted_users", evictedCount).Msg("Purged inactive users from engine RAM")
 
 	e.MM.RLock()
@@ -65,15 +65,15 @@ func (e *Engine) PerformSnapshot() {
 
 	// 2. Serialize State
 	data := struct {
-		Timestamp time.Time                `json:"timestamp"`
-		Users     map[string]*types.User   `json:"users"`
+		Timestamp time.Time                  `json:"timestamp"`
+		Users     map[string]*types.User     `json:"users"`
 		Markets   map[string]json.RawMessage `json:"markets"`
 	}{
 		Timestamp: time.Now(),
 		Users:     e.User,
 		Markets:   marketsRaw,
 	}
-	
+
 	jsonData, err := json.Marshal(data)
 	e.UM.Unlock() // Unlock after serialization to unblock trading
 
@@ -182,7 +182,12 @@ func (e *Engine) LoadLatestSnapshot() {
 			e.Market = make(map[string]*types.Market)
 		}
 		// Re-initialize channels and start goroutines for each market
-		for _, market := range e.Market {
+		for key, market := range e.Market {
+			if market == nil {
+				log.Warn().Str("market_key", key).Msg("Found nil market in snapshot, skipping")
+				delete(e.Market, key)
+				continue
+			}
 			market.Inbox = make(chan types.MarketMessage, 100)
 			go e.runMarket(market)
 		}
@@ -197,6 +202,6 @@ func (e *Engine) LoadLatestSnapshot() {
 		log.Info().Msg("S3_SNAPSHOT_BUCKET not set, skipping S3 snapshot restore on startup")
 		return
 	}
-	
+
 	log.Info().Msg("Snapshot restoration logic initialized (ready for S3 sync)")
 }

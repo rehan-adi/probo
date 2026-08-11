@@ -41,3 +41,10 @@ type Order struct {
 	OrderType OrderType
 	Timestamp time.Time
 }
+
+type CancelOrderPayload struct {
+	UserId   string
+	OrderId  string
+	MarketId string
+	Symbol   string
+}

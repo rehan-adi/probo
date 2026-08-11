@@ -154,20 +154,20 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 		Status:     types.Success,
 		Message:    "Market details fetched successfully",
 		Data: struct {
-			MarketId        string                    `json:"marketId"`
-			Title           string                    `json:"title"`
-			Symbol          string                    `json:"symbol"`
-			YesPrice        float32                   `json:"yesPrice"`
-			NoPrice         float32                   `json:"noPrice"`
-			Thumbnail       string                    `json:"thumbnail"`
-			EOS             string                    `json:"eos"`
-			Rules           string                    `json:"rules"`
-			Volume          float64                   `json:"volume"`
-			Status          string                    `json:"status"`
-			OrderBook       types.AggregatedOrderBook `json:"orderbook"`
-			Overview        types.Overview            `json:"overview"`
+			MarketId        string                     `json:"marketId"`
+			Title           string                     `json:"title"`
+			Symbol          string                     `json:"symbol"`
+			YesPrice        float32                    `json:"yesPrice"`
+			NoPrice         float32                    `json:"noPrice"`
+			Thumbnail       string                     `json:"thumbnail"`
+			EOS             string                     `json:"eos"`
+			Rules           string                     `json:"rules"`
+			Volume          float64                    `json:"volume"`
+			Status          string                     `json:"status"`
+			OrderBook       types.AggregatedOrderBook  `json:"orderbook"`
+			Overview        types.Overview             `json:"overview"`
 			Trades          []types.TradeExecutedEvent `json:"trades"`
-			NumberOfTraders int16                     `json:"numberOfTraders"`
+			NumberOfTraders int16                      `json:"numberOfTraders"`
 		}{
 			MarketId:        market.MarketId,
 			Title:           market.Title,
@@ -318,8 +318,8 @@ func AddLiquidity(payload types.QueuePayload) types.QueueResponse {
 }
 
 type ResolveMarketDataRequest struct {
-	MarketId string `mapstructure:"marketId"`
-	Result   string `mapstructure:"result"`
+	Symbol string `mapstructure:"symbol"`
+	Result string `mapstructure:"result"`
 }
 
 func ResolveMarket(payload types.QueuePayload) types.QueueResponse {
@@ -334,7 +334,7 @@ func ResolveMarket(payload types.QueuePayload) types.QueueResponse {
 	}
 
 	engine.EngineInstance.MM.RLock()
-	market, ok := engine.EngineInstance.GetMarket(data.MarketId)
+	market, ok := engine.EngineInstance.GetMarket(data.Symbol)
 	engine.EngineInstance.MM.RUnlock()
 
 	if !ok {

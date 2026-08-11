@@ -145,18 +145,33 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 		makerId = matchOrder.UserId
 		makerOrderId = matchOrder.OrderId
 
+		e.UM.Lock()
+		takerAcc := e.User[takerId]
+		makerAcc := e.User[makerId]
+		e.UM.Unlock()
+
+		var takerName, makerName string
+		if takerAcc != nil {
+			takerName = takerAcc.Name
+		}
+		if makerAcc != nil {
+			makerName = makerAcc.Name
+		}
+
 		trades = append(trades, types.TradeExecutedEvent{
-			MarketId:      market.MarketId,
-			MakerId:       makerId,
-			TakerId:       takerId,
-			MakerOrderId:  makerOrderId,
-			TakerOrderId:  takerOrderId,
-			StockType:     string(order.Side),
-			TakerAction:   string(order.Action),
-			Price:         matchPrice,
-			Quantity:      tradeQty,
-			Timestamp:     time.Now(),
-			MatchType:     matchType,
+			MarketId:     market.MarketId,
+			MakerId:      makerId,
+			TakerId:      takerId,
+			MakerName:    makerName,
+			TakerName:    takerName,
+			MakerOrderId: makerOrderId,
+			TakerOrderId: takerOrderId,
+			StockType:    string(order.Side),
+			TakerAction:  string(order.Action),
+			Price:        matchPrice,
+			Quantity:     tradeQty,
+			Timestamp:    time.Now(),
+			MatchType:    matchType,
 		})
 
 		if matchOrder.Filled == matchOrder.Quantity {
@@ -172,7 +187,7 @@ func (e *Engine) ProcessLimitOrder(market *types.Market, order *types.Order, isM
 	if isMarketOrder && order.Filled < order.Quantity && order.Action == types.BUY {
 		e.UM.Lock()
 		u := e.User[order.UserId]
-		refund := order.Price * float64(order.Quantity - order.Filled)
+		refund := order.Price * float64(order.Quantity-order.Filled)
 		u.Balance.WalletBalance.Locked -= refund
 		u.Balance.WalletBalance.Amount += refund
 		e.UM.Unlock()
@@ -246,8 +261,13 @@ func (e *Engine) settleTradeBalances(order, matchOrder *types.Order, qty int, ex
 		buyer.Balance.StockBalance[order.Symbol] = buyerStock
 		seller.Balance.StockBalance[order.Symbol] = sellerStock
 
-		buyer.Balance.WalletBalance.Locked -= executionPrice * float64(qty)
-		seller.Balance.WalletBalance.Amount += executionPrice * float64(qty)
+		tradeValue := executionPrice * float64(qty)
+		buyerFee := tradeValue * 0.0025
+		sellerFee := tradeValue * 0.0025
+
+		buyer.Balance.WalletBalance.Locked -= tradeValue
+		buyer.Balance.WalletBalance.Amount -= buyerFee
+		seller.Balance.WalletBalance.Amount += (tradeValue - sellerFee)
 
 	case "MINT":
 		var yesBuyer, noBuyer *types.User
@@ -260,12 +280,20 @@ func (e *Engine) settleTradeBalances(order, matchOrder *types.Order, qty int, ex
 		yStock := yesBuyer.Balance.StockBalance[order.Symbol]
 		yStock.Yes += qty
 		yesBuyer.Balance.StockBalance[order.Symbol] = yStock
-		yesBuyer.Balance.WalletBalance.Locked -= executionPrice * float64(qty) 
+
+		yesTradeValue := executionPrice * float64(qty)
+		yesFee := yesTradeValue * 0.0025
+		yesBuyer.Balance.WalletBalance.Locked -= yesTradeValue
+		yesBuyer.Balance.WalletBalance.Amount -= yesFee
 
 		nStock := noBuyer.Balance.StockBalance[order.Symbol]
 		nStock.No += qty
 		noBuyer.Balance.StockBalance[order.Symbol] = nStock
-		noBuyer.Balance.WalletBalance.Locked -= (10.0 - executionPrice) * float64(qty)
+
+		noTradeValue := (10.0 - executionPrice) * float64(qty)
+		noFee := noTradeValue * 0.0025
+		noBuyer.Balance.WalletBalance.Locked -= noTradeValue
+		noBuyer.Balance.WalletBalance.Amount -= noFee
 
 	case "MERGE":
 		var yesSeller, noSeller *types.User
@@ -278,13 +306,17 @@ func (e *Engine) settleTradeBalances(order, matchOrder *types.Order, qty int, ex
 		yStock := yesSeller.Balance.StockBalance[order.Symbol]
 		yStock.Yes -= qty
 		yesSeller.Balance.StockBalance[order.Symbol] = yStock
-		yesSeller.Balance.WalletBalance.Amount += executionPrice * float64(qty)
+
+		yesTradeValue := executionPrice * float64(qty)
+		yesFee := yesTradeValue * 0.0025
+		yesSeller.Balance.WalletBalance.Amount += (yesTradeValue - yesFee)
 
 		nStock := noSeller.Balance.StockBalance[order.Symbol]
 		nStock.No -= qty
 		noSeller.Balance.StockBalance[order.Symbol] = nStock
-		noSeller.Balance.WalletBalance.Amount += (10.0 - executionPrice) * float64(qty)
+
+		noTradeValue := (10.0 - executionPrice) * float64(qty)
+		noFee := noTradeValue * 0.0025
+		noSeller.Balance.WalletBalance.Amount += (noTradeValue - noFee)
 	}
 }
-
-

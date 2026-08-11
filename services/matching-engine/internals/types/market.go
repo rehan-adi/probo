@@ -35,10 +35,10 @@ type Market struct {
 	Status          MarketStatus
 	OrderBook       *OrderBook
 
-	Overview   Overview
-	Trades     []TradeExecutedEvent
-	Inbox      chan MarketMessage
-	Mu         sync.RWMutex
+	Overview Overview
+	Trades   []TradeExecutedEvent
+	Inbox    chan MarketMessage
+	Mu       sync.RWMutex
 }
 
 type MarketStatus string

@@ -28,7 +28,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	}
 
 	user.LastActive = time.Now()
-	
+
 	if user.Balance.StockBalance == nil {
 		user.Balance.StockBalance = make(map[string]types.StockBalance)
 	}
@@ -47,7 +47,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 			if order.Side == types.No {
 				currentShares = stock.No
 			}
-			if currentShares + order.Quantity > 5000 {
+			if currentShares+order.Quantity > 5000 {
 				e.UM.Unlock()
 				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "position limit exceeded (max 5000 shares)", Data: currentShares}
 				return
@@ -122,7 +122,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	probability := utils.GetYesProbability(aggOrderBook)
 	yesPrice := math.Round(probability*10*2) / 2
 	noPrice := math.Round((1-probability)*10*2) / 2
-	
+
 	if yesPrice != float64(market.YesPrice) || noPrice != float64(market.NoPrice) {
 		market.YesPrice = float32(yesPrice)
 		market.NoPrice = float32(noPrice)
@@ -134,8 +134,8 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 	payload := map[string]interface{}{
 		"symbol": order.Symbol, "orderbook": aggOrderBook,
 		"yesPrice": yesPrice, "noPrice": noPrice,
-		"trades": activities,
-		"volume": market.Volume,
+		"trades":          activities,
+		"volume":          market.Volume,
 		"numberOfTraders": market.NumberOfTraders,
 	}
 	data, err := json.Marshal(payload)
@@ -179,24 +179,24 @@ func (e *Engine) handleResolveMarket(msg types.MarketMessage, market *types.Mark
 
 	market.Mu.Lock()
 	market.Status = types.Close
-	
+
 	// Cancel all YES bids (BUY YES)
 	for _, order := range market.OrderBook.YesBids.OrderHeap {
-		refund := order.Price * float64(order.Quantity - order.Filled)
+		refund := order.Price * float64(order.Quantity-order.Filled)
 		e.UM.Lock()
 		e.User[order.UserId].Balance.WalletBalance.Locked -= refund
 		e.User[order.UserId].Balance.WalletBalance.Amount += refund
 		e.UM.Unlock()
-		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "refund": refund, "type": "INR"})
+		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "orderId": order.OrderId, "refund": refund, "type": "INR", "marketId": market.MarketId})
 	}
 	// Cancel all NO bids (BUY NO)
 	for _, order := range market.OrderBook.NoBids.OrderHeap {
-		refund := order.Price * float64(order.Quantity - order.Filled)
+		refund := order.Price * float64(order.Quantity-order.Filled)
 		e.UM.Lock()
 		e.User[order.UserId].Balance.WalletBalance.Locked -= refund
 		e.User[order.UserId].Balance.WalletBalance.Amount += refund
 		e.UM.Unlock()
-		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "refund": refund, "type": "INR"})
+		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "orderId": order.OrderId, "refund": refund, "type": "INR", "marketId": market.MarketId})
 	}
 
 	// Cancel all YES asks (SELL YES)
@@ -207,7 +207,7 @@ func (e *Engine) handleResolveMarket(msg types.MarketMessage, market *types.Mark
 		stock.Yes += refund
 		e.User[order.UserId].Balance.StockBalance[market.Symbol] = stock
 		e.UM.Unlock()
-		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "refund": refund, "type": "YES_STOCK", "marketId": market.MarketId})
+		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "orderId": order.OrderId, "refund": refund, "type": "YES_STOCK", "marketId": market.MarketId})
 	}
 	// Cancel all NO asks (SELL NO)
 	for _, order := range market.OrderBook.NoAsks.OrderHeap {
@@ -217,7 +217,7 @@ func (e *Engine) handleResolveMarket(msg types.MarketMessage, market *types.Mark
 		stock.No += refund
 		e.User[order.UserId].Balance.StockBalance[market.Symbol] = stock
 		e.UM.Unlock()
-		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "refund": refund, "type": "NO_STOCK", "marketId": market.MarketId})
+		kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{"userId": order.UserId, "orderId": order.OrderId, "refund": refund, "type": "NO_STOCK", "marketId": market.MarketId})
 	}
 
 	// Clear orderbook
@@ -236,4 +236,94 @@ func (e *Engine) handleResolveMarket(msg types.MarketMessage, market *types.Mark
 
 	log.Info().Str("marketId", market.MarketId).Str("result", result).Msg("Market resolved and closed")
 	msg.ReplyChan <- true
+}
+
+func (e *Engine) handleCancelOrder(msg types.MarketMessage, market *types.Market) {
+	req, ok := msg.Payload.(types.CancelOrderPayload)
+	if !ok {
+		msg.ReplyChan <- types.OrderResponse{Success: false, Message: "invalid payload"}
+		return
+	}
+
+	market.Mu.Lock()
+	defer market.Mu.Unlock()
+
+	var foundOrder *types.Order
+	var refund float64
+	var refundType string
+
+	removeFromHeap := func(h *types.OrderHeap) *types.Order {
+		for i, order := range *h {
+			if order.OrderId == req.OrderId {
+				found := order
+				*h = append((*h)[:i], (*h)[i+1:]...)
+				return found
+			}
+		}
+		return nil
+	}
+
+	if foundOrder = removeFromHeap(&market.OrderBook.YesBids.OrderHeap); foundOrder != nil {
+		refund = foundOrder.Price * float64(foundOrder.Quantity-foundOrder.Filled)
+		refundType = "INR"
+	} else if foundOrder = removeFromHeap(&market.OrderBook.NoBids.OrderHeap); foundOrder != nil {
+		refund = foundOrder.Price * float64(foundOrder.Quantity-foundOrder.Filled)
+		refundType = "INR"
+	} else if foundOrder = removeFromHeap(&market.OrderBook.YesAsks.OrderHeap); foundOrder != nil {
+		refund = float64(foundOrder.Quantity - foundOrder.Filled)
+		refundType = "YES_STOCK"
+	} else if foundOrder = removeFromHeap(&market.OrderBook.NoAsks.OrderHeap); foundOrder != nil {
+		refund = float64(foundOrder.Quantity - foundOrder.Filled)
+		refundType = "NO_STOCK"
+	}
+
+	if foundOrder == nil {
+		msg.ReplyChan <- types.OrderResponse{Success: false, Message: "order not found"}
+		return
+	}
+
+	e.UM.Lock()
+	if refundType == "INR" {
+		e.User[req.UserId].Balance.WalletBalance.Locked -= refund
+		e.User[req.UserId].Balance.WalletBalance.Amount += refund
+	} else {
+		stock := e.User[req.UserId].Balance.StockBalance[req.Symbol]
+		if refundType == "YES_STOCK" {
+			stock.Yes += int(refund)
+		} else {
+			stock.No += int(refund)
+		}
+		e.User[req.UserId].Balance.StockBalance[req.Symbol] = stock
+	}
+	e.UM.Unlock()
+
+	kafka.ProduceEventToDBProcessor("process_db", "ORDER_CANCELLED", map[string]interface{}{
+		"userId": req.UserId, "orderId": req.OrderId, "refund": refund, "type": refundType, "marketId": req.MarketId,
+	})
+
+	aggOrderBook := utils.AggregateOrderBook(market.OrderBook)
+	probability := utils.GetYesProbability(aggOrderBook)
+	yesPrice := math.Round(probability*10*2) / 2
+	noPrice := math.Round((1-probability)*10*2) / 2
+
+	if yesPrice != float64(market.YesPrice) || noPrice != float64(market.NoPrice) {
+		market.YesPrice = float32(yesPrice)
+		market.NoPrice = float32(noPrice)
+		kafka.ProduceEventToDBProcessor("process_db", "UPDATE_STOCK_PRICE", map[string]interface{}{
+			"marketId": req.MarketId, "yesPrice": yesPrice, "noPrice": noPrice,
+		})
+	}
+
+	payload := map[string]interface{}{
+		"symbol": req.Symbol, "orderbook": aggOrderBook,
+		"yesPrice": yesPrice, "noPrice": noPrice,
+		"volume":          market.Volume,
+		"numberOfTraders": market.NumberOfTraders,
+	}
+	if data, err := json.Marshal(payload); err == nil {
+		e.BroadcastMessage("stream:data", string(data))
+	}
+
+	log.Info().Str("orderId", req.OrderId).Msg("Order cancelled successfully")
+	msg.ReplyChan <- types.OrderResponse{Success: true, Message: "order cancelled"}
 }
