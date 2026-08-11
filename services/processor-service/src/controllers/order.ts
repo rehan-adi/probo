@@ -460,7 +460,7 @@ export const recordOrderPlaced = async (data: any) => {
 					},
 				});
 			} else {
-				const field = side === 'Yes' ? 'yes' : 'no';
+				const field = side === 'YES' ? 'yes' : 'no';
 				await tx.position.updateMany({
 					where: { userId, marketId },
 					data: {
