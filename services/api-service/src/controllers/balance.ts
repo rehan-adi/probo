@@ -44,7 +44,7 @@ export const getBalance = async (c: Context) => {
 				// Sync user to engine
 				await pushToQueue(EVENTS.CREATE_USER, {
 					id: dbUser.id,
-					name: dbUser.name,
+					name: dbUser.username || '',
 					phone: dbUser.phone,
 					kycVerificationStatus: dbUser.kycVerificationStatus,
 					paymentVerificationStatus: dbUser.paymentVerificationStatus,
