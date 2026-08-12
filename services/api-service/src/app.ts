@@ -16,6 +16,7 @@ import { portfolioRoutes } from '@/routes/portfolio';
 import { onboardingRoutes } from '@/routes/onboarding';
 import { categoriesRoutes } from '@/routes/categories';
 import { transactionRoutes } from '@/routes/transaction';
+import { leaderboardRoutes } from '@/routes/leaderboard';
 import { verificationRoutes } from '@/routes/verification';
 
 const app = new Hono();
@@ -52,6 +53,7 @@ app.route('/api/v1/capi/portfolio', portfolioRoutes);
 app.route('/api/v1/capi/onboarding', onboardingRoutes);
 app.route('/api/v1/capi/categories', categoriesRoutes);
 app.route('/api/v1/capi/transaction', transactionRoutes);
+app.route('/api/v1/capi/leaderboard', leaderboardRoutes);
 app.route('/api/v1/capi/verification', verificationRoutes);
 
 // Admin APIs (AAPI)
