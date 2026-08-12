@@ -110,6 +110,36 @@ export const handleMarketResolved = async (data: any) => {
 
 					payoutsToEngine.push({ userId: holder.userId, amount: payout });
 				}
+
+				// Update Leaderboard score if market resolution is definitive (YES/NO)
+				if (result === 'YES' || result === 'NO') {
+					const totalInvested = Number(holder.yesInvested) + Number(holder.noInvested);
+					const totalSellVal = Number(holder.yesSellValue) + Number(holder.noSellValue);
+					const netProfit = payout + totalSellVal - totalInvested;
+
+					const now = new Date();
+					const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+					const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+					const startOfYear = new Date(now.getFullYear(), 0, 1);
+					const weekNum = Math.ceil(
+						((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7,
+					);
+					const yearWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+
+					try {
+						await Promise.all([
+							redisPublisher.zincrby('leaderboard:all_time', netProfit, holder.userId),
+							redisPublisher.zincrby(`leaderboard:today:${todayStr}`, netProfit, holder.userId),
+							redisPublisher.zincrby(`leaderboard:monthly:${yearMonth}`, netProfit, holder.userId),
+							redisPublisher.zincrby(`leaderboard:weekly:${yearWeek}`, netProfit, holder.userId),
+						]);
+					} catch (redisErr) {
+						logger.error(
+							{ redisErr, userId: holder.userId },
+							'Failed to update Redis leaderboard score',
+						);
+					}
+				}
 			}
 
 			// Keep the position history, just don't delete them, maybe just zero out the balances?
