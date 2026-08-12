@@ -241,7 +241,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 							</AnimatePresence>
 						</div>
 					)}
-					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">ASKS (NO)</div>
+					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">ASKS</div>
 				</div>
 
 				{/* Spread / Mid Market */}
@@ -254,7 +254,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 
 				{/* Bids Section */}
 				<div className="flex flex-col justify-start relative flex-1">
-					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">BIDS (YES)</div>
+					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">BIDS</div>
 					{processedBids.length === 0 ? (
 						<div className="flex items-center justify-center text-xs text-muted-foreground opacity-50" style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}>No bids available</div>
 					) : (
