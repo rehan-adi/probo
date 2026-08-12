@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import { prisma } from '@probo/database';
-import { pushToQueue } from '../lib/redis/queue';
+import { pushToQueue } from '@/libs/redis/queue';
 import { EVENTS } from '../config/constants';
 
 const API_URL = 'http://localhost:3000/api/v1/capi';
@@ -26,7 +26,7 @@ async function loginUser(phone: string, name: string) {
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ email }),
 	});
-	const loginData = await loginRes.json();
+	const loginData: any = await loginRes.json();
 
 	//@ts-ignore
 	if (!loginData.success)
@@ -148,7 +148,7 @@ async function setupUser(phone: string, name: string) {
 		});
 		await pushToQueue(EVENTS.CREATE_USER, {
 			id: user.id,
-			name: user.name,
+			username: user.username,
 			phone: user.phone,
 			kycVerificationStatus: 'VERIFIED',
 			paymentVerificationStatus: 'VERIFIED',
