@@ -28,6 +28,7 @@ import AuthModal from '@/components/modals/AuthModal';
 import AdminTransactions from '@/pages/admin/Transactions';
 import AdminVerifications from '@/pages/admin/Verifications';
 import TransactionHistoryPage from '@/pages/TransactionHistory';
+import LeaderboardPage from '@/pages/Leaderboard';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { useThemeStore } from '@/store/theme';
@@ -53,6 +54,7 @@ function AppContent() {
 					<Route path="/events" element={<EventsPage />} />
 					<Route path="/events/:symbol" element={<EventDetails />} />
 					<Route path="/search" element={<SearchPage />} />
+					<Route path="/leaderboard" element={<LeaderboardPage />} />
 
 					<Route path="/about" element={<AboutPage />} />
 					<Route path="/blog" element={<BlogPage />} />
