@@ -178,12 +178,12 @@ export default function Navbar() {
 										</span>
 									</Link>
 
-									<div className="flex group relative items-center justify-center p-0.5 w-9 h-8 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors rounded-md cursor-pointer">
+									<Link to="/referral" className="flex group relative items-center justify-center p-0.5 w-9 h-8 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors rounded-md cursor-pointer">
 										<Gift size={20} className="text-gray-700 dark:text-gray-300" />
 										<div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
 											Refer & Reward
 										</div>
-									</div>
+									</Link>
 
 									<div ref={notifRef} className="relative">
 										<button
