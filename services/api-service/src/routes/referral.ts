@@ -6,20 +6,13 @@ import {
 	referralLeaderboard,
 	submitReferral,
 	getReferralEarnings,
+	getReferralInfo,
 } from '@/controllers/referral';
-
-/**
- * Referral Routes
- *
- * GET    /api/v1/referral/                   → Get referral code
- * POST   /api/v1/referral/submit             → Submit referral code (only once per user)
- * GET    /api/v1/referral/referral-earnings  → Get earnings for a user only referral earnings
- * GET    /api/v1/referral/leaderboard        → Fetch top 5 earners leaderboard
- */
 
 export const referralRoutes = new Hono();
 
 referralRoutes.get('/', authorization, getReferralCode);
+referralRoutes.get('/info', authorization, getReferralInfo);
 referralRoutes.post('/submit', authorization, submitReferral);
 referralRoutes.get(
 	'/referral-earnings',

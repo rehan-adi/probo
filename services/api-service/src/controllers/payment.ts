@@ -142,36 +142,44 @@ export const paymentWebhook = async (c: Context) => {
 						},
 					});
 
+					const referrerBonus = amount >= 100 ? 20.0 : 10.0;
+					const refereeBonus = amount >= 100 ? 10.0 : 5.0;
+
 					for (const ref of pendingReferrals) {
 						await tx.referral.update({
 							where: { id: ref.id },
-							data: { status: 'COMPLETED' },
+							data: {
+								status: 'COMPLETED',
+								amount: ref.isReferrer ? referrerBonus : refereeBonus,
+							},
 						});
 
-						const targetUserId = ref.isReferrer ? ref.referrerId : ref.referredId;
+						const isReferrer = ref.isReferrer;
+						const targetUserId = isReferrer ? ref.referrerId : ref.referredId;
+						const rewardAmount = isReferrer ? referrerBonus : refereeBonus;
 
 						if (targetUserId) {
 							await tx.wallet.update({
 								where: { userId: targetUserId },
-								data: { balance: { increment: ref.amount } },
+								data: { balance: { increment: rewardAmount } },
 							});
 
 							await tx.transaction.create({
 								data: {
 									userId: targetUserId,
 									type: 'REFERRAL_REWARD',
-									amount: ref.amount,
+									amount: rewardAmount,
 									status: 'SUCCESS',
-									remarks: ref.isReferrer
-										? `Referral reward for user ${customerId} depositing`
-										: `Bonus for using a referral code and making first deposit`,
+									remarks: isReferrer
+										? `Referral reward for user ${customerId} depositing ₹${amount}`
+										: `Deposit bonus reward for using referral code and recharging ₹${amount}`,
 								},
 							});
 
-							if (ref.isReferrer) {
+							if (isReferrer) {
 								await tx.user.update({
 									where: { id: targetUserId },
-									data: { totalReferralReward: { increment: Number(ref.amount) } },
+									data: { totalReferralReward: { increment: rewardAmount } },
 								});
 							}
 						}

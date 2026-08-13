@@ -214,21 +214,21 @@ export const submitReferral = async (c: Context) => {
 		try {
 			await prisma.$transaction(async (tx) => {
 				await tx.wallet.update({
-					where: { userId: referrer.id },
+					where: { userId },
 					data: {
 						balance: {
-							increment: 20,
+							increment: 10,
 						},
 					},
 				});
 
 				await tx.transaction.create({
 					data: {
-						userId: referrer.id,
+						userId,
 						type: 'REFERRAL_REWARD',
 						status: 'SUCCESS',
-						amount: '20.00',
-						remarks: `Referral bonus from +91-XXXXXX${(referrer.phone || '0000').slice(-4)}`,
+						amount: '10.00',
+						remarks: `Bonus for applying referral code ${referralCode}`,
 					},
 				});
 
@@ -245,6 +245,8 @@ export const submitReferral = async (c: Context) => {
 						referrerId: referrer.id,
 						referredId: user.id,
 						amount: 20,
+						isReferrer: true,
+						status: 'PENDING',
 					},
 				});
 			});
@@ -433,6 +435,203 @@ export const referralLeaderboard = async (c: Context) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Failed to fetch referral leaderboard');
+		return c.json(
+			{
+				success: false,
+				error: 'Internal server error',
+			},
+			500,
+		);
+	}
+};
+
+export const getReferralInfo = async (c: Context) => {
+	try {
+		const userId = c.get('user').id;
+
+		if (!userId) {
+			return c.json(
+				{
+					success: false,
+					error: 'Unauthorized',
+				},
+				401,
+			);
+		}
+
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				username: true,
+				email: true,
+				referralCode: true,
+				referrerId: true,
+				totalReferralReward: true,
+			},
+		});
+
+		if (!user) {
+			return c.json(
+				{
+					success: false,
+					error: 'User not found',
+				},
+				404,
+			);
+		}
+
+		let cleanCode = user.referralCode;
+
+		if (!cleanCode.startsWith('PROB-')) {
+			cleanCode = `PROB-${cleanCode.toUpperCase()}`;
+			await prisma.user
+				.update({
+					where: { id: userId },
+					data: { referralCode: cleanCode },
+				})
+				.catch(() => {});
+		}
+
+		const origin = c.req.header('origin') || 'http://localhost:5173';
+		const referralLink = `${origin}/events?ref=${cleanCode}`;
+
+		const referrals = await prisma.referral.findMany({
+			where: {
+				referrerId: userId,
+				isReferrer: true,
+			},
+			include: {
+				referred: {
+					select: {
+						id: true,
+						username: true,
+						email: true,
+						phone: true,
+						createdAt: true,
+					},
+				},
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
+		const totalInvited = referrals.length;
+		const completedCount = referrals.filter((r) => r.status === 'COMPLETED').length;
+		const pendingCount = referrals.filter((r) => r.status === 'PENDING').length;
+
+		const totalEarnings = referrals
+			.filter((r) => r.status === 'COMPLETED')
+			.reduce((acc, r) => acc + Number(r.amount || 20), 0);
+
+		const invitedFriends = referrals.map((ref) => {
+			const username =
+				ref.referred.username ||
+				ref.referred.email?.split('@')[0] ||
+				ref.referred.phone ||
+				'Trader';
+			return {
+				id: ref.referred.id,
+				username: username,
+				joinedAt: ref.createdAt,
+				status: ref.status,
+				rewardAmount: Number(ref.amount || 20),
+			};
+		});
+
+		const [tradeCount, totalDeposits] = await Promise.all([
+			prisma.order.count({ where: { userId, status: 'COMPLETED' } }),
+			prisma.transaction.aggregate({
+				where: { userId, type: 'DEPOSIT', status: 'SUCCESS' },
+				_sum: { amount: true },
+			}),
+		]);
+
+		const depositTotal = Number(totalDeposits._sum.amount || 0);
+
+		const rewardTasks = [
+			{
+				id: 'welcome_bonus',
+				title: 'Welcome Trading Bonus',
+				description: 'Sign up & complete onboarding to receive ₹15 trading bonus',
+				reward: 15,
+				type: 'PROMOTIONAL',
+				status: 'CLAIMED',
+				isWithdrawable: false,
+			},
+			{
+				id: 'tiered_deposit_50',
+				title: 'Recharge ₹50+',
+				description: 'Recharge ₹50+ to earn ₹5 bonus (unlocks ₹10 reward for your inviter)',
+				reward: 5,
+				type: 'BONUS',
+				status: depositTotal >= 50 ? 'COMPLETED' : 'PENDING',
+				progress: Math.min(Math.round((depositTotal / 50) * 100), 100),
+				isWithdrawable: true,
+			},
+			{
+				id: 'tiered_deposit_100',
+				title: 'Recharge ₹100+',
+				description: 'Recharge ₹100+ to earn ₹10 bonus (unlocks ₹20 reward for your inviter)',
+				reward: 10,
+				type: 'BONUS',
+				status: depositTotal >= 100 ? 'COMPLETED' : 'PENDING',
+				progress: Math.min(Math.round((depositTotal / 100) * 100), 100),
+				isWithdrawable: true,
+			},
+			{
+				id: 'trades_50',
+				title: '50 Trades Milestone',
+				description: 'Complete 50 trades on any prediction market to earn ₹5 cash bonus',
+				reward: 5,
+				type: 'MILESTONE',
+				status: tradeCount >= 50 ? 'COMPLETED' : 'IN_PROGRESS',
+				progress: Math.min(Math.round((tradeCount / 50) * 100), 100),
+				completedCount: tradeCount,
+				targetCount: 50,
+				isWithdrawable: true,
+			},
+			{
+				id: 'trades_100',
+				title: '100 Trades Milestone',
+				description: 'Complete 100 trades on any prediction market to earn ₹10 cash bonus',
+				reward: 10,
+				type: 'MILESTONE',
+				status: tradeCount >= 100 ? 'COMPLETED' : 'IN_PROGRESS',
+				progress: Math.min(Math.round((tradeCount / 100) * 100), 100),
+				completedCount: tradeCount,
+				targetCount: 100,
+				isWithdrawable: true,
+			},
+			{
+				id: 'trades_500',
+				title: '500 Trades Milestone',
+				description: 'Complete 500 trades on any prediction market to earn ₹30 cash bonus',
+				reward: 30,
+				type: 'MILESTONE',
+				status: tradeCount >= 500 ? 'COMPLETED' : 'IN_PROGRESS',
+				progress: Math.min(Math.round((tradeCount / 500) * 100), 100),
+				completedCount: tradeCount,
+				targetCount: 500,
+				isWithdrawable: true,
+			},
+		];
+
+		return c.json({
+			success: true,
+			data: {
+				referralCode: cleanCode,
+				referralLink,
+				hasAppliedReferral: Boolean(user.referrerId),
+				totalEarnings: Math.round(totalEarnings * 100) / 100,
+				totalInvited,
+				completedCount,
+				pendingCount,
+				invitedFriends,
+				rewardTasks,
+			},
+		});
+	} catch (error) {
+		logger.error({ error }, 'Failed to fetch referral info');
 		return c.json(
 			{
 				success: false,

@@ -155,21 +155,27 @@ export const updatePreferences = async (c: Context) => {
 
 					await prisma.$transaction(async (tx) => {
 						await tx.user.update({ where: { id: user.id }, data: { referrerId: referrer.id } });
-						await tx.referral.create({
+
+						await tx.wallet.update({
+							where: { userId: user.id },
+							data: { balance: { increment: 10.0 } },
+						});
+						await tx.transaction.create({
 							data: {
-								referrerId: referrer.id,
-								referredId: user.id,
-								amount: 15.0,
-								isReferrer: true,
-								status: 'PENDING',
+								userId: user.id,
+								type: 'REFERRAL_REWARD',
+								status: 'SUCCESS',
+								amount: '10.00',
+								remarks: 'Extra bonus for applying referral code',
 							},
 						});
+
 						await tx.referral.create({
 							data: {
 								referrerId: referrer.id,
 								referredId: user.id,
-								amount: 10.0,
-								isReferrer: false,
+								amount: 20.0,
+								isReferrer: true,
 								status: 'PENDING',
 							},
 						});
