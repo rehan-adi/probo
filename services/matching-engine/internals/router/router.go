@@ -53,6 +53,12 @@ func RouteEvent(payload types.QueuePayload) types.QueueResponse {
 	case "CANCEL_ORDER":
 		return handlers.CancelOrder(payload)
 
+	case "SPLIT_SHARES":
+		return handlers.SplitShares(payload)
+
+	case "MERGE_SHARES":
+		return handlers.MergeShares(payload)
+
 	default:
 		log.Warn().Str("eventType", payload.EventType).Msg("Unhandled event type")
 		return types.QueueResponse{

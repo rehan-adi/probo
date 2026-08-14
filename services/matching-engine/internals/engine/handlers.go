@@ -40,6 +40,7 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 			order.Price = 10.0
 		}
 		totalCost := order.Price * float64(order.Quantity)
+		totalCostWithFee := totalCost * 1.0025 // Include 0.25% trading fee
 		if !isAdmin {
 			// Check Position Limit (Max 5000 shares = ₹50k exposure)
 			stock := user.Balance.StockBalance[order.Symbol]
@@ -53,13 +54,13 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 				return
 			}
 
-			if user.Balance.WalletBalance.Amount < totalCost {
+			if user.Balance.WalletBalance.Amount < totalCostWithFee {
 				e.UM.Unlock()
-				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "insufficient balance", Data: user.Balance.WalletBalance.Amount}
+				msg.ReplyChan <- types.OrderResponse{Success: false, Message: "insufficient balance (includes 0.25% fee)", Data: user.Balance.WalletBalance.Amount}
 				return
 			}
-			user.Balance.WalletBalance.Amount -= totalCost
-			user.Balance.WalletBalance.Locked += totalCost
+			user.Balance.WalletBalance.Amount -= totalCostWithFee
+			user.Balance.WalletBalance.Locked += totalCostWithFee
 		}
 	} else { // SELL
 		if isMarketOrder {

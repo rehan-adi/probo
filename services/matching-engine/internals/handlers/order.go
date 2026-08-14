@@ -113,10 +113,11 @@ func BuyOrder(payload types.QueuePayload) types.QueueResponse {
 type SellOrderDataRequest struct {
 	UserId    string  `mapstructure:"userId"`
 	MarketId  string  `mapstructure:"marketId"`
-	orderId   string  `mapstructure:"orderId"`
+	OrderId   string  `mapstructure:"orderId"`
 	Symbol    string  `mapstructure:"symbol"`
 	Side      string  `mapstructure:"side"`
 	Price     float64 `mapstructure:"price"`
+	Action    string  `mapstructure:"action"`
 	OrderType string  `mapstructure:"orderType"`
 	Quantity  int     `mapstructure:"quantity"`
 }
@@ -155,13 +156,19 @@ func SellOrder(payload types.QueuePayload) types.QueueResponse {
 
 	replyChannel := make(chan interface{})
 
+	orderId := data.OrderId
+	if orderId == "" {
+		orderId = utils.GenerateOrderID()
+	}
+
 	order := types.Order{
 		UserId:    data.UserId,
-		OrderId:   data.orderId,
+		OrderId:   orderId,
 		MarketId:  data.MarketId,
 		Symbol:    data.Symbol,
 		Side:      types.Side(data.Side),
 		Price:     data.Price,
+		Action:    types.SELL,
 		OrderType: types.OrderType(data.OrderType),
 		Quantity:  data.Quantity,
 		Timestamp: time.Now().UTC(),
