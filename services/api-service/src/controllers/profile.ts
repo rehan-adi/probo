@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { logger } from '@/libs/logger';
 
 export const getProfile = async (c: Context) => {

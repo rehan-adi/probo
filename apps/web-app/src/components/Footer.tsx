@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import logo from '@/assets/images/logo.avif';
+import darkLogo from '@/assets/images/dark-logo.avif';
 import tradeViewIcon from '@/assets/images/trading-view.avif';
 import { Instagram, Linkedin, ShieldAlert } from 'lucide-react';
 
@@ -11,14 +12,17 @@ export default function Footer() {
 	return (
 		<footer className="bg-white dark:bg-[#090C1A] border-t border-gray-100 dark:border-gray-800 px-6 py-10 md:py-12 text-sm text-gray-600 dark:text-gray-400 pb-20 md:pb-10 transition-colors">
 			<div className="max-w-7xl mx-auto flex flex-col gap-8 md:gap-10">
-				{/* Top Row: Logo */}
 				<div className="w-full">
-					<Link to="/events" className="shrink-0 w-28 md:w-36 cursor-pointer inline-block">
-						<img src={logo} alt="Probo Logo" className="w-full object-contain" />
+					<Link to="/events" className="shrink-0 w-36 md:w-44 cursor-pointer inline-block">
+						<img src={logo} alt="Probstreet Logo" className="w-full object-contain dark:hidden" />
+						<img
+							src={darkLogo}
+							alt="Probstreet Logo"
+							className="w-full object-contain hidden dark:block"
+						/>
 					</Link>
 				</div>
 
-				{/* Bottom Row: Content Columns */}
 				<div className="flex flex-col md:flex-row justify-between gap-10 md:gap-16">
 					{/* Text Column */}
 					<div className="md:w-1/3">
@@ -134,7 +138,7 @@ export default function Footer() {
 			</div>
 
 			<div className="max-w-7xl mx-auto mt-10 pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col items-center md:items-start text-sm md:text-base font-medium text-gray-700 dark:text-gray-400">
-				<p>© {year} Probo. All rights reserved.</p>
+				<p>© {year} Probstreet. All rights reserved.</p>
 			</div>
 		</footer>
 	);

@@ -10,12 +10,11 @@ import {
 	LogOut,
 	ChevronRight,
 	MoreVertical,
-	Settings,
-	User as UserIcon,
 	Moon,
 	Sun,
 } from 'lucide-react';
 import logo from '@/assets/images/logo.avif';
+import darkLogo from '@/assets/images/dark-logo.avif';
 import { useAuthStore } from '@/store/auth';
 import { useThemeStore } from '@/store/theme';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -57,10 +56,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	return (
 		<div className="flex h-full w-full bg-gray-50 dark:bg-[#121212] font-sans">
 			{/* Sidebar */}
-			<aside className="w-64 flex-shrink-0 bg-white dark:bg-[#1C1C1E] border-r border-gray-200 dark:border-white/10 hidden md:flex flex-col">
+			<aside className="w-64 shrink-0 bg-white dark:bg-[#1C1C1E] border-r border-gray-200 dark:border-white/10 hidden md:flex flex-col">
 				<div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-white/10">
 					<Link to="/" className="flex items-center gap-2">
-						<img src={logo} alt="Probo" className="h-6 dark:invert" />
+						<img src={logo} alt="Probstreet" className="h-10 dark:hidden" />
+						<img src={darkLogo} alt="Probstreet" className="h-10 hidden dark:block" />
 					</Link>
 				</div>
 
@@ -167,7 +167,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 			<div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 				<header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-[#1C1C1E] border-b border-gray-200 dark:border-white/10 md:hidden sticky top-0 z-10">
 					<Link to="/dashboard/home" className="flex items-center gap-2">
-						<img src={logo} alt="Probo" className="h-6 dark:invert" />
+						<img src={logo} alt="Probstreet" className="h-10 dark:hidden" />
+						<img src={darkLogo} alt="Probstreet" className="h-10 hidden dark:block" />
 					</Link>
 					<button onClick={logout} className="text-gray-500 hover:text-red-500">
 						<LogOut size={20} />

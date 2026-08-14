@@ -23,7 +23,7 @@ export default function ShareModal({ isOpen, onClose, title, url }: ShareModalPr
 		}
 	};
 
-	const shareText = encodeURIComponent(`Trade on this event on Probo: ${title}`);
+	const shareText = encodeURIComponent(`Trade on this event on Probstreet: ${title}`);
 	const shareUrl = encodeURIComponent(url);
 
 	return (

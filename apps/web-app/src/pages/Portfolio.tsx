@@ -3,18 +3,10 @@ import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
 import { useEffect, useState } from 'react';
 import logo from '@/assets/images/logo.avif';
+import darkLogo from '@/assets/images/dark-logo.avif';
 import { useBalanceQuery } from '@/hooks/queries/balance';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-import {
-	Loader2,
-	Eye,
-	EyeOff,
-	TrendingUp,
-	Search,
-	SlidersHorizontal,
-	ChevronDown,
-	Download,
-} from 'lucide-react';
+import { Loader2, Eye, EyeOff, Search, Download } from 'lucide-react';
 import { placeOrder, cancelOrder } from '@/api/order';
 import { toast } from 'sonner';
 
@@ -159,7 +151,7 @@ export default function Portfolio() {
 			{/* Top Cards Section */}
 			<div className="grid md:grid-cols-2 gap-4 md:gap-6">
 				{/* Left Card: Portfolio Balance */}
-				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col justify-between min-h-[220px]">
+				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex flex-col justify-between min-h-55">
 					<div className="flex justify-between items-start">
 						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium">
 							Portfolio
@@ -203,7 +195,7 @@ export default function Portfolio() {
 				</div>
 
 				{/* Right Card: Profit/Loss Chart */}
-				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative flex flex-col justify-between min-h-[220px]">
+				<div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative flex flex-col justify-between min-h-55">
 					<div className="flex justify-between items-start">
 						<div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
 							<div className="w-2 h-2 rounded-full bg-gray-400"></div>
@@ -243,7 +235,12 @@ export default function Portfolio() {
 							</div>
 						</div>
 						<div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 font-bold text-xl opacity-50">
-							<img src={logo} alt="Probo" className="h-6 grayscale opacity-50" />
+							<img src={logo} alt="Probstreet" className="h-10 grayscale opacity-75 dark:hidden" />
+							<img
+								src={darkLogo}
+								alt="Probstreet"
+								className="h-10 grayscale opacity-75 hidden dark:block"
+							/>
 						</div>
 					</div>
 
@@ -297,7 +294,7 @@ export default function Portfolio() {
 					</div>
 
 					{/* Flexible Search Bar */}
-					<div className="relative flex-1 min-w-[200px]">
+					<div className="relative flex-1 min-w-50">
 						<Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
 						<input
 							type="text"
@@ -343,7 +340,7 @@ export default function Portfolio() {
 				</div>
 
 				<div className="w-full overflow-x-auto pb-4">
-					<div className="min-w-[1000px]">
+					<div className="min-w-250">
 						{/* Dynamic Table Headers */}
 						{activeTab === 'positions' && (
 							<div className="grid grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1.5fr_0.8fr] gap-4 px-6 py-4 border-b border-gray-400/25">

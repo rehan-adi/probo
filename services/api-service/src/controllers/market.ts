@@ -2,7 +2,7 @@ import slugify from 'slugify';
 import { Context } from 'hono';
 import { customAlphabet } from 'nanoid';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
 import { pushToQueue } from '@/libs/redis/queue';
 import { createMarketSchema } from '@/validations/market';
@@ -740,66 +740,60 @@ export const getMarketKlines = async (c: Context) => {
 			return c.json({ success: false, message: 'Market not found' }, 404);
 		}
 
-		let timeFilter: any = {};
-		if (from) timeFilter.gte = new Date(Number(from) * 1000);
-		if (to) timeFilter.lte = new Date(Number(to) * 1000);
-
-		const trades = await prisma.trade.findMany({
-			where: {
-				marketId: market.id,
-				...(Object.keys(timeFilter).length > 0 && { createdAt: timeFilter }),
-			},
-			orderBy: { createdAt: 'asc' },
-			select: { price: true, quantity: true, createdAt: true },
-		});
-
-		let bucketMs = 60 * 1000;
+		// Convert resolution to PostgreSQL interval format
+		let interval = '1 minute';
 		switch (resolution) {
 			case '1m':
-				bucketMs = 60 * 1000;
+				interval = '1 minute';
 				break;
 			case '5m':
-				bucketMs = 5 * 60 * 1000;
+				interval = '5 minutes';
 				break;
 			case '15m':
-				bucketMs = 15 * 60 * 1000;
+				interval = '15 minutes';
 				break;
 			case '1h':
-				bucketMs = 60 * 60 * 1000;
+				interval = '1 hour';
 				break;
 			case '4h':
-				bucketMs = 4 * 60 * 60 * 1000;
+				interval = '4 hours';
 				break;
 			case '1d':
-				bucketMs = 24 * 60 * 60 * 1000;
+				interval = '1 day';
 				break;
 			default:
-				bucketMs = 60 * 1000;
+				interval = '1 minute';
 		}
 
-		const klinesMap = new Map<number, any>();
-		for (const trade of trades) {
-			const time = Math.floor(trade.createdAt.getTime() / bucketMs) * bucketMs;
-			const price = Number(trade.price);
-			if (!klinesMap.has(time)) {
-				klinesMap.set(time, {
-					time: new Date(time),
-					open: price,
-					high: price,
-					low: price,
-					close: price,
-					volume: trade.quantity,
-				});
-			} else {
-				const bucket = klinesMap.get(time);
-				bucket.high = Math.max(bucket.high, price);
-				bucket.low = Math.min(bucket.low, price);
-				bucket.close = price;
-				bucket.volume += trade.quantity;
-			}
-		}
+		// Default to last 30 days if from/to are not provided
+		const fromDate = from
+			? new Date(Number(from) * 1000)
+			: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+		const toDate = to ? new Date(Number(to) * 1000) : new Date();
 
-		const klines = Array.from(klinesMap.values());
+		const query = `
+			SELECT 
+				time_bucket($1::interval, bucket) AS time,
+				first(open, bucket) AS open,
+				max(high) AS high,
+				min(low) AS low,
+				last(close, bucket) AS close,
+				sum(volume) AS volume
+			FROM trade_candles_1m
+			WHERE "marketId" = $2
+			  AND bucket >= $3
+			  AND bucket <= $4
+			GROUP BY time
+			ORDER BY time ASC;
+		`;
+
+		const klines: any[] = await prisma.$queryRawUnsafe(
+			query,
+			interval,
+			market.id,
+			fromDate,
+			toDate,
+		);
 
 		return c.json({
 			success: true,

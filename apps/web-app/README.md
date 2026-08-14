@@ -1,6 +1,6 @@
 # Web App
 
-The React-based frontend application for Probo, built using [Vite](https://vitejs.dev/). It allows users to browse markets, trade on opinions, and see real-time updates of order books and trade executions.
+The React-based frontend application for Probstreet, built using [Vite](https://vitejs.dev/). It allows users to browse markets, trade on opinions, and see real-time updates of order books and trade executions.
 
 ## Setup
 

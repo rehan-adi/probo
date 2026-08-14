@@ -5,7 +5,7 @@ import { connectProducer, disconnectProducer } from '@/libs/kafka/client';
 async function startDBProcessor() {
 	await connectProducer();
 
-	logger.info('DB processor is running and ready to process');
+	logger.info('Processor service is running and ready to process');
 	await dbConsumer();
 
 	process.on('SIGINT', async () => {

@@ -1,7 +1,7 @@
 {
-	"name": "@probo/processor-service",
+	"name": "@probstreet/processor-service",
 	"version": "1.0.0",
-	"description": "Processor service for Probo",
+	"description": "Processor service for Probstreet",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "services/processor-service"
 	},
 	"scripts": {
@@ -22,14 +22,14 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@probo/database": "workspace:*",
-		"@probo/logger": "workspace:*",
+		"@probstreet/database": "workspace:*",
+		"@probstreet/logger": "workspace:*",
 		"ioredis": "^6.0.0",
 		"kafkajs": "^2.2.4",
 		"zod": "^4.4.3"
 	},
 	"keywords": [
-		"probo",
+		"probstreet",
 		"processor-service",
 		"service",
 		"database",

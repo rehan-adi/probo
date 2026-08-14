@@ -63,7 +63,7 @@ const MOCK_USERS = [
 	{ name: 'Maria G.', color: 'from-pink-400 to-rose-400', initial: 'M' },
 	{ name: 'John D.', color: 'from-emerald-400 to-teal-400', initial: 'J' },
 	{ name: 'TraderX', color: 'from-purple-400 to-fuchsia-400', initial: 'X' },
-	{ name: 'Probo_Whale', color: 'from-indigo-500 to-purple-500', initial: 'P' },
+	{ name: 'Probstreet_Whale', color: 'from-indigo-500 to-purple-500', initial: 'P' },
 	{ name: 'CryptoKing', color: 'from-yellow-400 to-orange-500', initial: 'C' },
 ];
 

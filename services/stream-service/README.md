@@ -1,6 +1,6 @@
 # Stream Service
 
-The real-time streaming service for Probo.
+The real-time streaming service for Probstreet.
 
 This service connects to Redis via Pub/Sub to listen for market events (e.g., price changes, executed trades) and broadcasts those updates directly to connected frontend clients using WebSockets.
 

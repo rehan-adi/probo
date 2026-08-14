@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 
 /**
  * @desc Get all settings (profile, notification preferences)

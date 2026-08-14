@@ -1,5 +1,5 @@
 import { Redis } from 'ioredis';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { pushToQueue } from '@/libs/redis/queue';
 import { EVENTS } from '../config/constants';
 
@@ -11,7 +11,7 @@ const BOTS = [
 	{ name: 'Maria G.', phone: '7777777703', style: 'frequent', pref: 'YES' },
 	{ name: 'John D.', phone: '7777777704', style: 'whale', pref: 'NO' },
 	{ name: 'TraderX', phone: '7777777705', style: 'moderate', pref: 'YES' },
-	{ name: 'Probo_Whale', phone: '7777777706', style: 'passive', pref: 'NO' },
+	{ name: 'Probstreet_Whale', phone: '7777777706', style: 'passive', pref: 'NO' },
 	{ name: 'CryptoKing', phone: '7777777707', style: 'frequent', pref: 'YES' },
 ];
 
@@ -19,7 +19,7 @@ const REHAN_USER = { name: 'Rehan', phone: '9748151073' };
 const AMM_USER = { name: 'AMM Bot', phone: '7777777700' };
 
 async function loginUser(phone: string, name: string) {
-	const email = `${phone}@bot.probo.local`; // Synthetic email for bot
+	const email = `${phone}@bot.probstreet.local`;
 
 	const loginRes = await fetch(`${API_URL}/auth/init-signin`, {
 		method: 'POST',
@@ -46,15 +46,22 @@ async function loginUser(phone: string, name: string) {
 	});
 
 	const cookie = verifyRes.headers.get('set-cookie');
-	const token = cookie?.split(';')[0].split('=')[1];
-	if (!token) throw new Error(`Token not found for ${email}`);
+	console.log('COOKIE:', cookie);
+	const match = cookie?.match(/accessToken=([^;]+)/);
+	const token = match ? match[1] : null;
+	if (!token) {
+		const text = await verifyRes.text();
+		throw new Error(
+			`Token not found for ${email}. Status: ${verifyRes.status}, Body: ${text}, Headers: ${JSON.stringify(Object.fromEntries(verifyRes.headers))}`,
+		);
+	}
 
 	return token;
 }
 
 async function createMarket(token: string) {
 	const body = {
-		title: `Will Tesla (TSLA) stock price reach $300 by end of the 14 days?`,
+		title: `Will Tesla (TSLA) stock price reach $300 by end of the 14 days? - ${Date.now()}`,
 		thumbnail:
 			'https://s3.coinmarketcap.com/static-gravity/image/34d989f64bf44f84bf3dfd398f6d2b67.png',
 		categoryId: '11111111-1111-1111-1111-111111111111',
@@ -66,6 +73,7 @@ async function createMarket(token: string) {
 		endTime: new Date(Date.now() + 86400000 * 14).toISOString(), // 14 days future
 	};
 
+	console.log(`Sending token: [${token}]`);
 	const res = await fetch(`${API_URL}/market/create`, {
 		method: 'POST',
 		headers: {
@@ -124,7 +132,7 @@ async function placeOrder(
 async function setupUser(phone: string, name: string) {
 	let token = await loginUser(phone, name);
 
-	const email = `${phone}@bot.probo.local`;
+	const email = `${phone}@bot.probstreet.local`;
 	const updateData: any = { username: name.replace(/\s+/g, '').toLowerCase() };
 	if (phone === '9999999999') {
 		updateData.role = 'ADMIN';
@@ -189,7 +197,7 @@ async function seedLiquidity(token: string, marketId: string, symbol: string) {
 }
 
 async function runBotTrading() {
-	console.log('--- Probo Live Trading Bot Simulator ---');
+	console.log('--- Probstreet Live Trading Bot Simulator ---');
 
 	console.log('1. Setting up Admin...');
 	const adminToken = await setupUser('9999999999', 'Admin');

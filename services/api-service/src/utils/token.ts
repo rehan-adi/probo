@@ -24,11 +24,11 @@ export const generateAccessToken = async (
 		exp: Math.floor(Date.now() / 1000) + Number(ENV.ACCESS_TOKEN_EXPIRY),
 	};
 
-	return sign(payload, ENV.ACCESS_TOKEN_SECRET);
+	return sign(payload, ENV.ACCESS_TOKEN_SECRET, 'HS256');
 };
 
 export const verifyAccessToken = async (token: string): Promise<AccessTokenPayload> => {
-	return verify(token, ENV.ACCESS_TOKEN_SECRET) as Promise<AccessTokenPayload>;
+	return verify(token, ENV.ACCESS_TOKEN_SECRET, 'HS256') as Promise<AccessTokenPayload>;
 };
 
 export const generateRefreshTokenString = (): string => {

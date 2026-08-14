@@ -4,6 +4,8 @@ import { usePlaceOrderMutation } from '@/hooks/mutations/order';
 import { useSplitSharesMutation, useMergeSharesMutation } from '@/hooks/mutations/event';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '@/lib/axios';
+import { useAuthStore } from '@/store/auth';
 
 interface PlaceOrderProps {
 	yPrice: number;
@@ -42,6 +44,29 @@ export default function PlaceOrder({
 	const placeOrder = usePlaceOrderMutation();
 	const splitShares = useSplitSharesMutation();
 	const mergeShares = useMergeSharesMutation();
+
+	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+	const [hasHoldings, setHasHoldings] = useState(false);
+
+	useEffect(() => {
+		if (!isAuthenticated || !marketId) return;
+		const fetchPosition = async () => {
+			try {
+				const res = await api.get(`/portfolio/position/${marketId}`);
+				if (res.data?.success) {
+					const pos = res.data.data.position;
+					if (pos) {
+						setHasHoldings(
+							pos.yesQuantity > 0 || pos.yesLocked > 0 || pos.noQuantity > 0 || pos.noLocked > 0,
+						);
+					}
+				}
+			} catch {
+				// silent fail
+			}
+		};
+		fetchPosition();
+	}, [marketId, isAuthenticated]);
 
 	const isSplitMerge = orderType === 'SPLIT' || orderType === 'MERGE';
 	const isLimit = orderType === 'LIMIT';
@@ -193,6 +218,8 @@ export default function PlaceOrder({
 					? 'Split'
 					: 'Merge';
 
+	const hasInput = isMarket ? numAmount > 0 : numShares > 0;
+
 	return (
 		<div className="bg-card border border-border rounded-2xl p-5 w-full">
 			{/* Header: Thumbnail + Title */}
@@ -257,7 +284,7 @@ export default function PlaceOrder({
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: -4 }}
 									transition={{ duration: 0.12 }}
-									className="absolute top-full right-0 mt-2 z-50 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden min-w-[140px]"
+									className="absolute top-full right-0 mt-2 z-50 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden min-w-35"
 								>
 									{(['Market', 'Limit'] as const).map((opt) => (
 										<button
@@ -276,22 +303,24 @@ export default function PlaceOrder({
 										</button>
 									))}
 									<div className="h-px bg-muted mx-3" />
-									{(['Split', 'Merge'] as const).map((opt) => (
-										<button
-											key={opt}
-											onClick={() => {
-												setOrderType(opt.toUpperCase() as any);
-												setDropdownOpen(false);
-											}}
-											className={`w-full px-5 py-3 text-sm font-semibold text-left transition-colors hover:bg-muted cursor-pointer ${
-												orderType === opt.toUpperCase()
-													? 'text-foreground'
-													: 'text-muted-foreground'
-											}`}
-										>
-											{opt}
-										</button>
-									))}
+									{['Split', 'Merge']
+										.filter((opt) => opt === 'Split' || (opt === 'Merge' && hasHoldings))
+										.map((opt) => (
+											<button
+												key={opt}
+												onClick={() => {
+													setOrderType(opt.toUpperCase() as any);
+													setDropdownOpen(false);
+												}}
+												className={`w-full px-5 py-3 text-sm font-semibold text-left transition-colors hover:bg-muted cursor-pointer ${
+													orderType === opt.toUpperCase()
+														? 'text-foreground'
+														: 'text-muted-foreground'
+												}`}
+											>
+												{opt}
+											</button>
+										))}
 								</motion.div>
 							)}
 						</AnimatePresence>
@@ -321,7 +350,7 @@ export default function PlaceOrder({
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: -4 }}
 									transition={{ duration: 0.12 }}
-									className="absolute top-full right-0 mt-2 z-50 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden min-w-[140px]"
+									className="absolute top-full right-0 mt-2 z-50 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden min-w-35"
 								>
 									{(['Market', 'Limit', 'Split', 'Merge'] as const).map((opt) => (
 										<button
@@ -417,7 +446,7 @@ export default function PlaceOrder({
 							>
 								−
 							</button>
-							<div className="px-3 py-2 text-sm font-medium text-foreground min-w-[60px] text-center">
+							<div className="px-3 py-2 text-sm font-medium text-foreground min-w-15 text-center">
 								₹{Number(activePrice).toFixed(1)}
 							</div>
 							<button
@@ -490,24 +519,30 @@ export default function PlaceOrder({
 			)}
 
 			{/* Summary */}
-			<div className="border-t border-border pt-4 space-y-2 mb-5">
-				<div className="flex justify-between items-center text-sm">
-					<span className="text-muted-foreground">Total</span>
-					<span className="text-foreground font-medium">₹{totalCost.toFixed(2)}</span>
+			{hasInput && (
+				<div className="border-t border-border pt-4 space-y-2 mb-5">
+					<div className="flex justify-between items-center text-sm">
+						<span className="text-muted-foreground">Price</span>
+						<span className="text-foreground font-medium">₹{estimatedCost.toFixed(2)}</span>
+					</div>
+					{!isSplitMerge && (
+						<div className="flex justify-between items-center text-sm">
+							<span className="text-muted-foreground">Fee (0.25%)</span>
+							<span className="text-foreground font-medium">₹{fee.toFixed(2)}</span>
+						</div>
+					)}
+					<div className="flex justify-between items-center text-sm font-semibold">
+						<span className="text-muted-foreground">Total</span>
+						<span className="text-foreground">₹{totalCost.toFixed(2)}</span>
+					</div>
+					{isMarket && displayShares > 0 && (
+						<div className="flex justify-between items-center text-sm">
+							<span className="text-muted-foreground">Est. shares</span>
+							<span className="text-foreground font-medium">{displayShares}</span>
+						</div>
+					)}
 				</div>
-				{!isSplitMerge && (
-					<div className="flex justify-between items-center text-sm">
-						<span className="text-muted-foreground">Fee (0.25%)</span>
-						<span className="text-foreground font-medium">₹{fee.toFixed(2)}</span>
-					</div>
-				)}
-				{isMarket && displayShares > 0 && (
-					<div className="flex justify-between items-center text-sm">
-						<span className="text-muted-foreground">Est. shares</span>
-						<span className="text-foreground font-medium">{displayShares}</span>
-					</div>
-				)}
-			</div>
+			)}
 
 			{/* Action Button */}
 			<button

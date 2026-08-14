@@ -48,7 +48,7 @@ function AppContent() {
 		<div className={`flex flex-col ${isAdminRoute ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
 			{!isAdminRoute && <Navbar />}
 			<AuthModal />
-			<main className={!isAdminRoute ? 'flex-grow pt-[64px]' : 'flex-grow h-full overflow-hidden'}>
+			<main className={!isAdminRoute ? 'grow pt-16' : 'grow h-full overflow-hidden'}>
 				<Routes>
 					{/* public routes  */}
 					<Route

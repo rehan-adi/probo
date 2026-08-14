@@ -36,12 +36,12 @@ export default function ReferralPage() {
 	};
 
 	const handleWhatsAppShare = () => {
-		const text = `Join Probo using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge! Start here: ${shareLink}`;
+		const text = `Join Probstreet using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge! Start here: ${shareLink}`;
 		window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
 	};
 
 	const handleTelegramShare = () => {
-		const text = `Join Probo using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge!`;
+		const text = `Join Probstreet using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge!`;
 		window.open(
 			`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`,
 			'_blank',

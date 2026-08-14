@@ -1,7 +1,7 @@
 import { Context } from 'hono';
 import { ENV } from '@/config/env';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
 import { pushToQueue } from '@/libs/redis/queue';
 import { cashfree } from '@/libs/cashfree/client';
@@ -32,8 +32,8 @@ export const initPayment = async (c: Context) => {
 			customer_details: {
 				customer_id: userId,
 				customer_phone: user.phone || '9999999999',
-				customer_email: user.email || 'test@probo.com',
-				customer_name: 'Probo User',
+				customer_email: user.email || 'test@probstreet.com',
+				customer_name: 'Probstreet User',
 			},
 			order_meta: {
 				return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/wallet?order_id={order_id}`,

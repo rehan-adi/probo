@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { EVENTS } from '@/config/constants';
 import { pushToQueue } from '@/libs/redis/queue';
 import { balanceSchema } from '@/validations/balance';

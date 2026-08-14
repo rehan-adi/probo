@@ -1,18 +1,18 @@
 {
-	"name": "@probo/web-app",
+	"name": "@probstreet/web-app",
 	"private": true,
 	"version": "1.0.0",
-	"description": "Web app for probo",
+	"description": "Web app for probstreet",
 	"type": "module",
 	"author": "Rehan <official.rehan.me@gmail.com>",
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "apps/web-app"
 	},
 	"keywords": [
-		"probo",
+		"probstreet",
 		"react",
 		"vite",
 		"frontend",

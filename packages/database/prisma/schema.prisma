@@ -8,9 +8,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===============================
+// ENUMS
+// ===============================
+
 enum Role {
   USER
   ADMIN
+
+  @@map("role")
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  DISCORD
+  TELEGRAM
+
+  @@map("auth_provider")
+}
+
+enum OnboardingStatus {
+  PENDING_USERNAME
+  PENDING_PREFERENCES
+  COMPLETED
+
+  @@map("onboarding_status")
 }
 
 enum KycStatus {
@@ -18,6 +41,8 @@ enum KycStatus {
   PENDING
   VERIFIED
   REJECTED
+
+  @@map("kyc_status")
 }
 
 enum PaymentStatus {
@@ -25,44 +50,62 @@ enum PaymentStatus {
   PENDING
   VERIFIED
   REJECTED
+
+  @@map("payment_status")
 }
 
 enum PaymentType {
   BANK
   UPI
+
+  @@map("payment_type")
 }
 
 enum OrderType {
   BUY
   SELL
+
+  @@map("order_type")
 }
 
 enum OrderStatus {
   PENDING
   PARTIAL
   COMPLETED
+  FAILED
+  CANCELLED
+
+  @@map("order_status")
 }
 
 enum MatchType {
   STANDARD
   MINT
   MERGE
+
+  @@map("match_type")
 }
 
 enum StockType {
   YES
   NO
+
+  @@map("stock_type")
 }
 
 enum MarketStatus {
   OPEN
   CLOSED
+
+  @@map("market_status")
 }
 
 enum FeeType {
   TRADE_FEE
   WITHDRAWAL_FEE
   REFERRAL_BONUS
+
+  @@map("fee_type")
 }
 
 enum TransactionType {
@@ -73,175 +116,326 @@ enum TransactionType {
   REFUND
   REFERRAL_REWARD
   SIGNUP_BONUS
+
+  @@map("transaction_type")
 }
 
 enum TransactionStatus {
   PENDING
   SUCCESS
   FAILED
+
+  @@map("transaction_status")
 }
 
-enum SystemAccount {
+enum PlatformAccount {
   PLATFORM_FEES
   EXCHANGE_ESCROW
   REWARD_POOL
+
+  @@map("platform_account")
 }
 
-model LedgerEntry {
-  id          String          @id @default(uuid())
-  fromAccount String // Can be a User UUID or a SystemAccount enum string
-  toAccount   String // Can be a User UUID or a SystemAccount enum string
-  amount      Decimal         @db.Decimal(14, 2)
-  type        TransactionType
-  referenceId String? // Optional: OrderId, MarketId, etc
-  createdAt   DateTime        @default(now())
-}
+// ===============================
+// MODELS
+// ===============================
 
 model User {
-  id                        String        @id @default(uuid())
-  phone                     String        @unique
-  email                     String?       @unique
-  name                      String        @default("Prober")
-  profilePic                String?
-  isNewUser                 Boolean       @default(true)
-  role                      Role          @default(USER)
-  kycVerificationStatus     KycStatus     @default(NOT_VERIFIED)
-  paymentVerificationStatus PaymentStatus @default(NOT_VERIFIED)
-  referralCode              String        @unique
+  id                        String           @id @default(uuid())
+  email                     String?          @unique
+  phone                     String?          @unique
+  username                  String?          @unique
+  bio                       String?
+  avatarUrl                 String?          @map("avatar_url")
+  isNewUser                 Boolean          @default(true) @map("is_new_user")
+  onboardingStatus          OnboardingStatus @default(PENDING_USERNAME) @map("onboarding_status")
+  role                      Role             @default(USER)
+  lastProvider              AuthProvider?    @map("last_provider")
+  usernameChangedAt         DateTime?        @map("username_changed_at")
+  kycVerificationStatus     KycStatus        @default(NOT_VERIFIED) @map("kyc_verification_status")
+  paymentVerificationStatus PaymentStatus    @default(NOT_VERIFIED) @map("payment_verification_status")
+  referralCode              String           @unique @map("referral_code")
+  deletedAt                 DateTime?        @map("deleted_at")
 
-  referrerId String?
+  referrerId String? @map("referrer_id")
   referrer   User?   @relation("UserReferrer", fields: [referrerId], references: [id])
   referrals  User[]  @relation("UserReferrer")
 
   earnedRewards   Referral[] @relation("RewardReferrer")
   referredRewards Referral[] @relation("RewardReferred")
 
-  totalReferralReward Float @default(0)
+  totalReferralReward Float @default(0) @map("total_referral_reward")
+
+  authProviders     LinkedAccount[]
+  sessions          Session[]
+  notificationPrefs NotificationSettings?
+  auditLogs         AuditLog[]
 
   kycs           Kyc[]
   paymentMethods PaymentMethod[]
 
-  inrBalance    InrBalance?
-  stockBalances StockBalance[]
-  transactions  TransactionHistory[]
-  watchlists    Watchlist[]
+  wallet       Wallet?
+  positions    Position[]
+  transactions Transaction[]
+  watchlists   Watchlist[]
 
   orders      Order[]
   makerTrades Trade[] @relation("MakerUser")
   takerTrades Trade[] @relation("TakerUser")
 
-  companyEarnings CompanyEarning[]
+  platformRevenues PlatformRevenue[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
-model Kyc {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  panName     String
-  panNumber   String    @unique
-  dob         String
-  status      KycStatus @default(NOT_VERIFIED)
-  remarks     String?
-  submittedAt DateTime  @default(now())
-  reviewedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model LinkedAccount {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       AuthProvider
+  providerUserId String       @map("provider_user_id")
+  providerEmail  String?      @map("provider_email")
+  linkedAt       DateTime     @default(now()) @map("linked_at")
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("auth_provider_links")
 }
 
-model PaymentMethod {
-  id            String        @id @default(uuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  type          PaymentType
-  upiNumber     String?       @unique
-  accountNumber String?
-  ifscCode      String?
-  status        PaymentStatus @default(NOT_VERIFIED)
-  remarks       String?
-  submittedAt   DateTime      @default(now())
-  reviewedAt    DateTime?
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique @map("refresh_token")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  deviceName   String?  @map("device_name")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  isRevoked    Boolean  @default(false) @map("is_revoked")
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("sessions")
 }
 
-model Referral {
-  id         String   @id @default(uuid())
-  referrerId String?
-  referredId String
-  amount     Decimal  @default(20.00) @db.Decimal(14, 2)
-  createdAt  DateTime @default(now())
+model NotificationSettings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNewMarket     Boolean  @default(false) @map("email_new_market")
+  emailOrderFills    Boolean  @default(false) @map("email_order_fills")
+  emailTradeExecuted Boolean  @default(false) @map("email_trade_executed")
+  inAppNewMarket     Boolean  @default(true) @map("in_app_new_market")
+  inAppTradeExecuted Boolean  @default(true) @map("in_app_trade_executed")
+  inAppPriceAlerts   Boolean  @default(false) @map("in_app_price_alerts")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  referrer User? @relation("RewardReferrer", fields: [referrerId], references: [id])
-  referred User  @relation("RewardReferred", fields: [referredId], references: [id])
+  @@map("notification_preferences")
 }
 
-model InrBalance {
-  id      String  @id @default(uuid())
-  userId  String  @unique
-  user    User    @relation(fields: [userId], references: [id])
-  balance Decimal @default(0.00) @db.Decimal(14, 2)
-  locked  Decimal @default(0.00) @db.Decimal(14, 2)
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
 }
 
-model StockBalance {
-  id          String @id @default(uuid())
-  userId      String
-  marketId    String
-  user        User   @relation(fields: [userId], references: [id])
-  market      Market @relation(fields: [marketId], references: [id])
-  yesQuantity Int    @default(0)
-  yesLocked   Int    @default(0)
-  noQuantity  Int    @default(0)
-  noLocked    Int    @default(0)
+model LedgerEntry {
+  id          String          @id @default(uuid())
+  fromAccount String          @map("from_account")
+  toAccount   String          @map("to_account")
+  amount      Decimal         @db.Decimal(14, 2)
+  type        TransactionType
+  referenceId String?         @map("reference_id")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  @@map("ledger_entries")
 }
 
-model TransactionHistory {
+model Wallet {
+  id       String  @id @default(uuid())
+  userId   String  @unique @map("user_id")
+  user     User    @relation(fields: [userId], references: [id])
+  balance  Decimal @default(0.00) @db.Decimal(14, 2)
+  locked   Decimal @default(0.00) @db.Decimal(14, 2)
+  currency String  @default("INR")
+
+  @@map("wallets")
+}
+
+model Transaction {
   id        String            @id @default(uuid())
-  userId    String
-  marketId  String?
+  userId    String            @map("user_id")
+  marketId  String?           @map("market_id")
   user      User              @relation(fields: [userId], references: [id])
   market    Market?           @relation(fields: [marketId], references: [id])
   type      TransactionType
   amount    Decimal           @db.Decimal(14, 2)
   status    TransactionStatus @default(PENDING)
   remarks   String?
-  createdAt DateTime          @default(now())
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  @@map("transactions")
+}
+
+model Kyc {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id])
+  panName     String    @map("pan_name")
+  panNumber   String    @unique @map("pan_number")
+  dob         String
+  status      KycStatus @default(NOT_VERIFIED)
+  remarks     String?
+  submittedAt DateTime  @default(now()) @map("submitted_at")
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("kycs")
+}
+
+model PaymentMethod {
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
+  user          User          @relation(fields: [userId], references: [id])
+  type          PaymentType
+  upiNumber     String?       @unique @map("upi_number")
+  accountNumber String?       @map("account_number")
+  ifscCode      String?       @map("ifsc_code")
+  status        PaymentStatus @default(NOT_VERIFIED)
+  remarks       String?
+  submittedAt   DateTime      @default(now()) @map("submitted_at")
+  reviewedAt    DateTime?     @map("reviewed_at")
+
+  @@map("payment_methods")
+}
+
+enum RewardStatus {
+  PENDING
+  COMPLETED
+}
+
+model Referral {
+  id         String       @id @default(uuid())
+  referrerId String?      @map("referrer_id")
+  referredId String       @map("referred_id")
+  amount     Decimal      @default(20.00) @db.Decimal(14, 2)
+  isReferrer Boolean      @default(true) @map("is_referrer")
+  status     RewardStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  referrer User? @relation("RewardReferrer", fields: [referrerId], references: [id])
+  referred User  @relation("RewardReferred", fields: [referredId], references: [id])
+
+  @@map("referrals")
+}
+
+model Market {
+  id              String           @id @default(uuid())
+  title           String
+  symbol          String           @unique
+  yesPrice        Decimal          @map("yes_price") @db.Decimal(14, 2)
+  noPrice         Decimal          @map("no_price") @db.Decimal(14, 2)
+  startTime       DateTime         @map("start_time")
+  endTime         DateTime         @map("end_time")
+  result          String?
+  thumbnail       String?
+  categoryId      String           @map("category_id")
+  category        Category         @relation(fields: [categoryId], references: [id])
+  sourceOfTruth   String           @default("") @map("source_of_truth")
+  eos             String?
+  rules           String?
+  numberOfTraders Int              @default(0) @map("number_of_traders")
+  positions       Position[]
+  orders          Order[]
+  transactions    Transaction[]
+  trades          Trade[]
+  watchlists      Watchlist[]
+  platformRevenues  PlatformRevenue[]
+  status          MarketStatus     @default(OPEN)
+  volume          Decimal          @default(0.00) @db.Decimal(14, 2)
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@map("markets")
+}
+
+model Category {
+  id           String   @id @default(uuid())
+  categoryName String   @map("category_name")
+  markets      Market[]
+
+  @@map("categories")
+}
+
+model Position {
+  id          String @id @default(uuid())
+  userId      String @map("user_id")
+  marketId    String @map("market_id")
+  user        User   @relation(fields: [userId], references: [id])
+  market      Market @relation(fields: [marketId], references: [id])
+  yesQuantity Int    @default(0) @map("yes_quantity")
+  yesLocked   Int    @default(0) @map("yes_locked")
+  noQuantity  Int    @default(0) @map("no_quantity")
+  noLocked    Int    @default(0) @map("no_locked")
+
+  yesInvested  Decimal @default(0.00) @map("yes_invested") @db.Decimal(14, 2)
+  noInvested   Decimal @default(0.00) @map("no_invested") @db.Decimal(14, 2)
+  yesSellValue Decimal @default(0.00) @map("yes_sell_value") @db.Decimal(14, 2)
+  noSellValue  Decimal @default(0.00) @map("no_sell_value") @db.Decimal(14, 2)
+
+  @@map("positions")
 }
 
 model Order {
   id             String      @id @default(uuid())
-  stockSymbol    String
-  stockType      StockType
-  createdAt      DateTime    @default(now())
-  userId         String
+  stockSymbol    String      @map("stock_symbol")
+  stockType      StockType   @map("stock_type")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  userId         String      @map("user_id")
   user           User        @relation(fields: [userId], references: [id])
   quantity       Int
   price          Decimal     @db.Decimal(14, 2)
-  orderType      OrderType
-  totalPrice     Decimal     @db.Decimal(14, 2)
+  orderType      OrderType   @map("order_type")
+  totalPrice     Decimal     @map("total_price") @db.Decimal(14, 2)
   status         OrderStatus @default(PENDING)
-  filledQuantity Int         @default(0)
+  filledQuantity Int         @default(0) @map("filled_quantity")
   makerTrades    Trade[]     @relation("MakerTrades")
   takerTrades    Trade[]     @relation("TakerTrades")
-  marketId       String
+  marketId       String      @map("market_id")
   market         Market      @relation(fields: [marketId], references: [id])
-  updatedAt      DateTime    @updatedAt
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("orders")
 }
 
 model Trade {
   id           String    @default(uuid())
-  marketId     String
-  makerOrderId String
-  takerOrderId String
-  makerId      String
-  takerId      String
-  stockType    StockType
-  takerAction  OrderType
+  marketId     String    @map("market_id")
+  makerOrderId String    @map("maker_order_id")
+  takerOrderId String    @map("taker_order_id")
+  makerId      String    @map("maker_id")
+  takerId      String    @map("taker_id")
+  stockType    StockType @map("stock_type")
+  takerAction  OrderType @map("taker_action")
   price        Decimal   @db.Decimal(14, 2)
   quantity     Int
-  matchType    MatchType
-  createdAt    DateTime  @default(now())
+  matchType    MatchType @map("match_type")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   market     Market @relation(fields: [marketId], references: [id])
   makerOrder Order  @relation("MakerTrades", fields: [makerOrderId], references: [id])
@@ -255,62 +449,32 @@ model Trade {
   @@index([takerId, createdAt(sort: Desc)])
   @@index([makerOrderId])
   @@index([takerOrderId])
+  @@map("trades")
 }
 
-model Market {
-  id              String               @id @default(uuid())
-  title           String
-  symbol          String               @unique
-  yesPrice        Decimal              @db.Decimal(14, 2)
-  NoPrice         Decimal              @db.Decimal(14, 2)
-  startTime       DateTime
-  endTime         DateTime
-  result          String?
-  thumbnail       String?
-  categoryId      String
-  category        Category             @relation(fields: [categoryId], references: [id])
-  sourceOfTruth   String               @default("")
-  eos             String? // Event Overview & Statistics
-  rules           String?
-  numberOfTraders Int                  @default(0)
-  stockBalances   StockBalance[]
-  orders          Order[]
-  transactions    TransactionHistory[]
-  trades          Trade[]
-  watchlists      Watchlist[]
-  CompanyEarning  CompanyEarning[]
-  status          MarketStatus         @default(OPEN)
-  volume          Decimal              @default(0.00) @db.Decimal(14, 2)
-  createdAt       DateTime             @default(now())
-}
-
-model Category {
-  id           String   @id @default(uuid())
-  categoryName String
-  icon         String?
-  markets      Market[]
-}
-
-model CompanyEarning {
+model PlatformRevenue {
   id        String   @id @default(uuid())
-  userId    String
-  marketId  String?
-  tradeId   String?
+  userId    String   @map("user_id")
+  marketId  String?  @map("market_id")
+  tradeId   String?  @map("trade_id")
   user      User     @relation(fields: [userId], references: [id])
   market    Market?  @relation(fields: [marketId], references: [id])
   amount    Decimal  @db.Decimal(14, 2)
   type      FeeType
   remarks   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("platform_revenues")
 }
 
 model Watchlist {
   id        String   @id @default(uuid())
-  userId    String
-  marketId  String
+  userId    String   @map("user_id")
+  marketId  String   @map("market_id")
   user      User     @relation(fields: [userId], references: [id])
   market    Market   @relation(fields: [marketId], references: [id])
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([userId, marketId])
+  @@map("watchlists")
 }

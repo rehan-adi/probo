@@ -1,6 +1,6 @@
 {
-	"name": "@probo/logger",
-	"description": "Logger package for probo, powered by Pino.",
+	"name": "@probstreet/logger",
+	"description": "Logger package for probstreet, powered by Pino.",
 	"version": "1.0.0",
 	"module": "src/index.ts",
 	"type": "module",
@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "packages/logger"
 	},
 	"devDependencies": {
@@ -27,7 +27,7 @@
 		"pino",
 		"bun",
 		"typescript",
-		"probo",
+		"probstreet",
 		"microservices"
 	],
 	"exports": {

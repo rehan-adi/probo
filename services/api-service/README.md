@@ -1,6 +1,6 @@
 # api-service
 
-The primary HTTP backend service for Probo, built with [Bun](https://bun.sh/) and [Hono](https://hono.dev/).
+The primary HTTP backend service for Probstreet, built with [Bun](https://bun.sh/) and [Hono](https://hono.dev/).
 
 It handles user authentication, wallet operations, market queries, and admin operations. Endpoints are structured into client (`/capi`) and admin (`/aapi`) routes. It delegates order execution and state sync to the matching engine via Redis queues to maintain low latency.
 

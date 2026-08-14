@@ -17,6 +17,7 @@ import SearchInput from './SearchInput';
 import CategoryNav from './CategoryNav';
 import BottomNavbar from './BottomNavbar';
 import { useAuthStore } from '@/store/auth';
+import { formatAmount } from '@/lib/format';
 import logo from '@/assets/images/logo.avif';
 import { useModalStore } from '@/store/modal';
 import { useThemeStore } from '@/store/theme';
@@ -24,14 +25,14 @@ import pfpIcon from '@/assets/images/pfp.avif';
 import SearchModal from './modals/SearchModal';
 import LanguageSelector from './LanguageSelector';
 import walletIcon from '@/assets/images/wallet.svg';
+import darkLogo from '@/assets/images/dark-logo.avif';
 import HowItWorksModal from './modals/HowItWorksModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBalanceQuery } from '@/hooks/queries/balance';
-import { formatAmount } from '@/lib/format';
 
 export default function Navbar() {
-	const { t, i18n } = useTranslation();
 	const { user } = useAuthStore();
+	const { t, i18n } = useTranslation();
 	const { openOnboardModal } = useModalStore();
 	const { theme, toggleTheme } = useThemeStore();
 	const { data: balance, isLoading: balanceLoading } = useBalanceQuery();
@@ -68,16 +69,21 @@ export default function Navbar() {
 
 	return (
 		<>
-			<nav className="w-full bg-white dark:bg-[#090C1A] fixed top-0 z-[50] transition-colors flex flex-col">
+			<nav className="w-full bg-white dark:bg-[#090C1A] fixed top-0 z-50 transition-colors flex flex-col">
 				<div className={`w-full px-6`}>
 					<div className="max-w-7xl mx-auto h-16 flex items-center justify-between gap-4">
 						<div className="flex items-center gap-6 flex-1">
 							<Link to="/events" className="shrink-0">
-								<img src={logo} className="w-[112px] md:w-[130px] object-contain" alt="Logo" />
+								<img src={logo} className="w-35 md:w-44 object-contain dark:hidden" alt="Logo" />
+								<img
+									src={darkLogo}
+									className="hidden w-35 md:w-44 object-contain dark:block dark:brightness-110"
+									alt="Logo"
+								/>
 							</Link>
 
 							{user?.role !== 'ADMIN' && (
-								<div className="hidden md:flex items-center gap-4 flex-1 max-w-[500px]">
+								<div className="hidden md:flex items-center gap-4 flex-1 max-w-125">
 									<div className="w-full">
 										<SearchInput />
 									</div>
@@ -163,12 +169,12 @@ export default function Navbar() {
 																	<span>{t('Dark Mode')}</span>
 																</div>
 																<div
-																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																	className={`relative inline-flex h-5.5 w-10.5 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
 																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
-																		className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
+																		className={`pointer-events-none inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
 																	/>
 																</div>
 															</button>
@@ -246,7 +252,7 @@ export default function Navbar() {
 											<img
 												src={user?.avatarUrl || pfpIcon}
 												alt="Profile"
-												className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10"
+												className="w-8.5 h-8.5 rounded-full object-cover border border-gray-200 dark:border-white/10"
 											/>
 										</div>
 
@@ -311,12 +317,12 @@ export default function Navbar() {
 																	<span>{t('Dark Mode')}</span>
 																</div>
 																<div
-																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																	className={`relative inline-flex h-5.5 w-10.5 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
 																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
-																		className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
+																		className={`pointer-events-none inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
 																	/>
 																</div>
 															</button>
@@ -350,7 +356,7 @@ export default function Navbar() {
 											<img
 												src={user?.avatarUrl || pfpIcon}
 												alt="Profile"
-												className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10"
+												className="w-8.5 h-8.5 rounded-full object-cover border border-gray-200 dark:border-white/10"
 											/>
 										</div>
 
@@ -387,12 +393,12 @@ export default function Navbar() {
 																	<span>{t('Dark Mode')}</span>
 																</div>
 																<div
-																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																	className={`relative inline-flex h-5.5 w-10.5 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
 																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
-																		className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
+																		className={`pointer-events-none inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`}
 																	/>
 																</div>
 															</button>

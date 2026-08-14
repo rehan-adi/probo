@@ -1,7 +1,7 @@
 {
-	"name": "@probo/database",
+	"name": "@probstreet/database",
 	"version": "1.0.0",
-	"description": "Database package for probo - built with Prisma & Bun",
+	"description": "Database package for probstreet - built with Prisma & Bun",
 	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "packages/database"
 	},
 	"scripts": {

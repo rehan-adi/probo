@@ -1,7 +1,7 @@
 {
-	"name": "@probo/stream-service",
+	"name": "@probstreet/stream-service",
 	"version": "1.0.0",
-	"description": "stream service for Probo",
+	"description": "stream service for Probstreet",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "services/stream-service"
 	},
 	"scripts": {
@@ -22,13 +22,13 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"@probo/logger": "workspace:*",
+		"@probstreet/logger": "workspace:*",
 		"hono": "^4.9.1",
 		"ioredis": "^5.7.0",
 		"socket.io": "^4.8.1"
 	},
 	"keywords": [
-		"probo",
+		"probstreet",
 		"bun",
 		"typescript",
 		"socket.io",

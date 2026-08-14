@@ -1,10 +1,10 @@
-# Probo: Building a High-Frequency Opinion Trading / Prediction Market Platform from scratch where users can trade on the outcome of future events.
+# Probstreet: Building a High-Frequency Opinion Trading / Prediction Market Platform from scratch where users can trade on the outcome of future events.
 
 > _"I wanted to understand how trading systems and low latency systems work under the hood. Not just the APIs, but the deep internal engineering of how they match thousands of orders per second without race conditions ? How do they handle money when every millisecond counts ? This project is a simple, straightforward implementation of those kinds of systems."_
 
 ## Local Development Setup
 
-For detailed instructions on setting up the Probo project, starting the services, and managing the database, please refer to our comprehensive **[Local Development Guide](./docs/DEVELOPMENT.md)**.
+For detailed instructions on setting up the Probstreet project, starting the services, and managing the database, please refer to our comprehensive **[Local Development Guide](./docs/DEVELOPMENT.md)**.
 
 ### Quick Start
 
@@ -23,7 +23,7 @@ _(Run `make run` in `services/matching-engine` to start the Go engine. You do **
 
 ## The Architecture: Two Core Journeys
 
-When I started designing Probo by clonning and revers-engneering it from first principals thiking, I knew a monolithic architecture wouldn't cut it. I needed something that could scale independently and handle the "thundering herd" of users during live events.
+When I started designing Probstreet by clonning and revers-engneering it from first principals thiking, I knew a monolithic architecture wouldn't cut it. I needed something that could scale independently and handle the "thundering herd" of users during live events.
 
 ### Journey 1: User Onboarding (First Login Flow)
 
@@ -105,7 +105,7 @@ This is the core loop. When a user bets "Yes" on "Will India win?", speed is eve
 
 > _"In a real fintech app, you verify PAN and Bank details against government databases."_
 
-While reverse-engineering the actual Probo app (via the Network Tab), I noticed they call an external service for PAN verification. To mimic this:
+While reverse-engineering the actual Probstreet app (via the Network Tab), I noticed they call an external service for PAN verification. To mimic this:
 
 - When users submit pan/bank The system creates a **Pending Request** record in the database.
 - This request is visible to **admins via an internal dashboard**.

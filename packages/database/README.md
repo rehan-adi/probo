@@ -1,6 +1,6 @@
 # Database Package
 
-This package manages the PostgreSQL database connection, schema, and migrations for the entire Probo project using [Prisma ORM](https://www.prisma.io/).
+This package manages the PostgreSQL database connection, schema, and migrations for the entire Probstreet project using [Prisma ORM](https://www.prisma.io/).
 
 It is imported by other services (like `api-service` and `processor-service`) to interact with the database in a type-safe manner.
 

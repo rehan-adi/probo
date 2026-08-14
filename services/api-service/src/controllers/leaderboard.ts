@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { logger } from '@/libs/logger';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { client as redis } from '@/libs/redis/connection';
 
 export const syncLeaderboardFromDB = async (redisKey: string) => {

@@ -1,5 +1,5 @@
 import { logger } from '@/libs/logger';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 import { redisPublisher } from '@/libs/redis/connection';
 
 export const updateTradersCount = async (data: any) => {

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-echo "Stopping all running processes........"
+echo "Stopping all running processes for probstreet........"
 
 pkill -f "make run"
 pkill -f "bot_trading.ts"
 
-echo "Freeing up ports......."
+echo "Freeing up ports for probstreet.......",
 
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true
 lsof -ti :5173 | xargs kill -9 2>/dev/null || true

@@ -98,13 +98,15 @@ export default function MarketNews({ title }: MarketNewsProps) {
 
 	if (loading) {
 		return (
-			<div className="w-full mt-6">
-				<h3 className="text-[15px] font-bold text-foreground mb-4">Related News</h3>
-				<div className="animate-pulse space-y-4">
+			<div className="w-full mt-6 bg-card border border-border rounded-xl p-5">
+				<h3 className="text-base font-bold text-foreground mb-4 border-b border-border pb-2">
+					Related News
+				</h3>
+				<div className="flex flex-col gap-4">
 					{[1, 2, 3].map((i) => (
-						<div key={i} className="flex flex-col gap-2">
-							<div className="h-4 bg-muted rounded w-full"></div>
-							<div className="h-3 bg-muted rounded w-24"></div>
+						<div key={i} className="flex flex-col gap-2 p-3">
+							<div className="h-5 bg-muted/60 rounded-md w-full animate-pulse"></div>
+							<div className="h-4 bg-muted/60 rounded-md w-32 animate-pulse"></div>
 						</div>
 					))}
 				</div>
@@ -113,24 +115,26 @@ export default function MarketNews({ title }: MarketNewsProps) {
 	}
 
 	return (
-		<div className="w-full mt-6">
-			<h3 className="text-[15px] font-bold text-foreground mb-4">Related News</h3>
+		<div className="w-full mt-6 bg-card border border-border rounded-xl p-5">
+			<h3 className="text-base font-bold text-foreground mb-4 border-b border-border pb-2">
+				Related News
+			</h3>
 
-			<div className="space-y-1">
+			<div className="flex flex-col gap-2">
 				{newsList.map((news) => (
 					<a
 						key={news.id}
 						href={news.url}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="block py-3 cursor-pointer group hover:bg-muted/30 -mx-2 px-2 rounded-lg transition-colors"
+						className="flex flex-col gap-1.5 cursor-pointer rounded-xl hover:bg-muted p-3 transition-colors duration-200"
 					>
-						<p className="text-[14px] font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">
+						<p className="text-[15px] font-semibold text-foreground line-clamp-2 leading-snug">
 							{news.title}
 						</p>
-						<div className="flex items-center gap-2 text-[12px] text-muted-foreground font-medium">
-							<span>{news.source}</span>
-							<span>•</span>
+						<div className="flex items-center gap-2 text-xs text-muted-foreground">
+							<span className="font-semibold text-foreground/70">{news.source}</span>
+							<span className="w-1 h-1 rounded-full bg-muted-foreground/40"></span>
 							<span>{formatTimeAgo(news.publishedAt)}</span>
 						</div>
 					</a>

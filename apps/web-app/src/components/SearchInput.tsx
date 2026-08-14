@@ -86,7 +86,7 @@ export default function SearchInput() {
 					ref={inputRef}
 					type="text"
 					placeholder="Search markets..."
-					className="w-full bg-[#F4F5F6] dark:bg-slate-800 text-gray-900 dark:text-gray-100 rounded-md pl-10 pr-10 py-2.5 text-[15px] focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm transition-all placeholder:text-gray-500"
+					className="w-full bg-[#F4F5F6] dark:bg-slate-800 text-gray-900 dark:text-gray-100 rounded-md pl-10 pr-10 py-2 text-[15px] focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-gray-200 dark:focus:ring-gray-700 shadow-sm transition-all placeholder:text-gray-500"
 					value={query}
 					onChange={(e) => {
 						setQuery(e.target.value);
@@ -109,7 +109,7 @@ export default function SearchInput() {
 			</div>
 
 			{isOpen && (
-				<div className="absolute top-full mt-2 w-[500px] max-h-[80vh] overflow-y-auto bg-card border border-border rounded-xl shadow-lg z-50">
+				<div className="absolute top-full mt-2 w-125 max-h-[80vh] overflow-y-auto bg-card border border-border rounded-xl shadow-lg z-50">
 					{query.trim().length === 0 ? (
 						<div className="p-4">
 							<h3 className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wider">

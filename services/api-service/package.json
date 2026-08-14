@@ -1,7 +1,7 @@
 {
-	"name": "@probo/api-service",
+	"name": "@probstreet/api-service",
 	"version": "1.0.0",
-	"description": "API service for Probo built with Bun and Hono",
+	"description": "API service for Probstreet built with Bun and Hono",
 	"module": "src/server.ts",
 	"type": "module",
 	"private": true,
@@ -9,7 +9,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo",
+		"url": "https://github.com/rehan-adi/probstreet",
 		"directory": "services/api-service"
 	},
 	"scripts": {
@@ -24,8 +24,8 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.862.0",
 		"@aws-sdk/s3-request-presigner": "^3.862.0",
-		"@probo/database": "workspace:*",
-		"@probo/logger": "workspace:*",
+		"@probstreet/database": "workspace:*",
+		"@probstreet/logger": "workspace:*",
 		"cashfree-pg": "^6.0.4",
 		"google-auth-library": "^10.9.1",
 		"hono": "^4.8.5",
@@ -47,7 +47,7 @@
 		"zod",
 		"ioredis",
 		"uuid",
-		"probo",
+		"probstreet",
 		"fintech",
 		"prediction-market"
 	]

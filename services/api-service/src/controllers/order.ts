@@ -2,7 +2,7 @@ import { Context } from 'hono';
 import { logger } from '@/libs/logger';
 import { EVENTS } from '@/config/constants';
 import { pushToQueue } from '@/libs/redis/queue';
-import { prisma } from '@probo/database';
+import { prisma } from '@probstreet/database';
 
 /**
  * Buy order controller which push event to engine for Buy a yes or no stock

@@ -1,5 +1,5 @@
 {
-	"name": "probo",
+	"name": "probstreet",
 	"version": "1.0.0",
 	"description": "An opinion trading platform where users can trade on the outcome of future events.",
 	"private": true,
@@ -7,17 +7,17 @@
 	"scripts": {
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"db:push": "bun run --filter=@probo/database db:push",
-		"db:seed": "bun run --filter=@probo/database db:seed",
-		"db:studio": "bun run --filter=@probo/database db:studio",
-		"db:migrate": "bun run --filter=@probo/database db:migrate",
-		"db:generate": "bun run --filter=@probo/database db:generate",
-		"web:dev": "bun run --filter=@probo/web-app dev",
-		"web:build": "bun run --filter=@probo/web-app build",
-		"start:api-service": "bun --filter @probo/api-service start",
-		"start:stream-service": "bun --filter @probo/stream-service start",
-		"start:processor-service": "bun --filter @probo/processor-service start",
-		"start:all": "bun run --filter \"@probo/api-service\" --filter \"@probo/stream-service\" --filter \"@probo/processor-service\" start"
+		"db:push": "bun run --filter=@probstreet/database db:push",
+		"db:seed": "bun run --filter=@probstreet/database db:seed",
+		"db:studio": "bun run --filter=@probstreet/database db:studio",
+		"db:migrate": "bun run --filter=@probstreet/database db:migrate",
+		"db:generate": "bun run --filter=@probstreet/database db:generate",
+		"web:dev": "bun run --filter=@probstreet/web-app dev",
+		"web:build": "bun run --filter=@probstreet/web-app build",
+		"start:api-service": "bun --filter @probstreet/api-service start",
+		"start:stream-service": "bun --filter @probstreet/stream-service start",
+		"start:processor-service": "bun --filter @probstreet/processor-service start",
+		"start:all": "bun run --filter \"@probstreet/api-service\" --filter \"@probstreet/stream-service\" --filter \"@probstreet/processor-service\" start"
 	},
 	"workspaces": [
 		"apps/*",
@@ -30,7 +30,7 @@
 	},
 	"license": "Apache-2.0",
 	"keywords": [
-		"probo",
+		"probstreet",
 		"bun",
 		"hono",
 		"redis",
@@ -53,7 +53,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rehan-adi/probo"
+		"url": "https://github.com/rehan-adi/probstreet"
 	},
 	"packageManager": "bun@1.2.17",
 	"engines": {

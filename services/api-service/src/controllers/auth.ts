@@ -6,7 +6,7 @@ import { getClientInfo } from '@/utils/client';
 import { EVENTS } from '@/config/constants';
 import { pushToQueue } from '@/libs/redis/queue';
 import { deleteCookie, getCookie } from 'hono/cookie';
-import { prisma, AuthProvider } from '@probo/database';
+import { prisma, AuthProvider } from '@probstreet/database';
 import { client as redis } from '@/libs/redis/connection';
 import {
 	generateAccessToken,
@@ -477,7 +477,7 @@ export const telegramCallback = async (c: Context) => {
 			return c.json({ success: false, error: 'No Telegram data provided' }, 400);
 		}
 
-		const email = `${providerUserId}@telegram.probo.local`;
+		const email = `${providerUserId}@telegram.probstreet.local`;
 		const { user, isNewUser } = await resolveOrCreateUser(email, 'TELEGRAM', providerUserId);
 		await prisma.user.update({ where: { id: user.id }, data: { lastProvider: 'TELEGRAM' } });
 		const { accessToken, refreshToken } = await createSession(

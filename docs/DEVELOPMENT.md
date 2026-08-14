@@ -1,6 +1,6 @@
 # Local Development Guide
 
-This document explains how to set up the Probo project on your local machine for development.
+This document explains how to set up the Probstreet project on your local machine for development.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ bun install
 
 **What it does:** Installs all Bun workspace dependencies across the repository, links local workspace packages (`packages/*`, `services/*`, `apps/*`), and prepares the repository for local development.
 
-**Why it is required:** The project uses Bun workspaces. Running this at the root ensures all internal package links (like `@probo/database` or `@probo/logger`) are correctly resolved for the various services.
+**Why it is required:** The project uses Bun workspaces. Running this at the root ensures all internal package links (like `@probstreet/database` or `@probstreet/logger`) are correctly resolved for the various services.
 
 ---
 
@@ -131,7 +131,7 @@ bun run web:dev
 ```
 
 **What it does:** Starts the Vite development server for the React frontend application.
-**Why it is required:** Allows you to view and interact with the Probo user interface locally on your browser.
+**Why it is required:** Allows you to view and interact with the Probstreet user interface locally on your browser.
 
 ---
 
