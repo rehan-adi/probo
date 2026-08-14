@@ -534,3 +534,105 @@ export const handleOrderCancelled = async (data: any) => {
 		throw error;
 	}
 };
+
+export const handleSharesSplit = async (data: any) => {
+	try {
+		const { userId, marketId, quantity, cost } = data;
+		const qty = Number(quantity);
+		const totalCost = Number(cost);
+
+		await prisma.$transaction(async (tx) => {
+			// Deduct INR
+			await tx.wallet.updateMany({
+				where: { userId },
+				data: { balance: { decrement: totalCost } },
+			});
+			// Add YES and NO shares
+			const pos = await tx.position.findFirst({ where: { userId, marketId } });
+			if (pos) {
+				await tx.position.update({
+					where: { id: pos.id },
+					data: {
+						yesQuantity: { increment: qty },
+						noQuantity: { increment: qty },
+						yesInvested: { increment: totalCost / 2 },
+						noInvested: { increment: totalCost / 2 },
+					},
+				});
+			} else {
+				await tx.position.create({
+					data: {
+						userId,
+						marketId,
+						yesQuantity: qty,
+						noQuantity: qty,
+						yesInvested: totalCost / 2,
+						noInvested: totalCost / 2,
+					},
+				});
+			}
+
+			// Ledger entry for minting
+			await tx.ledgerEntry.create({
+				data: {
+					fromAccount: userId,
+					toAccount: 'EXCHANGE_ESCROW',
+					amount: totalCost,
+					type: 'BET',
+					referenceId: marketId,
+				},
+			});
+		});
+
+		redisPublisher.publish(
+			'stream:data',
+			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
+		);
+	} catch (error) {
+		logger.error({ error, data }, 'Failed to process shares split');
+		throw error;
+	}
+};
+
+export const handleSharesMerged = async (data: any) => {
+	try {
+		const { userId, marketId, quantity, refund } = data;
+		const qty = Number(quantity);
+		const totalRefund = Number(refund);
+
+		await prisma.$transaction(async (tx) => {
+			// Deduct YES and NO shares
+			await tx.position.updateMany({
+				where: { userId, marketId },
+				data: {
+					yesQuantity: { decrement: qty },
+					noQuantity: { decrement: qty },
+				},
+			});
+			// Add INR
+			await tx.wallet.updateMany({
+				where: { userId },
+				data: { balance: { increment: totalRefund } },
+			});
+
+			// Ledger entry for redeeming
+			await tx.ledgerEntry.create({
+				data: {
+					fromAccount: 'EXCHANGE_ESCROW',
+					toAccount: userId,
+					amount: totalRefund,
+					type: 'REFUND',
+					referenceId: marketId,
+				},
+			});
+		});
+
+		redisPublisher.publish(
+			'stream:data',
+			JSON.stringify({ symbol: userId, type: 'PORTFOLIO_UPDATE' }),
+		);
+	} catch (error) {
+		logger.error({ error, data }, 'Failed to process shares merged');
+		throw error;
+	}
+};

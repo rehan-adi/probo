@@ -1,6 +1,12 @@
 import { DB_EVENTS } from '@/config/constants';
 import { updateStockPrice, updateTradersCount, handleMarketResolved } from '@/controllers/market';
-import { recordTradeExecution, recordOrderPlaced, handleOrderCancelled } from '@/controllers/order';
+import {
+	recordTradeExecution,
+	recordOrderPlaced,
+	handleOrderCancelled,
+	handleSharesSplit,
+	handleSharesMerged,
+} from '@/controllers/order';
 
 export const processToDB = async (eventType: string, data: any) => {
 	switch (eventType) {
@@ -26,6 +32,14 @@ export const processToDB = async (eventType: string, data: any) => {
 
 		case DB_EVENTS.MARKET_RESOLVED:
 			await handleMarketResolved(data);
+			break;
+
+		case DB_EVENTS.SHARES_SPLIT:
+			await handleSharesSplit(data);
+			break;
+
+		case DB_EVENTS.SHARES_MERGED:
+			await handleSharesMerged(data);
 			break;
 
 		default:
