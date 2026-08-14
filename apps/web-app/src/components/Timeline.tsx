@@ -17,7 +17,14 @@ interface TimelineProps {
 
 type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
-export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, traders = 0, overview }: TimelineProps) {
+export default function TimelineChart({
+	symbol,
+	yesPrice,
+	noPrice,
+	volume = 0,
+	traders = 0,
+	overview,
+}: TimelineProps) {
 	const chartContainerRef = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<'yes' | 'no'>('yes');
 	const [timeframe, setTimeframe] = useState<Timeframe>('1m');
@@ -26,12 +33,14 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 	const [showGridY, setShowGridY] = useState(true);
 	const [showCrosshair, setShowCrosshair] = useState(true);
 	const [isLogScale, setIsLogScale] = useState(false);
-	const [isDarkTheme, setIsDarkTheme] = useState(() => document.documentElement.classList.contains('dark'));
+	const [isDarkTheme, setIsDarkTheme] = useState(() =>
+		document.documentElement.classList.contains('dark'),
+	);
 	const [fillArea, setFillArea] = useState(true);
 	const [isDarkChart, setIsDarkChart] = useState(false);
 
 	const chartRef = useRef<IChartApi | null>(null);
-	const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+	const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	const fetchKlines = async (tf: string) => {
@@ -41,16 +50,18 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 			if (res.data?.success) {
 				const rawData = res.data.data || [];
 
-				const data = rawData.map((d: any) => ({
-					time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
-					value: view === 'yes' ? Number(d.close) : 10 - Number(d.close),
-				})).sort((a: any, b: any) => (a.time as number) - (b.time as number));
+				const data = rawData
+					.map((d: any) => ({
+						time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
+						value: view === 'yes' ? Number(d.close) : 10 - Number(d.close),
+					}))
+					.sort((a: any, b: any) => (a.time as number) - (b.time as number));
 
 				// If there's only 1 data point, an AreaSeries won't render properly. We duplicate it slightly in the past.
 				if (data.length === 1) {
 					data.unshift({
 						time: ((data[0].time as number) - 60) as Time,
-						value: data[0].value
+						value: data[0].value,
 					});
 				}
 
@@ -99,8 +110,16 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 				timeVisible: true,
 			},
 			crosshair: {
-				vertLine: { visible: showCrosshair, width: 1, color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
-				horzLine: { visible: showCrosshair, width: 1, color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+				vertLine: {
+					visible: showCrosshair,
+					width: 1,
+					color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+				},
+				horzLine: {
+					visible: showCrosshair,
+					width: 1,
+					color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+				},
 			},
 			width: chartContainerRef.current.clientWidth,
 			height: 288,
@@ -110,11 +129,19 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 
 		const series = chart.addSeries(AreaSeries, {
 			lineColor: isDarkChart
-				? (isDarkTheme ? '#ffffff' : '#000000')
-				: (view === 'yes' ? '#22c55e' : '#ef4444'),
+				? isDarkTheme
+					? '#ffffff'
+					: '#000000'
+				: view === 'yes'
+					? '#22c55e'
+					: '#ef4444',
 			topColor: isDarkChart
-				? (isDarkTheme ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')
-				: (view === 'yes' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'),
+				? isDarkTheme
+					? 'rgba(255, 255, 255, 0.4)'
+					: 'rgba(0, 0, 0, 0.4)'
+				: view === 'yes'
+					? 'rgba(34, 197, 94, 0.4)'
+					: 'rgba(239, 68, 68, 0.4)',
 			bottomColor: 'rgba(0, 0, 0, 0)',
 			lineWidth: 2,
 			priceFormat: {
@@ -163,7 +190,7 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 				},
 				rightPriceScale: {
 					mode: isLogScale ? 1 : 0, // 1 for Logarithmic, 0 for Normal
-				}
+				},
 			});
 		}
 	}, [showGridX, showGridY, showCrosshair, isLogScale]);
@@ -171,12 +198,20 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 	useEffect(() => {
 		if (seriesRef.current) {
 			const lineColor = isDarkChart
-				? (isDarkTheme ? '#ffffff' : '#000000')
-				: (view === 'yes' ? '#22c55e' : '#ef4444');
+				? isDarkTheme
+					? '#ffffff'
+					: '#000000'
+				: view === 'yes'
+					? '#22c55e'
+					: '#ef4444';
 
 			const topColor = isDarkChart
-				? (isDarkTheme ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)')
-				: (view === 'yes' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+				? isDarkTheme
+					? 'rgba(255, 255, 255, 0.4)'
+					: 'rgba(0, 0, 0, 0.4)'
+				: view === 'yes'
+					? 'rgba(34, 197, 94, 0.4)'
+					: 'rgba(239, 68, 68, 0.4)';
 
 			seriesRef.current.applyOptions({
 				lineColor: lineColor,
@@ -240,7 +275,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 
 					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground tracking-wide">
 						{view.toUpperCase()} PROBABILITY
-						<span className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}>
+						<span
+							className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
+						>
 							{view === 'yes' ? Math.round(yesProb) : Math.round(noProb)}%
 						</span>
 					</div>
@@ -253,7 +290,9 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 						<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 transition-all duration-300">
 							<div className="flex flex-col items-center gap-2">
 								<div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-								<span className="text-muted-foreground text-xs font-medium">Loading historical data...</span>
+								<span className="text-muted-foreground text-xs font-medium">
+									Loading historical data...
+								</span>
 							</div>
 						</div>
 					)}
@@ -300,7 +339,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
-												<label htmlFor="dark-chart" className="text-xs text-muted-foreground font-medium cursor-pointer">Premium Charts</label>
+												<label
+													htmlFor="dark-chart"
+													className="text-xs text-muted-foreground font-medium cursor-pointer"
+												>
+													Premium Charts
+												</label>
 												<input
 													id="dark-chart"
 													type="checkbox"
@@ -310,7 +354,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 												/>
 											</div>
 											<div className="flex items-center justify-between">
-												<label htmlFor="fill-area" className="text-xs text-muted-foreground font-medium">Fill Area</label>
+												<label
+													htmlFor="fill-area"
+													className="text-xs text-muted-foreground font-medium"
+												>
+													Fill Area
+												</label>
 												<input
 													id="fill-area"
 													type="checkbox"
@@ -320,7 +369,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 												/>
 											</div>
 											<div className="flex items-center justify-between">
-												<label htmlFor="crosshair" className="text-xs text-muted-foreground font-medium">Crosshair</label>
+												<label
+													htmlFor="crosshair"
+													className="text-xs text-muted-foreground font-medium"
+												>
+													Crosshair
+												</label>
 												<input
 													id="crosshair"
 													type="checkbox"
@@ -330,7 +384,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 												/>
 											</div>
 											<div className="flex items-center justify-between">
-												<label htmlFor="log-scale" className="text-xs text-muted-foreground font-medium">Logarithmic Scale</label>
+												<label
+													htmlFor="log-scale"
+													className="text-xs text-muted-foreground font-medium"
+												>
+													Logarithmic Scale
+												</label>
 												<input
 													id="log-scale"
 													type="checkbox"
@@ -341,7 +400,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 											</div>
 											<div className="h-px bg-border/50 w-full my-2"></div>
 											<div className="flex items-center justify-between">
-												<label htmlFor="grid-x" className="text-xs text-muted-foreground font-medium">Vertical Grid</label>
+												<label
+													htmlFor="grid-x"
+													className="text-xs text-muted-foreground font-medium"
+												>
+													Vertical Grid
+												</label>
 												<input
 													id="grid-x"
 													type="checkbox"
@@ -351,7 +415,12 @@ export default function TimelineChart({ symbol, yesPrice, noPrice, volume = 0, t
 												/>
 											</div>
 											<div className="flex items-center justify-between">
-												<label htmlFor="grid-y" className="text-xs text-muted-foreground font-medium">Horizontal Grid</label>
+												<label
+													htmlFor="grid-y"
+													className="text-xs text-muted-foreground font-medium"
+												>
+													Horizontal Grid
+												</label>
 												<input
 													id="grid-y"
 													type="checkbox"

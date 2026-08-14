@@ -61,7 +61,10 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
 	};
 
 	return (
-		<div className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/40 backdrop-blur-sm md:hidden" onClick={onClose}>
+		<div
+			className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/40 backdrop-blur-sm md:hidden"
+			onClick={onClose}
+		>
 			<motion.div
 				initial={{ y: '100%' }}
 				animate={{ y: 0 }}
@@ -130,15 +133,13 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
 											className="w-10 h-10 rounded-md object-cover flex-shrink-0"
 										/>
 										<div className="flex-1 min-w-0">
-											<p className="text-sm font-medium text-foreground truncate">
-												{market.title}
-											</p>
+											<p className="text-sm font-medium text-foreground truncate">{market.title}</p>
 											<div className="flex items-center gap-2 mt-1">
 												<span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-1.5 py-0.5 rounded">
 													{Math.round((market.yes_price || 0) * 100)}%
 												</span>
 												<span className="text-xs text-gray-500 truncate">
-													Vol: ₹{((market.volume || 0)).toLocaleString()}
+													Vol: ₹{(market.volume || 0).toLocaleString()}
 												</span>
 											</div>
 										</div>

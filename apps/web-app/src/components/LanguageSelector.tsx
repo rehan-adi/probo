@@ -31,7 +31,10 @@ export default function LanguageSelector() {
 	return (
 		<div className="relative w-full" ref={dropdownRef}>
 			<button
-				onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+				onClick={(e) => {
+					e.stopPropagation();
+					setIsOpen(!isOpen);
+				}}
 				className="flex w-full items-center justify-between px-3 py-2 bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
 			>
 				<div className="flex items-center gap-3">
@@ -40,7 +43,10 @@ export default function LanguageSelector() {
 					</span>
 					<span>{activeLang.name}</span>
 				</div>
-				<ChevronDown size={14} className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+				<ChevronDown
+					size={14}
+					className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+				/>
 			</button>
 
 			<AnimatePresence>
@@ -49,7 +55,7 @@ export default function LanguageSelector() {
 						initial={{ opacity: 0, y: -8, scale: 0.98 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: -8, scale: 0.98 }}
-						transition={{ duration: 0.15, ease: "easeOut" }}
+						transition={{ duration: 0.15, ease: 'easeOut' }}
 						className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#1C1C1E] border border-gray-100 dark:border-white/10 rounded-xl shadow-xl z-[60] py-1.5 overflow-hidden"
 					>
 						{LANGUAGES.map((lang) => (
@@ -64,13 +70,24 @@ export default function LanguageSelector() {
 								className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
 							>
 								<div className="flex items-center gap-3">
-									<span className="text-sm leading-none opacity-80 group-hover:opacity-100 transition-opacity">{lang.flag}</span>
-									<span className={i18n.language === lang.code ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-300'}>
+									<span className="text-sm leading-none opacity-80 group-hover:opacity-100 transition-opacity">
+										{lang.flag}
+									</span>
+									<span
+										className={
+											i18n.language === lang.code
+												? 'text-blue-600 dark:text-blue-400 font-semibold'
+												: 'text-gray-700 dark:text-gray-300'
+										}
+									>
 										{lang.name}
 									</span>
 								</div>
 								{i18n.language === lang.code && (
-									<motion.div layoutId="active-indicator" className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shadow-sm" />
+									<motion.div
+										layoutId="active-indicator"
+										className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shadow-sm"
+									/>
 								)}
 							</button>
 						))}

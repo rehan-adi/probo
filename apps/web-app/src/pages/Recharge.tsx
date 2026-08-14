@@ -43,11 +43,15 @@ export default function RechargePage() {
 	return (
 		<div className="w-full flex justify-center items-center bg-[#f4f4f5] dark:bg-[#090C1A] md:py-36 py-14 px-2 md:px-0 transition-colors">
 			<div className="max-w-[910px] w-full px-4">
-				<h1 className="text-2xl md:text-4xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">Deposit</h1>
+				<h1 className="text-2xl md:text-4xl font-semibold md:mb-8 mb-4 text-gray-900 dark:text-white">
+					Deposit
+				</h1>
 
 				<div className="bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 max-w-[550px] rounded-xl py-6 px-4 space-y-6 transition-colors">
 					<div className="space-y-2">
-						<div className="text-base font-semibold text-gray-900 dark:text-white">Deposit amount</div>
+						<div className="text-base font-semibold text-gray-900 dark:text-white">
+							Deposit amount
+						</div>
 						<input
 							type="number"
 							placeholder="0"
@@ -76,10 +80,11 @@ export default function RechargePage() {
 						<button
 							onClick={handleSubmit}
 							disabled={!amount || amount <= 0 || isPending}
-							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${!amount || amount <= 0 || isPending
-								? 'bg-[#ABABAB] dark:bg-white/10 text-white dark:text-gray-500 cursor-not-allowed disabled:opacity-50'
-								: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
-								}`}
+							className={`w-full py-3 rounded-md text-sm font-semibold transition flex items-center justify-center ${
+								!amount || amount <= 0 || isPending
+									? 'bg-[#ABABAB] dark:bg-white/10 text-white dark:text-gray-500 cursor-not-allowed disabled:opacity-50'
+									: 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200 cursor-pointer'
+							}`}
 						>
 							{isPending ? (
 								<>

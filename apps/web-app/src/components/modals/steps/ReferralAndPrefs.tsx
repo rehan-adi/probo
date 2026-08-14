@@ -18,7 +18,7 @@ export default function ReferralAndPrefs() {
 					emailOrderFills: true,
 					inAppNewMarket: true,
 					inAppTradeExecuted: true,
-				}
+				},
 			};
 
 			if (!skipRef && referralCode.trim()) {
@@ -44,8 +44,12 @@ export default function ReferralAndPrefs() {
 			className="flex flex-col h-full justify-center max-w-[333px] mx-auto w-full py-4 md:py-2"
 		>
 			<div className="text-left mb-6">
-				<h2 className="text-xl font-semibold text-black dark:text-white tracking-tight">Got a referral code from a friend?</h2>
-				<p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5 font-medium">Enter it below for a joining bonus.</p>
+				<h2 className="text-xl font-semibold text-black dark:text-white tracking-tight">
+					Got a referral code from a friend?
+				</h2>
+				<p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5 font-medium">
+					Enter it below for a joining bonus.
+				</p>
 			</div>
 
 			<div className="flex flex-col relative">

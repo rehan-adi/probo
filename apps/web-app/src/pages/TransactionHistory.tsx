@@ -57,7 +57,9 @@ export default function TransactionHistoryPage() {
 					</ol>
 				</nav>
 
-				<h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Transaction History</h2>
+				<h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+					Transaction History
+				</h2>
 
 				<div className="flex items-center border-b border-t border-gray-400/25 dark:border-white/10 py-3 justify-between flex-wrap">
 					<div className="flex items-center space-x-2 mt-4 md:mt-0">
@@ -119,7 +121,9 @@ export default function TransactionHistoryPage() {
 
 								<p
 									className={`w-1/6 text-right md:text-base text-sm font-semibold md:mt-1 mt-0 ${
-										txn.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+										txn.amount > 0
+											? 'text-green-600 dark:text-green-400'
+											: 'text-red-600 dark:text-red-400'
 									}`}
 								>
 									{txn.amount > 0 ? `+₹${txn.amount}` : `-₹${Math.abs(txn.amount)}`}
@@ -129,7 +133,9 @@ export default function TransactionHistoryPage() {
 					))}
 
 					{filteredTransactions.length === 0 && (
-						<p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10">No transactions found.</p>
+						<p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10">
+							No transactions found.
+						</p>
 					)}
 				</div>
 			</div>

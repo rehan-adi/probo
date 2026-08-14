@@ -5,7 +5,9 @@ import { useLeaderboardQuery } from '@/hooks/queries/leaderboard';
 import { Loader2, Crown, Award, User as UserIcon, ChevronDown } from 'lucide-react';
 
 export default function LeaderboardPage() {
-	const [timeframe, setTimeframe] = useState<'all_time' | 'monthly' | 'weekly' | 'today'>('all_time');
+	const [timeframe, setTimeframe] = useState<'all_time' | 'monthly' | 'weekly' | 'today'>(
+		'all_time',
+	);
 	const [isMobileSelectOpen, setIsMobileSelectOpen] = useState(false);
 	const { data, isLoading } = useLeaderboardQuery(timeframe);
 	const currentUser = useAuthStore((state) => state.user);
@@ -23,7 +25,6 @@ export default function LeaderboardPage() {
 	return (
 		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:pt-10 pt-8 pb-6 md:pb-8 transition-colors">
 			<div className="w-full md:max-w-5xl px-6 md:px-6 flex flex-col gap-4">
-
 				<div className="flex items-start justify-between mb-1 md:mb-5">
 					<h1 className="md:text-2xl text-xl font-medium text-gray-900 dark:text-white tracking-tight">
 						Leaderboard
@@ -50,10 +51,11 @@ export default function LeaderboardPage() {
 											setTimeframe(tf);
 											setIsMobileSelectOpen(false);
 										}}
-										className={`w-full text-left px-3 py-2 text-xs font-medium transition ${timeframe === tf
-											? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-semibold'
-											: 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-											}`}
+										className={`w-full text-left px-3 py-2 text-xs font-medium transition ${
+											timeframe === tf
+												? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-semibold'
+												: 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+										}`}
 									>
 										{timeframeLabels[tf]}
 									</button>
@@ -65,37 +67,41 @@ export default function LeaderboardPage() {
 					<div className="hidden md:inline-flex bg-gray-200/80 dark:bg-[#161B26] p-0.5 rounded-md border border-gray-300/80 dark:border-white/10">
 						<button
 							onClick={() => setTimeframe('today')}
-							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${timeframe === 'today'
-								? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
-								: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
-								}`}
+							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${
+								timeframe === 'today'
+									? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
+									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
+							}`}
 						>
 							Today
 						</button>
 						<button
 							onClick={() => setTimeframe('weekly')}
-							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${timeframe === 'weekly'
-								? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
-								: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
-								}`}
+							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${
+								timeframe === 'weekly'
+									? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
+									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
+							}`}
 						>
 							Weekly
 						</button>
 						<button
 							onClick={() => setTimeframe('monthly')}
-							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${timeframe === 'monthly'
-								? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
-								: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
-								}`}
+							className={`px-4 py-1.5 text-xs font-medium border-r border-gray-300/80 dark:border-white/10 transition-all cursor-pointer ${
+								timeframe === 'monthly'
+									? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
+									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
+							}`}
 						>
 							Monthly
 						</button>
 						<button
 							onClick={() => setTimeframe('all_time')}
-							className={`px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${timeframe === 'all_time'
-								? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
-								: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
-								}`}
+							className={`px-4 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+								timeframe === 'all_time'
+									? 'bg-white dark:bg-[#202738] text-gray-900 dark:text-white font-semibold shadow-sm rounded-sm'
+									: 'text-gray-600 dark:text-gray-400 hover:bg-gray-300/40 dark:hover:bg-white/5'
+							}`}
 						>
 							All
 						</button>
@@ -109,12 +115,8 @@ export default function LeaderboardPage() {
 							<span className="w-5 md:w-6 text-center">#</span>
 							<span>Trader</span>
 						</div>
-						<div className="col-span-3 md:col-span-3 text-right">
-							Profit
-						</div>
-						<div className="col-span-3 md:col-span-3 text-right">
-							Volume
-						</div>
+						<div className="col-span-3 md:col-span-3 text-right">Profit</div>
+						<div className="col-span-3 md:col-span-3 text-right">Volume</div>
 					</div>
 
 					{/* Table Rows */}
@@ -136,10 +138,11 @@ export default function LeaderboardPage() {
 								return (
 									<div
 										key={item.userId}
-										className={`px-2 md:px-3 py-3 grid grid-cols-12 items-center transition-colors rounded-xl ${isMe
-											? 'bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20'
-											: 'hover:bg-gray-200/60 dark:hover:bg-white/5'
-											}`}
+										className={`px-2 md:px-3 py-3 grid grid-cols-12 items-center transition-colors rounded-xl ${
+											isMe
+												? 'bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20'
+												: 'hover:bg-gray-200/60 dark:hover:bg-white/5'
+										}`}
 									>
 										{/* Rank & User Details */}
 										<div className="col-span-6 md:col-span-6 flex items-center gap-2.5 md:gap-4 overflow-hidden">
@@ -166,7 +169,11 @@ export default function LeaderboardPage() {
 											{/* Avatar (w-7 h-7 on mobile for large numbers fit) */}
 											<div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs md:text-sm shadow-sm overflow-hidden shrink-0">
 												{item.avatar ? (
-													<img src={item.avatar} alt={displayName} className="w-full h-full object-cover" />
+													<img
+														src={item.avatar}
+														alt={displayName}
+														className="w-full h-full object-cover"
+													/>
 												) : (
 													displayName.charAt(0).toUpperCase() || <UserIcon size={14} />
 												)}
@@ -175,10 +182,11 @@ export default function LeaderboardPage() {
 											{/* Name */}
 											<div className="truncate">
 												<span
-													className={`text-xs md:text-sm font-semibold truncate block ${isMe
-														? 'text-blue-600 dark:text-blue-400 font-bold'
-														: 'text-gray-900 dark:text-white'
-														}`}
+													className={`text-xs md:text-sm font-semibold truncate block ${
+														isMe
+															? 'text-blue-600 dark:text-blue-400 font-bold'
+															: 'text-gray-900 dark:text-white'
+													}`}
 												>
 													{displayName}
 												</span>
@@ -204,7 +212,6 @@ export default function LeaderboardPage() {
 						</div>
 					)}
 				</div>
-
 			</div>
 		</div>
 	);

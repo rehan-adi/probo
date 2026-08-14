@@ -42,7 +42,10 @@ export default function ReferralPage() {
 
 	const handleTelegramShare = () => {
 		const text = `Join Probo using my referral code ${code} and get ₹15 FREE trading bonus + extra rewards on your first recharge!`;
-		window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`, '_blank');
+		window.open(
+			`https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`,
+			'_blank',
+		);
 	};
 
 	const handleSubmitCode = (e: React.FormEvent) => {
@@ -74,7 +77,6 @@ export default function ReferralPage() {
 	return (
 		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center md:pt-10 pt-6 pb-24 md:pb-12 transition-colors">
 			<div className="w-full max-w-[910px] px-4 md:px-6 flex flex-col gap-6">
-
 				<div>
 					<h1 className="text-2xl md:text-3xl font-medium text-gray-900 dark:text-white tracking-tight">
 						Refer & Rewards
@@ -92,13 +94,17 @@ export default function ReferralPage() {
 						</span>
 					</div>
 					<div className="bg-white dark:bg-[#1C1C1E] p-4 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col gap-1">
-						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Invited</span>
+						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+							Invited
+						</span>
 						<span className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
 							{info?.totalInvited || 0}
 						</span>
 					</div>
 					<div className="bg-white dark:bg-[#1C1C1E] p-4 rounded-xl border border-gray-400/20 dark:border-white/10 flex flex-col gap-1">
-						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Claimed</span>
+						<span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+							Claimed
+						</span>
 						<span className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
 							{info?.completedCount || 0}
 						</span>
@@ -110,7 +116,9 @@ export default function ReferralPage() {
 					<div className="p-5 md:p-6 flex flex-col gap-4">
 						<div className="flex items-center justify-between">
 							<div>
-								<h2 className="text-sm font-semibold text-gray-900 dark:text-white">Your Referral Code</h2>
+								<h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+									Your Referral Code
+								</h2>
 								<p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
 									Share your code — friends get ₹15 on signup + bonus on recharge
 								</p>
@@ -179,7 +187,8 @@ export default function ReferralPage() {
 						</h3>
 					</div>
 					<p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
-						Enter their <span className="font-mono font-semibold">PROB-XXXX</span> code to link your accounts.
+						Enter their <span className="font-mono font-semibold">PROB-XXXX</span> code to link your
+						accounts.
 					</p>
 
 					{info?.hasAppliedReferral ? (
@@ -232,12 +241,16 @@ export default function ReferralPage() {
 							</div>
 							<div className="flex-1 min-w-0">
 								<div className="flex items-center gap-2">
-									<h4 className="text-sm font-semibold text-gray-900 dark:text-white">{task.title}</h4>
+									<h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+										{task.title}
+									</h4>
 									<span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
 										Claimed
 									</span>
 								</div>
-								<p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{task.description}</p>
+								<p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+									{task.description}
+								</p>
 							</div>
 							<div className="text-sm font-bold text-gray-900 dark:text-white shrink-0">
 								+₹{task.reward}
@@ -250,7 +263,9 @@ export default function ReferralPage() {
 						<div className="bg-white dark:bg-[#1C1C1E] rounded-xl border border-gray-400/20 dark:border-white/10 overflow-hidden">
 							<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-2">
 								<Wallet size={15} className="text-gray-900 dark:text-white" />
-								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Recharge Rewards</h3>
+								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+									Recharge Rewards
+								</h3>
 							</div>
 							<div className="divide-y divide-gray-100 dark:divide-white/5">
 								{depositTasks.map((task: any) => (
@@ -260,14 +275,18 @@ export default function ReferralPage() {
 										</div>
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-2">
-												<h4 className="text-xs font-semibold text-gray-900 dark:text-white">{task.title}</h4>
-												{(task.status === 'COMPLETED') && (
+												<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+													{task.title}
+												</h4>
+												{task.status === 'COMPLETED' && (
 													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
 														Done
 													</span>
 												)}
 											</div>
-											<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{task.description}</p>
+											<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+												{task.description}
+											</p>
 											{/* Progress */}
 											<div className="mt-2 w-full bg-gray-100 dark:bg-[#090C1A] rounded-full h-1 overflow-hidden">
 												<div
@@ -290,7 +309,9 @@ export default function ReferralPage() {
 						<div className="bg-white dark:bg-[#1C1C1E] rounded-xl border border-gray-400/20 dark:border-white/10 overflow-hidden">
 							<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-2">
 								<Target size={15} className="text-gray-900 dark:text-white" />
-								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Trading Milestones</h3>
+								<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+									Trading Milestones
+								</h3>
 							</div>
 							<div className="divide-y divide-gray-100 dark:divide-white/5">
 								{milestoneTasks.map((task: any) => (
@@ -300,14 +321,18 @@ export default function ReferralPage() {
 												{/* Circular progress */}
 												<svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
 													<circle
-														cx="18" cy="18" r="15.5"
+														cx="18"
+														cy="18"
+														r="15.5"
 														fill="none"
 														stroke="currentColor"
 														strokeWidth="2"
 														className="text-gray-100 dark:text-white/5"
 													/>
 													<circle
-														cx="18" cy="18" r="15.5"
+														cx="18"
+														cy="18"
+														r="15.5"
 														fill="none"
 														stroke="currentColor"
 														strokeWidth="2"
@@ -325,14 +350,18 @@ export default function ReferralPage() {
 										</div>
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center gap-2">
-												<h4 className="text-xs font-semibold text-gray-900 dark:text-white">{task.title}</h4>
+												<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+													{task.title}
+												</h4>
 												{task.status === 'COMPLETED' && (
 													<span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
 														Done
 													</span>
 												)}
 											</div>
-											<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{task.description}</p>
+											<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+												{task.description}
+											</p>
 											{task.completedCount !== undefined && (
 												<p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono">
 													{task.completedCount}/{task.targetCount} trades
@@ -358,7 +387,9 @@ export default function ReferralPage() {
 								<span className="text-xs font-bold text-gray-900 dark:text-white">1</span>
 							</div>
 							<div>
-								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">Share Your Code</h4>
+								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+									Share Your Code
+								</h4>
 								<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
 									Send your PROB-XXXX code to friends via WhatsApp or Telegram.
 								</p>
@@ -369,7 +400,9 @@ export default function ReferralPage() {
 								<span className="text-xs font-bold text-gray-900 dark:text-white">2</span>
 							</div>
 							<div>
-								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">Friend Signs Up</h4>
+								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+									Friend Signs Up
+								</h4>
 								<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
 									They get ₹15 free trading bonus instantly on registration.
 								</p>
@@ -380,7 +413,9 @@ export default function ReferralPage() {
 								<span className="text-xs font-bold text-gray-900 dark:text-white">3</span>
 							</div>
 							<div>
-								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">Both Earn Rewards</h4>
+								<h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+									Both Earn Rewards
+								</h4>
 								<p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
 									When they recharge ₹50+, you earn ₹10 and they earn ₹5 bonus.
 								</p>
@@ -392,32 +427,56 @@ export default function ReferralPage() {
 				{/* Reward Tiers Table */}
 				<div className="bg-white dark:bg-[#1C1C1E] rounded-xl border border-gray-400/20 dark:border-white/10 overflow-hidden">
 					<div className="px-4 py-3 border-b border-gray-100 dark:border-white/5">
-						<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Reward Tiers</h3>
+						<h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+							Reward Tiers
+						</h3>
 					</div>
 					<div className="overflow-x-auto">
 						<table className="w-full text-xs">
 							<thead>
 								<tr className="border-b border-gray-100 dark:border-white/5">
-									<th className="px-4 py-2.5 text-left font-semibold text-gray-500 dark:text-gray-400">Action</th>
-									<th className="px-4 py-2.5 text-center font-semibold text-gray-500 dark:text-gray-400">You Get</th>
-									<th className="px-4 py-2.5 text-center font-semibold text-gray-500 dark:text-gray-400">Friend Gets</th>
+									<th className="px-4 py-2.5 text-left font-semibold text-gray-500 dark:text-gray-400">
+										Action
+									</th>
+									<th className="px-4 py-2.5 text-center font-semibold text-gray-500 dark:text-gray-400">
+										You Get
+									</th>
+									<th className="px-4 py-2.5 text-center font-semibold text-gray-500 dark:text-gray-400">
+										Friend Gets
+									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-gray-100 dark:divide-white/5">
 								<tr>
-									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">Friend Signs Up</td>
+									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+										Friend Signs Up
+									</td>
 									<td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">—</td>
-									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">₹15</td>
+									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+										₹15
+									</td>
 								</tr>
 								<tr>
-									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">Recharges ₹50+</td>
-									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">₹10</td>
-									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">₹5</td>
+									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+										Recharges ₹50+
+									</td>
+									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+										₹10
+									</td>
+									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+										₹5
+									</td>
 								</tr>
 								<tr>
-									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">Recharges ₹100+</td>
-									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">₹20</td>
-									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">₹10</td>
+									<td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+										Recharges ₹100+
+									</td>
+									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+										₹20
+									</td>
+									<td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
+										₹10
+									</td>
 								</tr>
 							</tbody>
 						</table>
@@ -431,7 +490,8 @@ export default function ReferralPage() {
 						</h2>
 						{info?.invitedFriends && info.invitedFriends.length > 0 && (
 							<span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-								{info.invitedFriends.length} {info.invitedFriends.length === 1 ? 'friend' : 'friends'}
+								{info.invitedFriends.length}{' '}
+								{info.invitedFriends.length === 1 ? 'friend' : 'friends'}
 							</span>
 						)}
 					</div>
@@ -444,8 +504,12 @@ export default function ReferralPage() {
 						) : !info?.invitedFriends || info.invitedFriends.length === 0 ? (
 							<div className="py-16 flex flex-col items-center gap-2">
 								<Users size={28} className="text-gray-300 dark:text-gray-600" />
-								<p className="text-xs text-gray-500 dark:text-gray-400 font-medium">No friends invited yet</p>
-								<p className="text-[10px] text-gray-400 dark:text-gray-500">Share your code to start earning</p>
+								<p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+									No friends invited yet
+								</p>
+								<p className="text-[10px] text-gray-400 dark:text-gray-500">
+									Share your code to start earning
+								</p>
 							</div>
 						) : (
 							<div className="divide-y divide-gray-100 dark:divide-white/5">
@@ -461,7 +525,8 @@ export default function ReferralPage() {
 												{friend.username}
 											</h4>
 											<p className="text-[10px] text-gray-400 dark:text-gray-500">
-												Joined {new Date(friend.joinedAt).toLocaleDateString('en-IN', {
+												Joined{' '}
+												{new Date(friend.joinedAt).toLocaleDateString('en-IN', {
 													day: 'numeric',
 													month: 'short',
 													year: 'numeric',
@@ -487,7 +552,6 @@ export default function ReferralPage() {
 						)}
 					</div>
 				</div>
-
 			</div>
 		</div>
 	);

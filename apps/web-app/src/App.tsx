@@ -48,10 +48,15 @@ function AppContent() {
 		<div className={`flex flex-col ${isAdminRoute ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
 			{!isAdminRoute && <Navbar />}
 			<AuthModal />
-			<main className={!isAdminRoute ? "flex-grow pt-[64px]" : "flex-grow h-full overflow-hidden"}>
+			<main className={!isAdminRoute ? 'flex-grow pt-[64px]' : 'flex-grow h-full overflow-hidden'}>
 				<Routes>
 					{/* public routes  */}
-					<Route path="/" element={<Navigate to={user?.role === 'ADMIN' ? "/dashboard/home" : "/events"} replace />} />
+					<Route
+						path="/"
+						element={
+							<Navigate to={user?.role === 'ADMIN' ? '/dashboard/home' : '/events'} replace />
+						}
+					/>
 					<Route path="/events" element={<EventsPage />} />
 					<Route path="/events/:symbol" element={<EventDetails />} />
 					<Route path="/search" element={<SearchPage />} />

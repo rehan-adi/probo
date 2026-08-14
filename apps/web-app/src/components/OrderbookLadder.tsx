@@ -16,92 +16,111 @@ interface OrderbookLadderProps {
 	resetScrollToken?: number;
 }
 
-const OrderRow = React.memo(({
-	type,
-	order,
-	cumulative,
-	maxCum,
-	isHovered,
-	isHighlighted,
-	isBoundary,
-	onHover,
-	onLeave,
-	onClick
-}: {
-	type: 'ask' | 'bid';
-	order: Order;
-	cumulative: number;
-	maxCum: number;
-	isHovered: boolean;
-	isHighlighted: boolean;
-	isBoundary: boolean;
-	onHover: () => void;
-	onLeave: () => void;
-	onClick: () => void;
-}) => {
-	const [flash, setFlash] = useState<'increase' | 'decrease' | null>(null);
-	const prevQty = useRef(order.quantity);
+const OrderRow = React.memo(
+	({
+		type,
+		order,
+		cumulative,
+		maxCum,
+		isHovered,
+		isHighlighted,
+		isBoundary,
+		onHover,
+		onLeave,
+		onClick,
+	}: {
+		type: 'ask' | 'bid';
+		order: Order;
+		cumulative: number;
+		maxCum: number;
+		isHovered: boolean;
+		isHighlighted: boolean;
+		isBoundary: boolean;
+		onHover: () => void;
+		onLeave: () => void;
+		onClick: () => void;
+	}) => {
+		const [flash, setFlash] = useState<'increase' | 'decrease' | null>(null);
+		const prevQty = useRef(order.quantity);
 
-	useEffect(() => {
-		if (prevQty.current !== order.quantity) {
-			setFlash(order.quantity > prevQty.current ? 'increase' : 'decrease');
-			prevQty.current = order.quantity;
-			const timer = setTimeout(() => setFlash(null), 300);
-			return () => clearTimeout(timer);
-		}
-	}, [order.quantity]);
+		useEffect(() => {
+			if (prevQty.current !== order.quantity) {
+				setFlash(order.quantity > prevQty.current ? 'increase' : 'decrease');
+				prevQty.current = order.quantity;
+				const timer = setTimeout(() => setFlash(null), 300);
+				return () => clearTimeout(timer);
+			}
+		}, [order.quantity]);
 
-	const depthPercent = maxCum > 0 ? (cumulative / maxCum) * 100 : 0;
-	const isAsk = type === 'ask';
+		const depthPercent = maxCum > 0 ? (cumulative / maxCum) * 100 : 0;
+		const isAsk = type === 'ask';
 
-	const textColor = isAsk ? 'text-red-500' : 'text-green-500';
-	const flashBg = flash === 'increase' ? 'bg-green-500/20' : flash === 'decrease' ? 'bg-red-500/20' : 'bg-transparent';
+		const textColor = isAsk ? 'text-red-500' : 'text-green-500';
+		const flashBg =
+			flash === 'increase'
+				? 'bg-green-500/20'
+				: flash === 'decrease'
+					? 'bg-red-500/20'
+					: 'bg-transparent';
 
-	// Boundary borders
-	const borderClass = isBoundary
-		? isAsk ? 'border-t border-dashed border-red-500/50' : 'border-b border-dashed border-green-500/50'
-		: 'border-t border-b border-transparent';
+		// Boundary borders
+		const borderClass = isBoundary
+			? isAsk
+				? 'border-t border-dashed border-red-500/50'
+				: 'border-b border-dashed border-green-500/50'
+			: 'border-t border-b border-transparent';
 
-	const highlightBg = isHighlighted
-		? 'bg-zinc-200/80 dark:bg-zinc-800'
-		: 'bg-transparent';
+		const highlightBg = isHighlighted ? 'bg-zinc-200/80 dark:bg-zinc-800' : 'bg-transparent';
 
-	const highlightDepth = isHighlighted
-		? (isAsk ? 'from-rose-500/40 to-rose-500/10' : 'from-emerald-500/40 to-emerald-500/10')
-		: (isAsk ? 'from-rose-500/20 to-rose-500/5' : 'from-emerald-500/20 to-emerald-500/5');
+		const highlightDepth = isHighlighted
+			? isAsk
+				? 'from-rose-500/40 to-rose-500/10'
+				: 'from-emerald-500/40 to-emerald-500/10'
+			: isAsk
+				? 'from-rose-500/20 to-rose-500/5'
+				: 'from-emerald-500/20 to-emerald-500/5';
 
-	return (
-		<motion.div
-			layout="position"
-			initial={{ opacity: 0, x: isAsk ? 10 : -10 }}
-			animate={{ opacity: 1, x: 0 }}
-			exit={{ opacity: 0, scale: 0.95 }}
-			transition={{ duration: 0.2 }}
-			onMouseEnter={onHover}
-			onMouseLeave={onLeave}
-			onClick={onClick}
-			className={`relative grid grid-cols-3 items-center h-[30px] px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} z-10 hover:z-20 ${!isHighlighted ? 'hover:bg-muted/50' : ''}`}
-		>
-			{/* Cumulative Depth Bar */}
-			<div
-				className={`absolute top-0 bottom-0 right-0 origin-right transition-transform duration-300 ease-out bg-gradient-to-l ${highlightDepth} -z-10`}
-				style={{ transform: `scaleX(${depthPercent / 100})`, width: '100%' }}
-			/>
+		return (
+			<motion.div
+				layout="position"
+				initial={{ opacity: 0, x: isAsk ? 10 : -10 }}
+				animate={{ opacity: 1, x: 0 }}
+				exit={{ opacity: 0, scale: 0.95 }}
+				transition={{ duration: 0.2 }}
+				onMouseEnter={onHover}
+				onMouseLeave={onLeave}
+				onClick={onClick}
+				className={`relative grid grid-cols-3 items-center h-[30px] px-4 cursor-pointer tabular-nums text-sm transition-colors duration-150 ${flashBg} ${highlightBg} ${borderClass} z-10 hover:z-20 ${!isHighlighted ? 'hover:bg-muted/50' : ''}`}
+			>
+				{/* Cumulative Depth Bar */}
+				<div
+					className={`absolute top-0 bottom-0 right-0 origin-right transition-transform duration-300 ease-out bg-gradient-to-l ${highlightDepth} -z-10`}
+					style={{ transform: `scaleX(${depthPercent / 100})`, width: '100%' }}
+				/>
 
-			<span className={`font-bold transition-all ${textColor}`}>
-				{order.price.toFixed(1)}
-			</span>
-			<span className={`text-center font-semibold tracking-tight transition-colors ${isHighlighted ? 'text-foreground' : 'text-muted-foreground'}`}>
-				{order.quantity}
-			</span>
-			<span className={`text-right font-medium tracking-tight transition-colors ${isHighlighted ? 'text-foreground' : 'text-muted-foreground'}`}>
-				{cumulative}
-			</span>
-		</motion.div>
-	);
-});
+				<span className={`font-bold transition-all ${textColor}`}>{order.price.toFixed(1)}</span>
+				<span
+					className={`text-center font-semibold tracking-tight transition-colors ${isHighlighted ? 'text-foreground' : 'text-muted-foreground'}`}
+				>
+					{order.quantity}
+				</span>
+				<span
+					className={`text-right font-medium tracking-tight transition-colors ${isHighlighted ? 'text-foreground' : 'text-muted-foreground'}`}
+				>
+					{cumulative}
+				</span>
+			</motion.div>
+		);
+	},
+);
 
-export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, resetScrollToken }: OrderbookLadderProps) {
+export default function OrderbookLadder({
+	bids,
+	asks,
+	onPriceSelect,
+	isLocked,
+	resetScrollToken,
+}: OrderbookLadderProps) {
 	const [hoveredAskIndex, setHoveredAskIndex] = useState<number | null>(null);
 	const [hoveredBidIndex, setHoveredBidIndex] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -118,7 +137,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 		if (askScrollRef.current) {
 			askScrollRef.current.scrollTo({
 				top: askScrollRef.current.scrollHeight,
-				behavior: smooth ? 'smooth' : 'auto'
+				behavior: smooth ? 'smooth' : 'auto',
 			});
 		}
 	};
@@ -128,7 +147,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 		if (bidScrollRef.current) {
 			bidScrollRef.current.scrollTo({
 				top: 0,
-				behavior: smooth ? 'smooth' : 'auto'
+				behavior: smooth ? 'smooth' : 'auto',
 			});
 		}
 	};
@@ -157,7 +176,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 	// Process Asks
 	const processedAsks = React.useMemo(() => {
 		const sorted = [...asks]
-			.filter(o => o.price > 0 && o.quantity > 0)
+			.filter((o) => o.price > 0 && o.quantity > 0)
 			.slice(0, 15) // Top 15 best asks
 			.reverse(); // Reverse so highest is at top, best ask at bottom
 
@@ -172,9 +191,7 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 
 	// Process Bids
 	const processedBids = React.useMemo(() => {
-		const sorted = [...bids]
-			.filter(o => o.price > 0 && o.quantity > 0)
-			.slice(0, 15); // Top 15 best bids
+		const sorted = [...bids].filter((o) => o.price > 0 && o.quantity > 0).slice(0, 15); // Top 15 best bids
 
 		let cum = 0;
 		const withCum = new Array(sorted.length);
@@ -187,12 +204,13 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 
 	const maxCum = Math.max(
 		processedAsks[0]?.cumulative || 0,
-		processedBids[processedBids.length - 1]?.cumulative || 0
+		processedBids[processedBids.length - 1]?.cumulative || 0,
 	);
 
-	const spread = (processedAsks.length > 0 && processedBids.length > 0)
-		? (processedAsks[processedAsks.length - 1].price - processedBids[0].price).toFixed(1)
-		: null;
+	const spread =
+		processedAsks.length > 0 && processedBids.length > 0
+			? (processedAsks[processedAsks.length - 1].price - processedBids[0].price).toFixed(1)
+			: null;
 
 	return (
 		<div className="text-sm w-full font-mono h-full flex flex-col">
@@ -204,12 +222,20 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 			<div
 				ref={scrollRef}
 				className="flex flex-col flex-1 min-h-0"
-				onMouseLeave={() => { setHoveredAskIndex(null); setHoveredBidIndex(null); }}
+				onMouseLeave={() => {
+					setHoveredAskIndex(null);
+					setHoveredBidIndex(null);
+				}}
 			>
 				{/* Asks Section */}
 				<div className="flex flex-col justify-end relative flex-1">
 					{processedAsks.length === 0 ? (
-						<div className="flex items-center justify-center text-xs text-muted-foreground opacity-50" style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}>No asks available</div>
+						<div
+							className="flex items-center justify-center text-xs text-muted-foreground opacity-50"
+							style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}
+						>
+							No asks available
+						</div>
 					) : (
 						<div
 							ref={askScrollRef}
@@ -241,22 +267,31 @@ export default function OrderbookLadder({ bids, asks, onPriceSelect, isLocked, r
 							</AnimatePresence>
 						</div>
 					)}
-					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">ASKS</div>
+					<div className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">
+						ASKS
+					</div>
 				</div>
 
 				{/* Spread / Mid Market */}
 				<div className="spread-row flex items-center justify-between py-2.5 bg-card/95 backdrop-blur-sm border-y border-border/50 shadow-[0_0_10px_rgba(0,0,0,0.05)] px-4 shrink-0">
-					<span className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">SPREAD</span>
-					<span className="text-xs font-bold text-foreground">
-						{spread ? `₹${spread}` : '-'}
+					<span className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">
+						SPREAD
 					</span>
+					<span className="text-xs font-bold text-foreground">{spread ? `₹${spread}` : '-'}</span>
 				</div>
 
 				{/* Bids Section */}
 				<div className="flex flex-col justify-start relative flex-1">
-					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">BIDS</div>
+					<div className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest px-4 py-1.5 bg-card/50">
+						BIDS
+					</div>
 					{processedBids.length === 0 ? (
-						<div className="flex items-center justify-center text-xs text-muted-foreground opacity-50" style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}>No bids available</div>
+						<div
+							className="flex items-center justify-center text-xs text-muted-foreground opacity-50"
+							style={{ height: VISIBLE_ROWS * ROW_HEIGHT }}
+						>
+							No bids available
+						</div>
 					) : (
 						<div
 							ref={bidScrollRef}

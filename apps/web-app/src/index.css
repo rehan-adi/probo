@@ -114,11 +114,11 @@ body {
 }
 
 .dark {
-	--background: #090C1A;
+	--background: #090c1a;
 	--foreground: #fafafa;
-	--card: #090C1A;
+	--card: #090c1a;
 	--card-foreground: #fafafa;
-	--popover: #090C1A;
+	--popover: #090c1a;
 	--popover-foreground: #fafafa;
 	--primary: #fafafa;
 	--primary-foreground: #09090b;

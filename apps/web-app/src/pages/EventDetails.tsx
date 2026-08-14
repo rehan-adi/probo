@@ -11,7 +11,9 @@ import downloadIcon from '@/assets/images/download.avif';
 import defaultThumbnail from '@/assets/images/logo.avif';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import MarketNews from '@/components/MarketNews';
 import ShareModal from '@/components/modals/ShareModal';
+import UserHoldings from '@/components/UserHoldings';
 import OrderbookLadder from '@/components/OrderbookLadder';
 
 interface TradeExecutedEvent {
@@ -52,7 +54,7 @@ interface Market {
 		startDate?: string;
 		eos?: string;
 		Rules?: string;
-	}
+	};
 }
 
 const MOCK_USERS = [
@@ -87,8 +89,6 @@ export default function EventDetails() {
 	const [isOrderbookLocked, setIsOrderbookLocked] = useState(false);
 	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 	const [resetScrollToken, setResetScrollToken] = useState(0);
-
-
 
 	useEffect(() => {
 		if (!symbol) return;
@@ -273,35 +273,44 @@ export default function EventDetails() {
 	const { bids, asks } = calculateOrderbookDisplay(innerTab);
 
 	return (
-		<div className="w-full bg-background min-h-screen py-4 flex items-start justify-center text-foreground transition-colors">
-			<div className="flex gap-12 max-w-7xl mx-auto w-full px-6 pt-4 md:pt-8 flex-col lg:flex-row">
-				<div className="w-full lg:w-[65%]">
+		<div className="w-full bg-background min-h-screen flex items-start justify-center text-foreground transition-colors">
+			<div className="flex gap-8 max-w-7xl mx-auto w-full px-6 pt-4 md:pt-8 flex-col lg:flex-row relative">
+				<div className="w-full lg:w-[65%] pb-20">
 					<div className="flex justify-between items-start mb-8 gap-4">
 						<div className="flex items-start gap-4">
 							<div className="w-16 h-16 md:w-[72px] md:h-[72px] shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
 								<img
-									src={market.thumbnail || defaultThumbnail}
+									src={
+										!market.thumbnail ||
+										market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
+											? defaultThumbnail
+											: market.thumbnail
+									}
 									alt={market.title}
 									className="w-full h-full object-cover bg-white dark:bg-[#262626]"
 								/>
 							</div>
 							<div>
 								<div className="flex items-center gap-2 mb-2">
-									<span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/60 px-2.5 py-1 rounded-md border border-border/50">
+									<span className="text-xs font-semibold uppercase tracking-wide">
 										{market.category || 'Event'}
 									</span>
 								</div>
-								<h1 className="md:text-xl text-lg font-bold leading-tight">
-									{market.title}
-								</h1>
+								<h1 className="md:text-xl text-lg font-bold leading-tight">{market.title}</h1>
 							</div>
 						</div>
 
 						<div className="flex gap-2 shrink-0">
-							<button onClick={toggleBookmark} className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm">
-								<Bookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
+							<button
+								onClick={toggleBookmark}
+								className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+							>
+								<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
 							</button>
-							<button onClick={() => setIsShareModalOpen(true)} className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm">
+							<button
+								onClick={() => setIsShareModalOpen(true)}
+								className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+							>
 								<Share2 size={18} />
 							</button>
 						</div>
@@ -318,16 +327,23 @@ export default function EventDetails() {
 						/>
 					</div>
 
+					<UserHoldings
+						marketId={market.marketId}
+						yesPrice={market.yesPrice}
+						noPrice={market.noPrice}
+					/>
+
 					<div className="mb-8 border border-border rounded-xl shadow-sm bg-card overflow-hidden">
 						<div className="flex border-b border-border bg-muted/30">
 							{['Orderbook', 'Activity'].map((tab) => (
 								<button
 									key={tab}
 									onClick={() => setActiveBoxTab(tab.toLowerCase() as any)}
-									className={`flex-1 py-3.5 text-sm font-bold relative transition ${activeBoxTab === tab.toLowerCase()
-										? 'text-foreground'
-										: 'text-muted-foreground hover:text-foreground'
-										}`}
+									className={`flex-1 py-3.5 text-sm font-bold relative transition ${
+										activeBoxTab === tab.toLowerCase()
+											? 'text-foreground'
+											: 'text-muted-foreground hover:text-foreground'
+									}`}
 								>
 									{tab}
 									{activeBoxTab === tab.toLowerCase() && (
@@ -347,12 +363,13 @@ export default function EventDetails() {
 													key={tab}
 													onClick={() => {
 														setInnerTab(tab as any);
-														setTimeout(() => setResetScrollToken(prev => prev + 1), 60);
+														setTimeout(() => setResetScrollToken((prev) => prev + 1), 60);
 													}}
-													className={`py-2 text-sm font-bold relative transition-colors ${innerTab === tab
-														? 'text-foreground'
-														: 'text-muted-foreground hover:text-foreground'
-														}`}
+													className={`py-2 text-sm font-bold relative transition-colors ${
+														innerTab === tab
+															? 'text-foreground'
+															: 'text-muted-foreground hover:text-foreground'
+													}`}
 												>
 													Trade {tab.toUpperCase()}
 													{innerTab === tab && (
@@ -363,7 +380,7 @@ export default function EventDetails() {
 										</div>
 										<div className="flex items-center gap-2">
 											<button
-												onClick={() => setResetScrollToken(prev => prev + 1)}
+												onClick={() => setResetScrollToken((prev) => prev + 1)}
 												className="flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50 border border-transparent transition-colors"
 												title="Re-centre Spread"
 											>
@@ -372,9 +389,22 @@ export default function EventDetails() {
 											<button
 												onClick={() => setIsOrderbookLocked(!isOrderbookLocked)}
 												className={`flex items-center justify-center p-1.5 rounded-md transition-colors border ${isOrderbookLocked ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50'}`}
-												title={isOrderbookLocked ? "Unlock Scroll" : "Lock Scroll (Center Spread)"}
+												title={isOrderbookLocked ? 'Unlock Scroll' : 'Lock Scroll (Center Spread)'}
 											>
-												<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													width="16"
+													height="16"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													strokeWidth="2.5"
+													strokeLinecap="round"
+													strokeLinejoin="round"
+												>
+													<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+													<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+												</svg>
 											</button>
 										</div>
 									</div>
@@ -406,15 +436,29 @@ export default function EventDetails() {
 													let userMock;
 
 													if (user && (trade.takerId === user.id || trade.makerId === user.id)) {
-														userMock = { name: 'You', color: 'from-emerald-500 to-teal-500', initial: 'Y' };
+														userMock = {
+															name: 'You',
+															color: 'from-emerald-500 to-teal-500',
+															initial: 'Y',
+														};
 													} else if (realName) {
-														const found = MOCK_USERS.find(m => m.name === realName);
-														userMock = found ? found : { name: realName, color: MOCK_USERS[0].color, initial: realName.charAt(0).toUpperCase() };
+														const found = MOCK_USERS.find((m) => m.name === realName);
+														userMock = found
+															? found
+															: {
+																	name: realName,
+																	color: MOCK_USERS[0].color,
+																	initial: realName.charAt(0).toUpperCase(),
+																};
 													} else {
 														userMock = getUserMock(trade.takerId || trade.makerId);
 													}
 
-													const actionText = trade.takerAction ? (trade.takerAction.toLowerCase() === 'buy' ? 'bought' : 'sold') : 'traded';
+													const actionText = trade.takerAction
+														? trade.takerAction.toLowerCase() === 'buy'
+															? 'bought'
+															: 'sold'
+														: 'traded';
 													const price = Number(trade.price);
 													const total = (trade.quantity * price).toFixed(1);
 
@@ -423,13 +467,18 @@ export default function EventDetails() {
 															key={idx}
 															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors rounded-lg"
 														>
-															<div className={`w-8 h-8 rounded-full bg-gradient-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}>
+															<div
+																className={`w-8 h-8 rounded-full bg-gradient-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
+															>
 																{userMock.initial}
 															</div>
 															<div className="flex flex-col">
 																<span className="text-sm text-foreground leading-snug">
-																	<span className="font-semibold">{userMock.name}</span> {actionText} <span className="font-bold">{trade.quantity}</span>{' '}
-																	<span className={`font-semibold ${trade.stockType.toLowerCase() === 'yes' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
+																	<span className="font-semibold">{userMock.name}</span>{' '}
+																	{actionText} <span className="font-bold">{trade.quantity}</span>{' '}
+																	<span
+																		className={`font-semibold ${trade.stockType.toLowerCase() === 'yes' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}
+																	>
 																		{trade.stockType}
 																	</span>{' '}
 																	at ₹{price.toFixed(1)}{' '}
@@ -437,7 +486,10 @@ export default function EventDetails() {
 																</span>
 																<span className="text-xs text-muted-foreground font-medium mt-1">
 																	{(() => {
-																		const diff = Math.floor((new Date().getTime() - new Date(trade.timestamp).getTime()) / 1000);
+																		const diff = Math.floor(
+																			(new Date().getTime() - new Date(trade.timestamp).getTime()) /
+																				1000,
+																		);
 																		if (diff < 60) return `${diff}s ago`;
 																		if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
 																		return `${Math.floor(diff / 3600)}h ago`;
@@ -451,8 +503,12 @@ export default function EventDetails() {
 										) : (
 											<div className="flex flex-col items-center justify-center h-full text-center py-12">
 												<span className="text-muted-foreground/50 text-4xl mb-3">⚬</span>
-												<div className="text-sm font-medium text-muted-foreground">No activities yet</div>
-												<div className="text-xs text-muted-foreground/70 mt-1">Trades will appear here in real-time</div>
+												<div className="text-sm font-medium text-muted-foreground">
+													No activities yet
+												</div>
+												<div className="text-xs text-muted-foreground/70 mt-1">
+													Trades will appear here in real-time
+												</div>
 											</div>
 										)}
 									</div>
@@ -466,26 +522,61 @@ export default function EventDetails() {
 						<h2 className="text-lg font-bold mb-5 text-foreground">About the Event</h2>
 						<div className="flex flex-col md:flex-row md:items-start justify-between gap-6 md:gap-4 mb-8 text-sm">
 							<div className="flex-1 flex flex-col gap-1.5 min-w-0 pr-4">
-								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Source of Truth</span>
-								<a href="https://icc-cricket.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 font-medium hover:underline flex items-center gap-1 line-clamp-2" title="Official ICC announcements and match results from icc-cricket.com">
+								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
+									Source of Truth
+								</span>
+								<a
+									href="https://icc-cricket.com"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-blue-500 font-medium hover:underline flex items-center gap-1 line-clamp-2"
+									title="Official ICC announcements and match results from icc-cricket.com"
+								>
 									Official ICC announcements and match results
-									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="12"
+										height="12"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										className="shrink-0"
+									>
+										<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+										<polyline points="15 3 21 3 21 9" />
+										<line x1="10" y1="14" x2="21" y2="3" />
+									</svg>
 								</a>
 							</div>
 							<div className="flex-1 flex flex-col gap-1.5 min-w-0">
-								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Event started</span>
+								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
+									Event started
+								</span>
 								<span className="text-foreground font-medium">
-									{market.overview?.startDate ? new Date(market.overview.startDate).toLocaleDateString(undefined, {
-										day: '2-digit', month: 'short', year: 'numeric',
-									}) : '--'}
+									{market.overview?.startDate
+										? new Date(market.overview.startDate).toLocaleDateString(undefined, {
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric',
+											})
+										: '--'}
 								</span>
 							</div>
 							<div className="flex-1 flex flex-col gap-1.5 min-w-0">
-								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">Event expires</span>
+								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
+									Event expires
+								</span>
 								<span className="text-foreground font-medium">
-									{market.overview?.EndDate ? new Date(market.overview.EndDate).toLocaleDateString(undefined, {
-										day: '2-digit', month: 'short', year: 'numeric',
-									}) : '--'}
+									{market.overview?.EndDate
+										? new Date(market.overview.EndDate).toLocaleDateString(undefined, {
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric',
+											})
+										: '--'}
 								</span>
 							</div>
 						</div>
@@ -497,7 +588,9 @@ export default function EventDetails() {
 							</div>
 							<div>
 								<h3 className="text-foreground mb-2 text-sm font-bold">Rules</h3>
-								<p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{market.overview?.Rules}</p>
+								<p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+									{market.overview?.Rules}
+								</p>
 							</div>
 						</div>
 					</div>
@@ -506,7 +599,11 @@ export default function EventDetails() {
 					<div className="mb-12 bg-card p-6 border border-border rounded-xl shadow-sm">
 						<h2 className="text-lg font-bold mb-6 text-foreground">Comments</h2>
 						<div className="flex gap-4 items-start mb-8">
-							<img src={pfpIcon} alt="You" className="w-10 h-10 rounded-full border border-border shrink-0" />
+							<img
+								src={pfpIcon}
+								alt="You"
+								className="w-10 h-10 rounded-full border border-border shrink-0"
+							/>
 							<div className="flex-1">
 								<textarea
 									placeholder="Add a comment..."
@@ -528,7 +625,9 @@ export default function EventDetails() {
 								<div>
 									<div className="flex items-center gap-2.5 mb-1.5">
 										<span className="font-bold text-sm text-foreground">fmfwd</span>
-										<span className="text-[10px] font-bold text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">17.5K Yes</span>
+										<span className="text-[10px] font-bold text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+											17.5K Yes
+										</span>
 										<span className="text-xs font-semibold text-muted-foreground">11h ago</span>
 									</div>
 									<p className="text-sm text-foreground">turn gay since I do copytrading!</p>
@@ -550,19 +649,24 @@ export default function EventDetails() {
 					</div>
 				</div>
 
-				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden">
+				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden lg:sticky lg:top-32 self-start max-h-[calc(100vh-130px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-10">
 					{isAuthenticated ? (
-						<PlaceOrder
-							symbol={market.symbol}
-							marketId={market.marketId}
-							yPrice={market.yesPrice}
-							nPrice={market.noPrice}
-							yOrderPrice={market.yesPrice}
-							nOrderPrice={market.noPrice}
-							onOrderPlaced={() => {
-								console.log('Order placed, refresh data if needed');
-							}}
-						/>
+						<>
+							<PlaceOrder
+								symbol={market.symbol}
+								marketId={market.marketId}
+								yPrice={market.yesPrice}
+								nPrice={market.noPrice}
+								yOrderPrice={market.yesPrice}
+								nOrderPrice={market.noPrice}
+								title={market.title}
+								thumbnail={market.thumbnail}
+								onOrderPlaced={() => {
+									console.log('Order placed, refresh data if needed');
+								}}
+							/>
+							<MarketNews />
+						</>
 					) : (
 						<>
 							<div className="space-y-6">
@@ -599,22 +703,37 @@ export default function EventDetails() {
 
 			{/* Mobile Bottom Order Bar (Opens PlaceOrder) */}
 			<div className="hidden max-[970px]:flex justify-between items-center px-6 py-4 bg-card border-t border-border bottom-0 fixed w-full z-50 gap-4">
-				<button onClick={() => { setInnerTab('Yes'); setIsMobileOrderOpen(true); }} className="text-green-600 border border-green-200 bg-green-50 dark:bg-green-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold">
+				<button
+					onClick={() => {
+						setInnerTab('Yes');
+						setIsMobileOrderOpen(true);
+					}}
+					className="text-green-600 border border-green-200 bg-green-50 dark:bg-green-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold"
+				>
 					Yes ₹{market.yesPrice}
 				</button>
-				<button onClick={() => { setInnerTab('No'); setIsMobileOrderOpen(true); }} className="text-red-600 border border-red-200 bg-red-50 dark:bg-red-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold">
+				<button
+					onClick={() => {
+						setInnerTab('No');
+						setIsMobileOrderOpen(true);
+					}}
+					className="text-red-600 border border-red-200 bg-red-50 dark:bg-red-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold"
+				>
 					No ₹{market.noPrice}
 				</button>
 			</div>
 
 			{/* Mobile Order Popup/Drawer */}
 			{isMobileOrderOpen && (
-				<div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileOrderOpen(false)}>
+				<div
+					className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60 backdrop-blur-sm"
+					onClick={() => setIsMobileOrderOpen(false)}
+				>
 					<motion.div
-						initial={{ y: "100%" }}
+						initial={{ y: '100%' }}
 						animate={{ y: 0 }}
-						exit={{ y: "100%" }}
-						transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+						exit={{ y: '100%' }}
+						transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
 						className="bg-card w-full rounded-t-2xl p-4"
 						onClick={(e) => e.stopPropagation()}
 					>
@@ -627,6 +746,8 @@ export default function EventDetails() {
 								nPrice={market.noPrice}
 								yOrderPrice={market.yesPrice}
 								nOrderPrice={market.noPrice}
+								title={market.title}
+								thumbnail={market.thumbnail}
 								onOrderPlaced={() => {
 									setIsMobileOrderOpen(false);
 								}}

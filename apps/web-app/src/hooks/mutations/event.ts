@@ -18,3 +18,21 @@ export const useCreateEventMutation = () => {
 		mutationFn: (payload: CreateEventPayload) => createMarket(payload),
 	});
 };
+
+import { splitShares, mergeShares } from '@/api/market';
+
+export const useSplitSharesMutation = () => {
+	return useMutation({
+		mutationKey: ['splitShares'],
+		mutationFn: ({ symbol, quantity }: { symbol: string; quantity: number }) =>
+			splitShares(symbol, quantity),
+	});
+};
+
+export const useMergeSharesMutation = () => {
+	return useMutation({
+		mutationKey: ['mergeShares'],
+		mutationFn: ({ symbol, quantity }: { symbol: string; quantity: number }) =>
+			mergeShares(symbol, quantity),
+	});
+};

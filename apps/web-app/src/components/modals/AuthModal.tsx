@@ -14,8 +14,6 @@ export default function AuthModal() {
 	const [step, setStep] = useState<AuthStep>('provider');
 	const [email, setEmail] = useState('');
 
-
-
 	const [isMobile, setIsMobile] = useState(false);
 	const dragControls = useDragControls();
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -56,15 +54,15 @@ export default function AuthModal() {
 
 	const modalVariants = isMobile
 		? {
-			hidden: { y: '100%' },
-			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
-			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } }
-		}
+				hidden: { y: '100%' },
+				visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
+				exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } },
+			}
 		: {
-			hidden: { opacity: 0 },
-			visible: { opacity: 1, transition: { duration: 0.15, ease: 'easeOut' } },
-			exit: { opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }
-		};
+				hidden: { opacity: 0 },
+				visible: { opacity: 1, transition: { duration: 0.15, ease: 'easeOut' } },
+				exit: { opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } },
+			};
 
 	return (
 		<AnimatePresence>
@@ -88,7 +86,7 @@ export default function AuthModal() {
 						initial="hidden"
 						animate="visible"
 						exit="exit"
-						drag={isMobile ? "y" : false}
+						drag={isMobile ? 'y' : false}
 						dragControls={dragControls}
 						dragListener={false}
 						dragConstraints={{ top: 0 }}
@@ -96,7 +94,6 @@ export default function AuthModal() {
 						onDragEnd={handleDragEnd}
 						className={`w-full md:w-[420px] h-[85vh] ${step === 'provider' ? 'md:h-[500px]' : 'md:h-auto'} bg-white dark:bg-[#1C1C1E] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative z-10 flex flex-col overflow-hidden md:transition-[height] md:duration-300`}
 					>
-
 						{isMobile && (
 							<div
 								className="w-full flex justify-center py-4 cursor-grab active:cursor-grabbing z-20 touch-none shrink-0 bg-white dark:bg-[#1C1C1E] rounded-t-[24px]"
@@ -107,7 +104,6 @@ export default function AuthModal() {
 						)}
 
 						<div className="w-full h-full flex flex-col overflow-y-auto scrollbar-hide pt-2 md:pt-0">
-
 							<div className="w-full px-6 py-6 md:px-8 md:py-8 relative flex flex-col justify-center">
 								<AnimatePresence mode="wait">
 									{step === 'provider' && (
@@ -141,15 +137,10 @@ export default function AuthModal() {
 									)}
 
 									{step === 'username' && (
-										<UsernameSetup
-											key="username"
-											onNext={() => setStep('referral')}
-										/>
+										<UsernameSetup key="username" onNext={() => setStep('referral')} />
 									)}
 
-									{step === 'referral' && (
-										<ReferralAndPrefs key="referral" />
-									)}
+									{step === 'referral' && <ReferralAndPrefs key="referral" />}
 								</AnimatePresence>
 							</div>
 						</div>

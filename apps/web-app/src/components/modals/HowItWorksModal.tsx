@@ -22,23 +22,26 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 		return () => window.removeEventListener('resize', checkMobile);
 	}, []);
 
-	const STEPS = useMemo(() => [
-		{
-			title: t('step1_title'),
-			desc: t('step1_desc'),
-			image: step1Img,
-		},
-		{
-			title: t('step2_title'),
-			desc: t('step2_desc'),
-			image: step2Img,
-		},
-		{
-			title: t('step3_title'),
-			desc: t('step3_desc'),
-			image: step3Img,
-		},
-	], [t]);
+	const STEPS = useMemo(
+		() => [
+			{
+				title: t('step1_title'),
+				desc: t('step1_desc'),
+				image: step1Img,
+			},
+			{
+				title: t('step2_title'),
+				desc: t('step2_desc'),
+				image: step2Img,
+			},
+			{
+				title: t('step3_title'),
+				desc: t('step3_desc'),
+				image: step3Img,
+			},
+		],
+		[t],
+	);
 
 	const handleNext = () => {
 		if (currentStep < STEPS.length - 1) {
@@ -57,15 +60,15 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 
 	const modalVariants = isMobile
 		? {
-			hidden: { y: '100%' },
-			visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
-			exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } }
-		}
+				hidden: { y: '100%' },
+				visible: { y: 0, transition: { type: 'spring', damping: 25, stiffness: 300 } },
+				exit: { y: '100%', transition: { type: 'spring', damping: 25, stiffness: 300 } },
+			}
 		: {
-			hidden: { opacity: 0, scale: 0.95 },
-			visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-			exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } }
-		};
+				hidden: { opacity: 0, scale: 0.95 },
+				visible: { opacity: 1, scale: 1, transition: { duration: 0.2, ease: 'easeOut' } },
+				exit: { opacity: 0, scale: 0.95, transition: { duration: 0.15, ease: 'easeIn' } },
+			};
 
 	return (
 		<div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center sm:p-4">
@@ -83,7 +86,7 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
 				initial="hidden"
 				animate="visible"
 				exit="exit"
-				drag={isMobile ? "y" : false}
+				drag={isMobile ? 'y' : false}
 				dragControls={dragControls}
 				dragListener={false}
 				dragConstraints={{ top: 0 }}

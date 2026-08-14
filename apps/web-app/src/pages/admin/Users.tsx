@@ -10,7 +10,7 @@ import {
 	getPaginationRowModel,
 	getSortedRowModel,
 	useReactTable,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import {
 	Table,
 	TableBody,
@@ -18,10 +18,10 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/format';
 
 export default function AdminUsers() {
@@ -49,8 +49,8 @@ export default function AdminUsers() {
 
 	const columns = [
 		{
-			accessorKey: "username",
-			header: "User",
+			accessorKey: 'username',
+			header: 'User',
 			cell: ({ row }: any) => {
 				const user = row.original;
 				return (
@@ -59,16 +59,20 @@ export default function AdminUsers() {
 							{user.username?.charAt(0).toUpperCase() || 'U'}
 						</div>
 						<div className="flex flex-col">
-							<span className="font-medium text-gray-900 dark:text-white">{user.username || 'No username'}</span>
-							<span className="text-xs text-gray-500 dark:text-gray-400">ID: {user.id.substring(0, 8)}...</span>
+							<span className="font-medium text-gray-900 dark:text-white">
+								{user.username || 'No username'}
+							</span>
+							<span className="text-xs text-gray-500 dark:text-gray-400">
+								ID: {user.id.substring(0, 8)}...
+							</span>
 						</div>
 					</div>
 				);
 			},
 		},
 		{
-			accessorKey: "contact",
-			header: "Contact Info",
+			accessorKey: 'contact',
+			header: 'Contact Info',
 			cell: ({ row }: any) => {
 				const user = row.original;
 				return (
@@ -85,49 +89,125 @@ export default function AdminUsers() {
 								{user.phone}
 							</div>
 						)}
-						{!user.email && !user.phone && <span className="text-sm text-gray-500">No contact info</span>}
+						{!user.email && !user.phone && (
+							<span className="text-sm text-gray-500">No contact info</span>
+						)}
 					</div>
 				);
 			},
 		},
 		{
-			accessorKey: "kycVerificationStatus",
-			header: "KYC Status",
+			accessorKey: 'kycVerificationStatus',
+			header: 'KYC Status',
 			cell: ({ row }: any) => {
-				const status = row.getValue("kycVerificationStatus");
-				if (status === 'VERIFIED') return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">Verified</Badge>;
-				if (status === 'PENDING') return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">Pending</Badge>;
-				if (status === 'REJECTED') return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20">Rejected</Badge>;
-				return <Badge variant="outline" className="text-gray-500 border-gray-200 dark:border-white/10 dark:text-gray-400">Not Verified</Badge>;
+				const status = row.getValue('kycVerificationStatus');
+				if (status === 'VERIFIED')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+						>
+							Verified
+						</Badge>
+					);
+				if (status === 'PENDING')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20"
+						>
+							Pending
+						</Badge>
+					);
+				if (status === 'REJECTED')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
+						>
+							Rejected
+						</Badge>
+					);
+				return (
+					<Badge
+						variant="outline"
+						className="text-gray-500 border-gray-200 dark:border-white/10 dark:text-gray-400"
+					>
+						Not Verified
+					</Badge>
+				);
 			},
 		},
 		{
-			accessorKey: "paymentVerificationStatus",
-			header: "Payment Status",
+			accessorKey: 'paymentVerificationStatus',
+			header: 'Payment Status',
 			cell: ({ row }: any) => {
-				const status = row.getValue("paymentVerificationStatus");
-				if (status === 'VERIFIED') return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">Verified</Badge>;
-				if (status === 'PENDING') return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">Pending</Badge>;
-				if (status === 'REJECTED') return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20">Rejected</Badge>;
-				return <Badge variant="outline" className="text-gray-500 border-gray-200 dark:border-white/10 dark:text-gray-400">Not Verified</Badge>;
+				const status = row.getValue('paymentVerificationStatus');
+				if (status === 'VERIFIED')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+						>
+							Verified
+						</Badge>
+					);
+				if (status === 'PENDING')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20"
+						>
+							Pending
+						</Badge>
+					);
+				if (status === 'REJECTED')
+					return (
+						<Badge
+							variant="outline"
+							className="bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"
+						>
+							Rejected
+						</Badge>
+					);
+				return (
+					<Badge
+						variant="outline"
+						className="text-gray-500 border-gray-200 dark:border-white/10 dark:text-gray-400"
+					>
+						Not Verified
+					</Badge>
+				);
 			},
 		},
 		{
-			accessorKey: "role",
-			header: "Role",
+			accessorKey: 'role',
+			header: 'Role',
 			cell: ({ row }: any) => {
-				const role = row.getValue("role");
-				if (role === 'ADMIN') return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">Admin</Badge>;
-				return <Badge variant="outline" className="text-gray-600 dark:text-gray-400">User</Badge>;
+				const role = row.getValue('role');
+				if (role === 'ADMIN')
+					return (
+						<Badge
+							variant="secondary"
+							className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400"
+						>
+							Admin
+						</Badge>
+					);
+				return (
+					<Badge variant="outline" className="text-gray-600 dark:text-gray-400">
+						User
+					</Badge>
+				);
 			},
 		},
 		{
-			accessorKey: "createdAt",
-			header: "Joined At",
+			accessorKey: 'createdAt',
+			header: 'Joined At',
 			cell: ({ row }: any) => (
 				<div className="flex items-center text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
 					<CalendarDays className="w-4 h-4 mr-1 opacity-70" />
-					{formatDate(row.getValue("createdAt"))}
+					{formatDate(row.getValue('createdAt'))}
 				</div>
 			),
 		},
@@ -140,7 +220,7 @@ export default function AdminUsers() {
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
-		globalFilterFn: "includesString",
+		globalFilterFn: 'includesString',
 		state: {
 			globalFilter,
 		},
@@ -167,8 +247,12 @@ export default function AdminUsers() {
 			<div className="space-y-6">
 				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 					<div>
-						<h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Users</h2>
-						<p className="text-gray-500 dark:text-gray-400 mt-2">Manage all registered users on the platform.</p>
+						<h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+							Users
+						</h2>
+						<p className="text-gray-500 dark:text-gray-400 mt-2">
+							Manage all registered users on the platform.
+						</p>
 					</div>
 				</div>
 
@@ -178,7 +262,7 @@ export default function AdminUsers() {
 						<Input
 							placeholder="Search by username, email, phone..."
 							value={globalFilter ?? ''}
-							onChange={e => setGlobalFilter(e.target.value)}
+							onChange={(e) => setGlobalFilter(e.target.value)}
 							className="pl-9 bg-white dark:bg-[#1C1C1E] border-gray-200 dark:border-white/10 focus-visible:ring-blue-500"
 						/>
 					</div>
@@ -189,15 +273,18 @@ export default function AdminUsers() {
 						<Table>
 							<TableHeader className="bg-gray-50 dark:bg-[#2C2C2E]">
 								{table.getHeaderGroups().map((headerGroup) => (
-									<TableRow key={headerGroup.id} className="border-gray-200 dark:border-white/10 hover:bg-transparent">
+									<TableRow
+										key={headerGroup.id}
+										className="border-gray-200 dark:border-white/10 hover:bg-transparent"
+									>
 										{headerGroup.headers.map((header) => (
-											<TableHead key={header.id} className="text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
+											<TableHead
+												key={header.id}
+												className="text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
+											>
 												{header.isPlaceholder
 													? null
-													: flexRender(
-															header.column.columnDef.header,
-															header.getContext()
-													  )}
+													: flexRender(header.column.columnDef.header, header.getContext())}
 											</TableHead>
 										))}
 									</TableRow>
@@ -208,7 +295,7 @@ export default function AdminUsers() {
 									table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											data-state={row.getIsSelected() && "selected"}
+											data-state={row.getIsSelected() && 'selected'}
 											className="border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
 										>
 											{row.getVisibleCells().map((cell) => (
@@ -232,7 +319,7 @@ export default function AdminUsers() {
 						</Table>
 					</div>
 				</div>
-				
+
 				<div className="flex items-center justify-between py-4">
 					<div className="text-sm text-gray-500 dark:text-gray-400">
 						Showing {table.getRowModel().rows.length} of {users.length} users

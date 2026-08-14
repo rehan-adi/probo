@@ -71,9 +71,15 @@ export default function KycVerificationPage() {
 		<div className="w-full min-h-screen bg-[#f4f4f5] dark:bg-[#090C1A] flex justify-center items-start text-gray-900 dark:text-white transition-colors pb-12">
 			<div className="max-w-[950px] flex flex-col items-start px-4 md:py-2 w-full pt-20 md:pt-[90px]">
 				<div className="flex items-center mb-6 gap-4">
-					<img src={kycTitleIcon} alt="KYC Illustration" className="w-16 h-16 object-contain dark:invert" />
+					<img
+						src={kycTitleIcon}
+						alt="KYC Illustration"
+						className="w-16 h-16 object-contain dark:invert"
+					/>
 					<div>
-						<h2 className="text-2xl font-semibold text-gray-900 dark:text-white">KYC verification</h2>
+						<h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+							KYC verification
+						</h2>
 						<p className="text-gray-600 dark:text-gray-400 text-base">It takes just 5 minutes</p>
 					</div>
 				</div>
@@ -93,7 +99,9 @@ export default function KycVerificationPage() {
 
 							<div className="space-y-6 max-w-[357px]">
 								<div>
-									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Name (as in PAN card)</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+										Name (as in PAN card)
+									</label>
 									<input
 										type="text"
 										placeholder="Type the full name"
@@ -104,7 +112,9 @@ export default function KycVerificationPage() {
 								</div>
 
 								<div>
-									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">PAN card number</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+										PAN card number
+									</label>
 									<input
 										type="text"
 										placeholder="PAN number (10 digits)"
@@ -116,7 +126,9 @@ export default function KycVerificationPage() {
 								</div>
 
 								<div>
-									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Date of Birth</label>
+									<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+										Date of Birth
+									</label>
 									<DatePicker
 										onChange={(date: Date | null) => setDOB(date)}
 										dateFormat="dd/MM/yyyy"
@@ -146,12 +158,16 @@ export default function KycVerificationPage() {
 					)}
 
 					{((kycVerificationStatus === 'PENDING' &&
-						(paymentVerificationStatus === 'NOT_VERIFIED' || paymentVerificationStatus === 'REJECTED')) ||
+						(paymentVerificationStatus === 'NOT_VERIFIED' ||
+							paymentVerificationStatus === 'REJECTED')) ||
 						(kycVerificationStatus === 'VERIFIED' &&
-							(paymentVerificationStatus === 'NOT_VERIFIED' || paymentVerificationStatus === 'REJECTED'))) && (
+							(paymentVerificationStatus === 'NOT_VERIFIED' ||
+								paymentVerificationStatus === 'REJECTED'))) && (
 						<div className="w-full rounded-xl bg-white dark:bg-[#1C1C1E] border border-gray-200 dark:border-white/10 min-h-[40vh] py-6 px-6 shadow-sm transition-colors">
 							<div className="text-sm max-w-[357px] rounded-lg mb-6">
-								<h3 className="text-[10px] mb-2 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">PAYMENT DETAILS</h3>
+								<h3 className="text-[10px] mb-2 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+									PAYMENT DETAILS
+								</h3>
 								<p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
 									Please provide your payment method. Make sure the details are correct to avoid
 									failed transactions.
@@ -187,7 +203,9 @@ export default function KycVerificationPage() {
 
 								{paymentMethod === 'UPI' && (
 									<div>
-										<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">UPI ID</label>
+										<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+											UPI ID
+										</label>
 										<input
 											type="text"
 											placeholder="example@upi"
@@ -201,7 +219,9 @@ export default function KycVerificationPage() {
 								{paymentMethod === 'BANK' && (
 									<>
 										<div>
-											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">Bank Account Number</label>
+											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+												Bank Account Number
+											</label>
 											<input
 												type="text"
 												placeholder="Enter account number"
@@ -211,7 +231,9 @@ export default function KycVerificationPage() {
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">IFSC Code</label>
+											<label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-1.5">
+												IFSC Code
+											</label>
 											<input
 												type="text"
 												placeholder="Enter IFSC code"
@@ -232,11 +254,7 @@ export default function KycVerificationPage() {
 											: 'bg-black dark:bg-white text-white dark:text-black cursor-pointer hover:opacity-90'
 									}`}
 								>
-									{paymentPending ? (
-										<Loader2 className="animate-spin w-4 h-4" />
-									) : (
-										'Submit Payment'
-									)}
+									{paymentPending ? <Loader2 className="animate-spin w-4 h-4" /> : 'Submit Payment'}
 								</button>
 							</div>
 						</div>

@@ -10,7 +10,7 @@ import {
 	getPaginationRowModel,
 	getSortedRowModel,
 	useReactTable,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import {
 	Table,
 	TableBody,
@@ -18,11 +18,11 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate } from '@/lib/format';
 
 export default function AdminVerifications() {
@@ -39,9 +39,16 @@ export default function AdminVerifications() {
 				// Normalize data structure for easier filtering
 				const normalized = res.data.data.map((v: any) => ({
 					...v,
-					pendingType: v.kycs?.[0]?.status === 'PENDING' ? 'KYC' : 
-								 v.paymentMethods?.[0]?.status === 'PENDING' ? 'PAYMENT' : 'UNKNOWN',
-					submittedAt: v.kycs?.[0]?.submittedAt || v.paymentMethods?.[0]?.submittedAt || new Date().toISOString()
+					pendingType:
+						v.kycs?.[0]?.status === 'PENDING'
+							? 'KYC'
+							: v.paymentMethods?.[0]?.status === 'PENDING'
+								? 'PAYMENT'
+								: 'UNKNOWN',
+					submittedAt:
+						v.kycs?.[0]?.submittedAt ||
+						v.paymentMethods?.[0]?.submittedAt ||
+						new Date().toISOString(),
 				}));
 				setVerifications(normalized);
 			}
@@ -57,12 +64,16 @@ export default function AdminVerifications() {
 		fetchVerifications();
 	}, []);
 
-	const handleVerify = async (userId: string, type: 'KYC' | 'PAYMENT', action: 'APPROVE' | 'REJECT') => {
+	const handleVerify = async (
+		userId: string,
+		type: 'KYC' | 'PAYMENT',
+		action: 'APPROVE' | 'REJECT',
+	) => {
 		setProcessingId(userId);
 		try {
 			const status = action === 'APPROVE' ? 'VERIFIED' : 'REJECTED';
 			const remark = action === 'APPROVE' ? 'Approved by admin' : 'Rejected by admin';
-			
+
 			const res = await verify(
 				userId,
 				type === 'KYC' ? status : undefined,
@@ -78,20 +89,25 @@ export default function AdminVerifications() {
 				toast.error(res.data.error || res.data.message || 'Failed to verify');
 			}
 		} catch (err: any) {
-			toast.error(err.response?.data?.error || err.response?.data?.message || err.message || 'Error processing request');
+			toast.error(
+				err.response?.data?.error ||
+					err.response?.data?.message ||
+					err.message ||
+					'Error processing request',
+			);
 		} finally {
 			setProcessingId(null);
 		}
 	};
 
-	const filteredVerifications = verifications.filter(v => 
-		typeFilter === 'ALL' ? true : v.pendingType === typeFilter
+	const filteredVerifications = verifications.filter((v) =>
+		typeFilter === 'ALL' ? true : v.pendingType === typeFilter,
 	);
 
 	const columns = [
 		{
-			accessorKey: "user.email",
-			header: "User Details",
+			accessorKey: 'user.email',
+			header: 'User Details',
 			cell: ({ row }: any) => {
 				const user = row.original;
 				return (
@@ -100,28 +116,38 @@ export default function AdminVerifications() {
 							{user.phone?.charAt(0) || 'U'}
 						</div>
 						<div className="flex flex-col">
-							<span className="font-medium text-gray-900 dark:text-white">{user.phone || 'N/A'}</span>
-							<span className="text-xs text-gray-500 dark:text-gray-400">ID: {user.id.substring(0, 8)}...</span>
+							<span className="font-medium text-gray-900 dark:text-white">
+								{user.phone || 'N/A'}
+							</span>
+							<span className="text-xs text-gray-500 dark:text-gray-400">
+								ID: {user.id.substring(0, 8)}...
+							</span>
 						</div>
 					</div>
 				);
 			},
 		},
 		{
-			accessorKey: "type",
-			header: "Verification Type",
+			accessorKey: 'type',
+			header: 'Verification Type',
 			cell: ({ row }: any) => {
 				const v = row.original;
 				const isKyc = v.pendingType === 'KYC';
-				
+
 				return (
 					<div className="flex items-center gap-2">
 						{isKyc ? (
-							<Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
+							<Badge
+								variant="outline"
+								className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20"
+							>
 								<User className="w-3 h-3 mr-1" /> KYC
 							</Badge>
 						) : (
-							<Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20">
+							<Badge
+								variant="outline"
+								className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20"
+							>
 								<CreditCard className="w-3 h-3 mr-1" /> PAYMENT
 							</Badge>
 						)}
@@ -130,18 +156,20 @@ export default function AdminVerifications() {
 			},
 		},
 		{
-			accessorKey: "details",
-			header: "Submitted Data",
+			accessorKey: 'details',
+			header: 'Submitted Data',
 			cell: ({ row }: any) => {
 				const v = row.original;
 				const isKyc = v.pendingType === 'KYC';
-				
+
 				if (isKyc && v.kycs?.[0]) {
 					const kyc = v.kycs[0];
 					return (
 						<div className="text-sm">
 							<div className="text-gray-900 dark:text-white font-medium">{kyc.panName}</div>
-							<div className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">PAN: {kyc.panNumber}</div>
+							<div className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+								PAN: {kyc.panNumber}
+							</div>
 						</div>
 					);
 				} else if (!isKyc && v.paymentMethods?.[0]) {
@@ -155,13 +183,13 @@ export default function AdminVerifications() {
 						</div>
 					);
 				}
-				
+
 				return <span className="text-gray-500 text-sm">No data</span>;
 			},
 		},
 		{
-			accessorKey: "submittedAt",
-			header: "Submitted At",
+			accessorKey: 'submittedAt',
+			header: 'Submitted At',
 			cell: ({ row }: any) => (
 				<div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
 					<Clock className="w-4 h-4 mr-1 opacity-70" />
@@ -170,33 +198,43 @@ export default function AdminVerifications() {
 			),
 		},
 		{
-			id: "actions",
+			id: 'actions',
 			header: () => <div className="text-right">Actions</div>,
 			cell: ({ row }: any) => {
 				const v = row.original;
 				const userId = v.id;
 				const isProcessing = processingId === userId;
 				const type = v.pendingType;
-				
+
 				return (
 					<div className="flex items-center justify-end gap-2">
-						<Button 
+						<Button
 							size="sm"
 							variant="outline"
 							className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 dark:hover:bg-emerald-500/20 disabled:opacity-50"
 							disabled={isProcessing}
 							onClick={() => handleVerify(userId, type, 'APPROVE')}
 						>
-							{isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-1" />} Approve
+							{isProcessing ? (
+								<Loader2 className="w-4 h-4 animate-spin" />
+							) : (
+								<CheckCircle className="w-4 h-4 mr-1" />
+							)}{' '}
+							Approve
 						</Button>
-						<Button 
+						<Button
 							size="sm"
 							variant="outline"
 							className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 dark:hover:bg-red-500/20 disabled:opacity-50"
 							disabled={isProcessing}
 							onClick={() => handleVerify(userId, type, 'REJECT')}
 						>
-							{isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />} Reject
+							{isProcessing ? (
+								<Loader2 className="w-4 h-4 animate-spin" />
+							) : (
+								<XCircle className="w-4 h-4 mr-1" />
+							)}{' '}
+							Reject
 						</Button>
 					</div>
 				);
@@ -211,7 +249,7 @@ export default function AdminVerifications() {
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
-		globalFilterFn: "includesString",
+		globalFilterFn: 'includesString',
 		state: {
 			globalFilter,
 		},
@@ -238,8 +276,12 @@ export default function AdminVerifications() {
 			<div className="space-y-6">
 				<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 					<div>
-						<h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Verifications</h2>
-						<p className="text-gray-500 dark:text-gray-400 mt-2">Review and process user KYC and payment methods.</p>
+						<h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+							Verifications
+						</h2>
+						<p className="text-gray-500 dark:text-gray-400 mt-2">
+							Review and process user KYC and payment methods.
+						</p>
 					</div>
 				</div>
 
@@ -257,7 +299,7 @@ export default function AdminVerifications() {
 						<Input
 							placeholder="Search by phone..."
 							value={globalFilter ?? ''}
-							onChange={e => setGlobalFilter(e.target.value)}
+							onChange={(e) => setGlobalFilter(e.target.value)}
 							className="pl-9 bg-white dark:bg-[#1C1C1E] border-gray-200 dark:border-white/10 focus-visible:ring-blue-500"
 						/>
 					</div>
@@ -268,15 +310,18 @@ export default function AdminVerifications() {
 						<Table>
 							<TableHeader className="bg-gray-50 dark:bg-[#2C2C2E]">
 								{table.getHeaderGroups().map((headerGroup) => (
-									<TableRow key={headerGroup.id} className="border-gray-200 dark:border-white/10 hover:bg-transparent">
+									<TableRow
+										key={headerGroup.id}
+										className="border-gray-200 dark:border-white/10 hover:bg-transparent"
+									>
 										{headerGroup.headers.map((header) => (
-											<TableHead key={header.id} className="text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">
+											<TableHead
+												key={header.id}
+												className="text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
+											>
 												{header.isPlaceholder
 													? null
-													: flexRender(
-															header.column.columnDef.header,
-															header.getContext()
-													  )}
+													: flexRender(header.column.columnDef.header, header.getContext())}
 											</TableHead>
 										))}
 									</TableRow>
@@ -287,7 +332,7 @@ export default function AdminVerifications() {
 									table.getRowModel().rows.map((row) => (
 										<TableRow
 											key={row.id}
-											data-state={row.getIsSelected() && "selected"}
+											data-state={row.getIsSelected() && 'selected'}
 											className="border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
 										>
 											{row.getVisibleCells().map((cell) => (
@@ -312,11 +357,12 @@ export default function AdminVerifications() {
 						</Table>
 					</div>
 				</div>
-				
+
 				{table.getRowModel().rows?.length > 0 && (
 					<div className="flex items-center justify-between py-4">
 						<div className="text-sm text-gray-500 dark:text-gray-400">
-							Showing {table.getRowModel().rows.length} of {filteredVerifications.length} verifications
+							Showing {table.getRowModel().rows.length} of {filteredVerifications.length}{' '}
+							verifications
 						</div>
 						<div className="flex items-center space-x-2">
 							<Button

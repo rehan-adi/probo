@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Home, Search, Menu } from 'lucide-react';
 import walletIcon from '@/assets/images/wallet.svg';
 
-export default function BottomNavbar({ 
-	onOpenSearch, 
-	onOpenMenu 
-}: { 
+export default function BottomNavbar({
+	onOpenSearch,
+	onOpenMenu,
+}: {
 	onOpenSearch: () => void;
 	onOpenMenu: () => void;
 }) {
@@ -19,39 +19,47 @@ export default function BottomNavbar({
 			<NavLink
 				to="/events"
 				end
-				className={({ isActive }) => 
+				className={({ isActive }) =>
 					`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
 				}
 			>
 				<Home size={22} className="stroke-[2]" />
-				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Home')}</span>
+				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">
+					{t('Home')}
+				</span>
 			</NavLink>
 
-			<button 
+			<button
 				onClick={onOpenSearch}
 				className={`flex flex-col items-center gap-1 transition-colors text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white`}
 			>
 				<Search size={22} className="stroke-[2]" />
-				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Search')}</span>
+				<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">
+					{t('Search')}
+				</span>
 			</button>
 
 			{user?.role === 'USER' ? (
 				<NavLink
 					to="/wallet"
-					className={({ isActive }) => 
+					className={({ isActive }) =>
 						`flex flex-col items-center gap-1 transition-colors ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'}`
 					}
 				>
 					<img src={walletIcon} alt="Wallet" className="w-[22px] h-[22px] opacity-80" />
-					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('Wallet')}</span>
+					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">
+						{t('Wallet')}
+					</span>
 				</NavLink>
 			) : (
-				<button 
+				<button
 					onClick={onOpenMenu}
 					className="flex flex-col items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
 				>
 					<Menu size={22} className="stroke-[2]" />
-					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">{t('More')}</span>
+					<span className="text-[10px] font-normal text-gray-900 dark:text-gray-100">
+						{t('More')}
+					</span>
 				</button>
 			)}
 		</>

@@ -16,7 +16,7 @@ export function UsernameModal({ onClose, usernameChangedAt }: UsernameModalProps
 
 	const checkCooldown = () => {
 		if (!usernameChangedAt) return { canChange: true };
-		
+
 		const lastChanged = new Date(usernameChangedAt);
 		const fourteenDaysAgo = new Date();
 		fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
@@ -97,7 +97,9 @@ export function UsernameModal({ onClose, usernameChangedAt }: UsernameModalProps
 
 					<button
 						onClick={handleSave}
-						disabled={!canChange || loading || !newUsername.trim() || newUsername === user?.username}
+						disabled={
+							!canChange || loading || !newUsername.trim() || newUsername === user?.username
+						}
 						className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-medium disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
 					>
 						{loading ? 'Saving...' : 'Save Username'}

@@ -31,14 +31,18 @@ export default function MenuModal({ onClose }: { onClose: () => void }) {
 					<Trophy size={18} className="text-yellow-500" />
 					{t('Leaderboard')}
 				</button>
-				<button 
+				<button
 					onClick={toggleTheme}
 					className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors cursor-pointer"
 				>
 					{theme === 'dark' ? (
-						<><Sun size={18} className="text-orange-500" /> {t('Light Mode')}</>
+						<>
+							<Sun size={18} className="text-orange-500" /> {t('Light Mode')}
+						</>
 					) : (
-						<><Moon size={18} className="text-blue-500" /> {t('Dark Mode')}</>
+						<>
+							<Moon size={18} className="text-blue-500" /> {t('Dark Mode')}
+						</>
 					)}
 				</button>
 				<button className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors cursor-pointer">
@@ -46,9 +50,9 @@ export default function MenuModal({ onClose }: { onClose: () => void }) {
 					{t('Status')}
 				</button>
 			</div>
-			
+
 			<div className="px-2">
-				<button 
+				<button
 					onClick={() => setShowLanguages(!showLanguages)}
 					className="flex w-full items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors cursor-pointer"
 				>
@@ -56,12 +60,16 @@ export default function MenuModal({ onClose }: { onClose: () => void }) {
 						<span>🌐</span>
 						<span>{t('Language')}</span>
 					</div>
-					<span className={`transition-transform duration-200 ${showLanguages ? 'rotate-180' : ''}`}>▼</span>
+					<span
+						className={`transition-transform duration-200 ${showLanguages ? 'rotate-180' : ''}`}
+					>
+						▼
+					</span>
 				</button>
-				
+
 				<AnimatePresence>
 					{showLanguages && (
-						<motion.div 
+						<motion.div
 							initial={{ height: 0, opacity: 0 }}
 							animate={{ height: 'auto', opacity: 1 }}
 							exit={{ height: 0, opacity: 0 }}
@@ -75,7 +83,9 @@ export default function MenuModal({ onClose }: { onClose: () => void }) {
 										setShowLanguages(false);
 									}}
 									className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors font-medium text-sm cursor-pointer ${
-										i18n.language === lang.code ? 'bg-gray-100 text-black' : 'hover:bg-gray-50 text-gray-600'
+										i18n.language === lang.code
+											? 'bg-gray-100 text-black'
+											: 'hover:bg-gray-50 text-gray-600'
 									}`}
 								>
 									<div className="flex items-center gap-3">

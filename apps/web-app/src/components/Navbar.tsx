@@ -2,8 +2,16 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
 import {
-	Menu, Gift, Bell,
-	LogOut, Settings, Briefcase, Info, Trophy, Moon, Activity
+	Menu,
+	Gift,
+	Bell,
+	LogOut,
+	Settings,
+	Briefcase,
+	Info,
+	Trophy,
+	Moon,
+	Activity,
 } from 'lucide-react';
 import SearchInput from './SearchInput';
 import CategoryNav from './CategoryNav';
@@ -41,8 +49,10 @@ export default function Navbar() {
 	useEffect(() => {
 		const handleClickOutside = (e: MouseEvent) => {
 			if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
-			if (profileRef.current && !profileRef.current.contains(e.target as Node)) setIsProfileOpen(false);
-			if (notifRef.current && !notifRef.current.contains(e.target as Node)) setIsNotificationOpen(false);
+			if (profileRef.current && !profileRef.current.contains(e.target as Node))
+				setIsProfileOpen(false);
+			if (notifRef.current && !notifRef.current.contains(e.target as Node))
+				setIsNotificationOpen(false);
 		};
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -61,7 +71,6 @@ export default function Navbar() {
 			<nav className="w-full bg-white dark:bg-[#090C1A] fixed top-0 z-[50] transition-colors flex flex-col">
 				<div className={`w-full px-6`}>
 					<div className="max-w-7xl mx-auto h-16 flex items-center justify-between gap-4">
-
 						<div className="flex items-center gap-6 flex-1">
 							<Link to="/events" className="shrink-0">
 								<img src={logo} className="w-[112px] md:w-[130px] object-contain" alt="Logo" />
@@ -76,10 +85,16 @@ export default function Navbar() {
 							)}
 							{user?.role === 'ADMIN' && (
 								<div className="hidden md:flex items-center gap-6 ml-8">
-									<Link to="/dashboard/home" className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+									<Link
+										to="/dashboard/home"
+										className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
+									>
 										Admin
 									</Link>
-									<Link to="/verifications" className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors">
+									<Link
+										to="/verifications"
+										className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
+									>
 										Verifications
 									</Link>
 								</div>
@@ -87,7 +102,6 @@ export default function Navbar() {
 						</div>
 
 						<div className="flex items-center gap-2 lg:gap-2 shrink-0">
-
 							{!user && (
 								<>
 									<button
@@ -124,7 +138,11 @@ export default function Navbar() {
 														className="absolute right-0 top-12 w-56 bg-white dark:bg-slate-900 shadow-xl rounded-xl py-2 border border-gray-100 dark:border-slate-800 z-50"
 													>
 														<div className="px-2">
-															<Link to="/leaderboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer">
+															<Link
+																to="/leaderboard"
+																onClick={() => setIsMenuOpen(false)}
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+															>
 																<Trophy size={16} className="text-black dark:text-white" />
 																{t('Leaderboard')}
 															</Link>
@@ -144,7 +162,9 @@ export default function Navbar() {
 																	<Moon size={16} className="text-black dark:text-white" />
 																	<span>{t('Dark Mode')}</span>
 																</div>
-																<div className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+																<div
+																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
@@ -178,7 +198,10 @@ export default function Navbar() {
 										</span>
 									</Link>
 
-									<Link to="/referral" className="flex group relative items-center justify-center p-0.5 w-9 h-8 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors rounded-md cursor-pointer">
+									<Link
+										to="/referral"
+										className="flex group relative items-center justify-center p-0.5 w-9 h-8 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors rounded-md cursor-pointer"
+									>
 										<Gift size={20} className="text-gray-700 dark:text-gray-300" />
 										<div className="absolute top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
 											Refer & Reward
@@ -200,9 +223,16 @@ export default function Navbar() {
 													exit={{ opacity: 0, y: 10, scale: 0.95 }}
 													className="absolute right-0 top-12 w-64 bg-white dark:bg-[#1C1C1E] shadow-xl rounded-xl border border-gray-100 dark:border-white/10 p-4 text-center z-50"
 												>
-													<Bell size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-													<p className="text-sm font-medium text-gray-800 dark:text-gray-200">No new notifications</p>
-													<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You're all caught up!</p>
+													<Bell
+														size={32}
+														className="mx-auto text-gray-300 dark:text-gray-600 mb-2"
+													/>
+													<p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+														No new notifications
+													</p>
+													<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+														You're all caught up!
+													</p>
 												</motion.div>
 											)}
 										</AnimatePresence>
@@ -213,7 +243,11 @@ export default function Navbar() {
 											onMouseEnter={() => setIsProfileOpen(true)}
 											className="flex items-center cursor-pointer p-0.5 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
 										>
-											<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10" />
+											<img
+												src={user?.avatarUrl || pfpIcon}
+												alt="Profile"
+												className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10"
+											/>
 										</div>
 
 										<AnimatePresence>
@@ -226,21 +260,39 @@ export default function Navbar() {
 														className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1C1C1E] shadow-xl rounded-xl py-2 border border-gray-100 dark:border-white/10 z-50"
 													>
 														<div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-white/5 mb-1">
-															<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+															<img
+																src={user?.avatarUrl || pfpIcon}
+																alt="Profile"
+																className="w-10 h-10 rounded-full object-cover"
+															/>
 															<div className="flex flex-col">
-																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">{user?.username || 'User'}</span>
+																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+																	{user?.username || 'User'}
+																</span>
 															</div>
 														</div>
 
 														<div className="px-2">
-															<Link to="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">
-																<Settings size={16} className="text-black dark:text-white" /> {t('Settings')}
+															<Link
+																to="/settings"
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+															>
+																<Settings size={16} className="text-black dark:text-white" />{' '}
+																{t('Settings')}
 															</Link>
-															<Link to="/portfolio" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">
-																<Briefcase size={16} className="text-black dark:text-white" /> {t('Portfolio')}
+															<Link
+																to="/portfolio"
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+															>
+																<Briefcase size={16} className="text-black dark:text-white" />{' '}
+																{t('Portfolio')}
 															</Link>
-															<Link to="/leaderboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">
-																<Trophy size={16} className="text-black dark:text-white" /> {t('Leaderboard')}
+															<Link
+																to="/leaderboard"
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+															>
+																<Trophy size={16} className="text-black dark:text-white" />{' '}
+																{t('Leaderboard')}
 															</Link>
 
 															<button className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors cursor-pointer">
@@ -258,7 +310,9 @@ export default function Navbar() {
 																	<Moon size={16} className="text-black dark:text-white" />
 																	<span>{t('Dark Mode')}</span>
 																</div>
-																<div className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+																<div
+																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
@@ -293,7 +347,11 @@ export default function Navbar() {
 											onMouseEnter={() => setIsProfileOpen(true)}
 											className="flex items-center cursor-pointer p-0.5 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
 										>
-											<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10" />
+											<img
+												src={user?.avatarUrl || pfpIcon}
+												alt="Profile"
+												className="w-[34px] h-[34px] rounded-full object-cover border border-gray-200 dark:border-white/10"
+											/>
 										</div>
 
 										<AnimatePresence>
@@ -306,9 +364,15 @@ export default function Navbar() {
 														className="absolute right-0 top-12 w-56 bg-white dark:bg-[#1C1C1E] shadow-xl rounded-xl py-2 border border-gray-100 dark:border-white/10 z-50"
 													>
 														<div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-white/5 mb-1">
-															<img src={user?.avatarUrl || pfpIcon} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+															<img
+																src={user?.avatarUrl || pfpIcon}
+																alt="Profile"
+																className="w-10 h-10 rounded-full object-cover"
+															/>
 															<div className="flex flex-col">
-																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">Admin</span>
+																<span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+																	Admin
+																</span>
 															</div>
 														</div>
 														<div className="px-2">
@@ -322,7 +386,9 @@ export default function Navbar() {
 																	<Moon size={16} className="text-black dark:text-white" />
 																	<span>{t('Dark Mode')}</span>
 																</div>
-																<div className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}>
+																<div
+																	className={`relative inline-flex h-[22px] w-[42px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-opacity-75 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+																>
 																	<span className="sr-only">Toggle Dark Mode</span>
 																	<span
 																		aria-hidden="true"
@@ -358,15 +424,11 @@ export default function Navbar() {
 			/>
 
 			<AnimatePresence>
-				{showHowItWorks && (
-					<HowItWorksModal onClose={() => setShowHowItWorks(false)} />
-				)}
+				{showHowItWorks && <HowItWorksModal onClose={() => setShowHowItWorks(false)} />}
 			</AnimatePresence>
 
 			<AnimatePresence>
-				{isSearchOpen && (
-					<SearchModal onClose={() => setIsSearchOpen(false)} />
-				)}
+				{isSearchOpen && <SearchModal onClose={() => setIsSearchOpen(false)} />}
 			</AnimatePresence>
 		</>
 	);

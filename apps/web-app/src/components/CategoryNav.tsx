@@ -40,10 +40,11 @@ export default function CategoryNav() {
 					<button
 						key={cat.id}
 						onClick={() => handleCategoryChange(cat.categoryName)}
-						className={`relative h-full flex items-center md:text-[15px] text-sm whitespace-nowrap transition-colors duration-300 cursor-pointer ${selectedCategoryName === cat.categoryName
-							? 'text-black dark:text-white font-semibold'
-							: 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
-							}`}
+						className={`relative h-full flex items-center md:text-[15px] text-sm whitespace-nowrap transition-colors duration-300 cursor-pointer ${
+							selectedCategoryName === cat.categoryName
+								? 'text-black dark:text-white font-semibold'
+								: 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
+						}`}
 					>
 						{cat.categoryName}
 						{selectedCategoryName === cat.categoryName && (

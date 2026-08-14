@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-	LayoutDashboard, 
-	Activity, 
-	CheckSquare, 
-	PlusCircle, 
-	Users, 
-	WalletCards, 
+import {
+	LayoutDashboard,
+	Activity,
+	CheckSquare,
+	PlusCircle,
+	Users,
+	WalletCards,
 	LogOut,
 	ChevronRight,
 	MoreVertical,
 	Settings,
 	User as UserIcon,
 	Moon,
-	Sun
+	Sun,
 } from 'lucide-react';
 import logo from '@/assets/images/logo.avif';
 import { useAuthStore } from '@/store/auth';
@@ -32,30 +32,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 	const navGroups = [
 		{
 			title: 'Overview',
-			items: [
-				{ title: 'Dashboard', href: '/dashboard/home', icon: LayoutDashboard },
-			]
+			items: [{ title: 'Dashboard', href: '/dashboard/home', icon: LayoutDashboard }],
 		},
 		{
 			title: 'Markets',
 			items: [
 				{ title: 'All Markets', href: '/dashboard/markets', icon: Activity },
 				{ title: 'Create Market', href: '/dashboard/markets/create', icon: PlusCircle },
-			]
+			],
 		},
 		{
 			title: 'Users',
 			items: [
 				{ title: 'Verifications', href: '/dashboard/verifications', icon: CheckSquare },
 				{ title: 'All Users', href: '/dashboard/users', icon: Users },
-			]
+			],
 		},
 		{
 			title: 'Finance',
-			items: [
-				{ title: 'Transactions', href: '/dashboard/transactions', icon: WalletCards },
-			]
-		}
+			items: [{ title: 'Transactions', href: '/dashboard/transactions', icon: WalletCards }],
+		},
 	];
 
 	return (
@@ -67,7 +63,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 						<img src={logo} alt="Probo" className="h-6 dark:invert" />
 					</Link>
 				</div>
-				
+
 				<nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto custom-scrollbar">
 					{navGroups.map((group) => (
 						<div key={group.title}>
@@ -76,7 +72,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 							</h3>
 							<div className="space-y-1">
 								{group.items.map((item) => {
-									const isActive = location.pathname === item.href || (item.href !== '/dashboard/home' && location.pathname.startsWith(item.href));
+									const isActive =
+										location.pathname === item.href ||
+										(item.href !== '/dashboard/home' && location.pathname.startsWith(item.href));
 									return (
 										<Link
 											key={item.href}
@@ -88,10 +86,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 											}`}
 										>
 											<div className="flex items-center gap-3">
-												<item.icon size={18} className={isActive ? 'text-blue-700 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500'} />
+												<item.icon
+													size={18}
+													className={
+														isActive
+															? 'text-blue-700 dark:text-blue-400'
+															: 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500'
+													}
+												/>
 												{item.title}
 											</div>
-											{isActive && <ChevronRight size={14} className="text-blue-700 dark:text-blue-400" />}
+											{isActive && (
+												<ChevronRight size={14} className="text-blue-700 dark:text-blue-400" />
+											)}
 										</Link>
 									);
 								})}
@@ -99,7 +106,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 						</div>
 					))}
 				</nav>
-				
+
 				<div className="p-4 border-t border-gray-200 dark:border-white/10">
 					<Popover>
 						<PopoverTrigger asChild>
@@ -112,16 +119,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 										{user?.username || 'Admin User'}
 									</p>
 								</div>
-								<MoreVertical size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+								<MoreVertical
+									size={16}
+									className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300"
+								/>
 							</button>
 						</PopoverTrigger>
-						<PopoverContent className="w-56 p-1 bg-white dark:bg-[#2C2C2E] border-gray-200 dark:border-white/10 rounded-xl shadow-lg mb-2" align="start">
+						<PopoverContent
+							className="w-56 p-1 bg-white dark:bg-[#2C2C2E] border-gray-200 dark:border-white/10 rounded-xl shadow-lg mb-2"
+							align="start"
+						>
 							<div className="p-2 border-b border-gray-100 dark:border-white/5 mb-1">
 								<p className="text-sm font-medium text-gray-900 dark:text-white">Admin Account</p>
 								<p className="text-xs text-gray-500">{user?.email}</p>
 							</div>
-							
-							<button 
+
+							<button
 								onClick={toggleTheme}
 								className="flex items-center justify-between px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors w-full text-left"
 							>
@@ -129,12 +142,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 									{theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
 									Dark Mode
 								</div>
-								<div className={`w-8 h-4 rounded-full transition-colors relative ${theme === 'dark' ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-									<div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`} />
+								<div
+									className={`w-8 h-4 rounded-full transition-colors relative ${theme === 'dark' ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+								>
+									<div
+										className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`}
+									/>
 								</div>
 							</button>
 
-							<button 
+							<button
 								onClick={logout}
 								className="flex items-center gap-2 px-2 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors w-full text-left mt-1"
 							>
@@ -156,11 +173,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 						<LogOut size={20} />
 					</button>
 				</header>
-				
+
 				<main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-					<div className="mx-auto max-w-7xl">
-						{children}
-					</div>
+					<div className="mx-auto max-w-7xl">{children}</div>
 				</main>
 			</div>
 		</div>

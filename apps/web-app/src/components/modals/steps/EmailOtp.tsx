@@ -89,14 +89,19 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 			</button>
 
 			<div className="text-left mb-8 w-full mt-4">
-				<h2 className="text-[22px] font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">Check your email</h2>
+				<h2 className="text-[22px] font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">
+					Check your email
+				</h2>
 				<p className="text-gray-500 dark:text-gray-400 text-[13px] font-medium leading-relaxed max-w-[260px]">
-					We've sent a 6-digit verification code to <span className="font-semibold text-gray-900 dark:text-white">{email}</span>
+					We've sent a 6-digit verification code to{' '}
+					<span className="font-semibold text-gray-900 dark:text-white">{email}</span>
 				</p>
 			</div>
 
 			<div className="flex flex-col items-start w-full">
-				<div className={`transition-opacity duration-300 w-full ${isVerifyingOtp ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+				<div
+					className={`transition-opacity duration-300 w-full ${isVerifyingOtp ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
+				>
 					<OTPInput
 						maxLength={6}
 						value={otpCode}
@@ -110,13 +115,13 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 									<div
 										key={idx}
 										className={clsx(
-											"relative flex items-center justify-center w-10 h-12 text-xl font-bold rounded-md transition-all duration-300",
-											"border bg-gray-50 dark:bg-white/5 shadow-none",
+											'relative flex items-center justify-center w-10 h-12 text-xl font-bold rounded-md transition-all duration-300',
+											'border bg-gray-50 dark:bg-white/5 shadow-none',
 											slot.isActive
-												? "border-black bg-white dark:border-white dark:bg-white/10 z-10"
-												: "border-gray-200 dark:border-white/10",
-											slot.char && !slot.isActive ? "border-gray-300 dark:border-white/20" : "",
-											"text-gray-900 dark:text-white"
+												? 'border-black bg-white dark:border-white dark:bg-white/10 z-10'
+												: 'border-gray-200 dark:border-white/10',
+											slot.char && !slot.isActive ? 'border-gray-300 dark:border-white/20' : '',
+											'text-gray-900 dark:text-white',
 										)}
 									>
 										{slot.char !== null && <div>{slot.char}</div>}
@@ -134,26 +139,36 @@ export default function EmailOtp({ email, onBack, onNextUsername, onNextReferral
 
 				<div className="mt-4 h-12 w-full flex flex-col items-start justify-center text-sm">
 					{isVerifyingOtp ? (
-						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-black dark:text-white font-medium">
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							className="flex items-center gap-2 text-black dark:text-white font-medium"
+						>
 							<Loader2 className="animate-spin w-4 h-4" />
 							Verifying...
 						</motion.div>
 					) : error ? (
-						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 font-medium bg-red-50 dark:bg-red-500/10 px-4 py-2 rounded-lg w-full text-left">
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							className="text-red-500 font-medium bg-red-50 dark:bg-red-500/10 px-4 py-2 rounded-lg w-full text-left"
+						>
 							{error}
 						</motion.div>
 					) : canResend ? (
-						<button onClick={handleSendEmailOtp} className="flex items-center gap-1.5 text-black dark:text-white font-semibold hover:underline bg-gray-100 dark:bg-white/10 px-4 py-2 rounded-md transition-colors cursor-pointer">
+						<button
+							onClick={handleSendEmailOtp}
+							className="flex items-center gap-1.5 text-black dark:text-white font-semibold hover:underline bg-gray-100 dark:bg-white/10 px-4 py-2 rounded-md transition-colors cursor-pointer"
+						>
 							<RefreshCw className="w-4 h-4" /> Resend code
 						</button>
 					) : (
 						<p className="text-gray-500 dark:text-gray-400 font-medium">
-							Resend code in <span className="font-bold text-gray-900 dark:text-white">{secondsLeft}s</span>
+							Resend code in{' '}
+							<span className="font-bold text-gray-900 dark:text-white">{secondsLeft}s</span>
 						</p>
 					)}
 				</div>
-
-
 			</div>
 		</motion.div>
 	);

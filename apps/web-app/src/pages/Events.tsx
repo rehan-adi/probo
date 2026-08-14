@@ -44,14 +44,15 @@ export default function EventsPage() {
 
 	useEffect(() => {
 		if (isAuthenticated) {
-			api.get('/profile/watchlist')
-				.then(res => {
+			api
+				.get('/profile/watchlist')
+				.then((res) => {
 					if (res.data?.success) {
 						const ids = new Set<string>(res.data.data.map((m: any) => m.id));
 						setBookmarkedIds(ids);
 					}
 				})
-				.catch(err => console.error('Error fetching watchlist', err));
+				.catch((err) => console.error('Error fetching watchlist', err));
 		}
 	}, [isAuthenticated]);
 
@@ -62,28 +63,30 @@ export default function EventsPage() {
 			socket.connect();
 		}
 
-		events.forEach(event => {
+		events.forEach((event) => {
 			socket.emit('SUBSCRIBE', event.symbol);
 		});
 
 		const handleMessage = (data: any) => {
-			setEvents(prev => prev.map(event => {
-				if (event.symbol === data.symbol || event.symbol === data.Symbol) {
-					return {
-						...event,
-						yesPrice: data.yesPrice ?? event.yesPrice,
-						noPrice: data.noPrice ?? event.noPrice,
-						volume: data.volume ?? event.volume,
-					};
-				}
-				return event;
-			}));
+			setEvents((prev) =>
+				prev.map((event) => {
+					if (event.symbol === data.symbol || event.symbol === data.Symbol) {
+						return {
+							...event,
+							yesPrice: data.yesPrice ?? event.yesPrice,
+							noPrice: data.noPrice ?? event.noPrice,
+							volume: data.volume ?? event.volume,
+						};
+					}
+					return event;
+				}),
+			);
 		};
 
 		socket.on('MESSAGE', handleMessage);
 
 		return () => {
-			events.forEach(event => {
+			events.forEach((event) => {
 				socket.emit('UNSUBSCRIBE', event.symbol);
 			});
 			socket.off('MESSAGE', handleMessage);
@@ -96,18 +99,18 @@ export default function EventsPage() {
 			openOnboardModal();
 			return;
 		}
-		
+
 		try {
 			if (bookmarkedIds.has(marketId)) {
 				await api.delete(`/profile/watchlist/${marketId}`);
-				setBookmarkedIds(prev => {
+				setBookmarkedIds((prev) => {
 					const next = new Set(prev);
 					next.delete(marketId);
 					return next;
 				});
 			} else {
 				await api.post('/profile/watchlist', { marketId });
-				setBookmarkedIds(prev => {
+				setBookmarkedIds((prev) => {
 					const next = new Set(prev);
 					next.add(marketId);
 					return next;
@@ -126,7 +129,9 @@ export default function EventsPage() {
 						<h1 className="text-xl font-semibold border-b border-gray-200 dark:border-gray-800 pb-3 mb-4 text-gray-900 dark:text-white">
 							{selectedCategoryName}
 						</h1>
-						<div className={`flex-1 grid grid-cols-1 md:grid-cols-2 ${!user ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-4`}>
+						<div
+							className={`flex-1 grid grid-cols-1 md:grid-cols-2 ${!user ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-4`}
+						>
 							{events.length > 0 ? (
 								events.map((event, idx) => (
 									<div
@@ -134,7 +139,7 @@ export default function EventsPage() {
 										onClick={() => navigate(`/events/${event.symbol}`)}
 										className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-0 h-[230px] transition-colors"
 									>
-										<div className=''>
+										<div className="">
 											<div className="flex items-center text-gray-600 dark:text-gray-400">
 												<img src={barChartIcon} className="w-4 h-4 mr-1" />
 												<p className="text-xs">{event.numberOfTraders || 0} traders</p>
@@ -164,13 +169,19 @@ export default function EventsPage() {
 
 											<div className="flex items-center justify-between md:pt-0 pt-1">
 												<p className="text-xs flex items-center justify-start gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
-													<span className="font-bold text-gray-900 dark:text-white">₹{formatVolume(event.volume || 0)} Vol.</span>
+													<span className="font-bold text-gray-900 dark:text-white">
+														₹{formatVolume(event.volume || 0)} Vol.
+													</span>
 												</p>
 												<button
 													onClick={(e) => toggleBookmark(e, event.id)}
 													className="p-1 text-black dark:text-white transition-colors"
 												>
-													<Bookmark size={18} fill={bookmarkedIds.has(event.id) ? "currentColor" : "transparent"} className="hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer" />
+													<Bookmark
+														size={18}
+														fill={bookmarkedIds.has(event.id) ? 'currentColor' : 'transparent'}
+														className="hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+													/>
 												</button>
 											</div>
 										</div>
@@ -192,7 +203,10 @@ export default function EventsPage() {
 										UNLOCK UP TO ₹25 WELCOME BONUS!
 									</h3>
 									<p className="text-sm text-gray-600 dark:text-gray-400 mb-4 font-medium">
-										Get <span className="font-semibold text-black dark:text-white">₹15</span> instantly on signin and <span className="font-semibold text-black dark:text-white">₹10</span> extra with a referral code.
+										Get <span className="font-semibold text-black dark:text-white">₹15</span>{' '}
+										instantly on signin and{' '}
+										<span className="font-semibold text-black dark:text-white">₹10</span> extra with
+										a referral code.
 									</p>
 									<button
 										onClick={openOnboardModal}
@@ -202,7 +216,11 @@ export default function EventsPage() {
 									</button>
 								</div>
 								<div className="w-[35%] flex justify-end items-center">
-									<img src={downloadIcon} alt="Bonus" className="w-24 h-24 lg:w-28 lg:h-28 object-contain" />
+									<img
+										src={downloadIcon}
+										alt="Bonus"
+										className="w-24 h-24 lg:w-28 lg:h-28 object-contain"
+									/>
 								</div>
 							</div>
 						</div>
