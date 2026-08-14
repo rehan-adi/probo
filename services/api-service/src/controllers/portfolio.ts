@@ -74,3 +74,41 @@ export const getPortfolio = async (c: Context) => {
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };
+
+export const getMarketPosition = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		if (!user) {
+			return c.json({ success: false, message: 'Unauthorized' }, 401);
+		}
+
+		const marketId = c.req.param('marketId');
+		if (!marketId) {
+			return c.json({ success: false, message: 'Market ID required' }, 400);
+		}
+
+		const position = await prisma.position.findFirst({
+			where: { userId: user.id, marketId },
+		});
+
+		const activeOrders = await prisma.order.findMany({
+			where: {
+				userId: user.id,
+				marketId,
+				status: { in: ['PENDING', 'PARTIAL'] },
+			},
+			orderBy: { createdAt: 'desc' },
+		});
+
+		return c.json({
+			success: true,
+			data: {
+				position: position || null,
+				activeOrders,
+			},
+		});
+	} catch (error: any) {
+		logger.error({ context: 'GET_MARKET_POSITION', message: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};

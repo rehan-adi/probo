@@ -941,3 +941,69 @@ export const generatePresignedUrlRoute = async (c: Context) => {
 		return c.json({ success: false, message: 'Internal server error' }, 500);
 	}
 };
+
+export const splitShares = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		const symbol = c.req.param('symbol');
+		const { quantity } = await c.req.json<{ quantity: number }>();
+
+		if (!quantity || quantity <= 0) {
+			return c.json({ success: false, message: 'Quantity must be greater than 0' }, 400);
+		}
+
+		const market = await prisma.market.findUnique({ where: { symbol } });
+		if (!market) {
+			return c.json({ success: false, message: 'Market not found' }, 404);
+		}
+
+		const response = await pushToQueue(EVENTS.SPLIT_SHARES, {
+			userId: user.id,
+			marketId: market.id,
+			symbol,
+			quantity,
+		});
+
+		if (!response.success) {
+			return c.json({ success: false, message: response.message }, 502);
+		}
+
+		return c.json({ success: true, message: 'Shares split successfully' }, 200);
+	} catch (error: any) {
+		logger.error({ context: 'SPLIT_SHARES', error: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
+
+export const mergeShares = async (c: Context) => {
+	try {
+		const user = c.get('user');
+		const symbol = c.req.param('symbol');
+		const { quantity } = await c.req.json<{ quantity: number }>();
+
+		if (!quantity || quantity <= 0) {
+			return c.json({ success: false, message: 'Quantity must be greater than 0' }, 400);
+		}
+
+		const market = await prisma.market.findUnique({ where: { symbol } });
+		if (!market) {
+			return c.json({ success: false, message: 'Market not found' }, 404);
+		}
+
+		const response = await pushToQueue(EVENTS.MERGE_SHARES, {
+			userId: user.id,
+			marketId: market.id,
+			symbol,
+			quantity,
+		});
+
+		if (!response.success) {
+			return c.json({ success: false, message: response.message }, 502);
+		}
+
+		return c.json({ success: true, message: 'Shares merged successfully' }, 200);
+	} catch (error: any) {
+		logger.error({ context: 'MERGE_SHARES', error: error.message });
+		return c.json({ success: false, message: 'Internal server error' }, 500);
+	}
+};
