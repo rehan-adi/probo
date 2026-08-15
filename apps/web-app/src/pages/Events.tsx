@@ -122,8 +122,8 @@ export default function EventsPage() {
 	};
 
 	return (
-		<div className="w-full bg-gray-50 dark:bg-[#090C1A] min-h-screen">
-			<div className="max-w-7xl mx-auto md:px-0 px-6 py-6 md:py-8 flex flex-col gap-6">
+		<div className="w-full bg-gray-50 dark:bg-[#090C1A] min-h-screen px-6">
+			<div className="max-w-7xl mx-auto py-6 md:py-8 flex flex-col gap-6">
 				<div className="flex gap-16">
 					<div className="w-full">
 						<h1 className="text-xl font-semibold border-b border-gray-200 dark:border-gray-800 pb-3 mb-4 text-gray-900 dark:text-white">
