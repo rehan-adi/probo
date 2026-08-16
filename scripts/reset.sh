@@ -5,7 +5,7 @@ echo "Stopping all running processes for probstreet........"
 pkill -f "make run"
 pkill -f "bot_trading.ts"
 
-echo "Freeing up ports for probstreet.......",
+echo "Freeing up ports for probstreet......."
 
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true
 lsof -ti :5173 | xargs kill -9 2>/dev/null || true
@@ -27,7 +27,10 @@ cd services/api-service && bun -e "import { Redis } from 'ioredis'; const r = ne
 echo "Resetting PostgreSQL database........"
 cd packages/database && bunx prisma db push --force-reset && cd ../..
 
-echo "Environment completely reset."
+echo "Configuring TimescaleDB (Hypertables & Continuous Aggregates)........"
+psql "postgres://probstreet:probstreetadmin@localhost:5432/primary-database" -f packages/database/prisma/timescale_setup.sql
+
+echo "Environment completely reset with TimescaleDB configured."
 echo ""
 echo "--- STARTUP WORKFLOW INSTRUCTIONS ---"
 echo "To start the application, open 4 separate terminals and run these commands IN ORDER:"
