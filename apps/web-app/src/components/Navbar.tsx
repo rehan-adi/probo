@@ -12,6 +12,7 @@ import {
 	Trophy,
 	Moon,
 	Activity,
+	Bookmark,
 } from 'lucide-react';
 import SearchInput from './SearchInput';
 import CategoryNav from './CategoryNav';
@@ -292,6 +293,13 @@ export default function Navbar() {
 															>
 																<Briefcase size={16} className="text-black dark:text-white" />{' '}
 																{t('Portfolio')}
+															</Link>
+															<Link
+																to="/wishlist"
+																className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
+															>
+																<Bookmark size={16} className="text-black dark:text-white" />{' '}
+																{t('Wishlist')}
 															</Link>
 															<Link
 																to="/leaderboard"

@@ -19,17 +19,18 @@ import WithdrawPage from '@/pages/Withdraw';
 import SettingsPage from '@/pages/Settings';
 import NotFoundPage from '@/pages/NotFound';
 import { useAuthStore } from '@/store/auth';
+import WishlistPage from '@/pages/Wishlist';
+import ReferralPage from '@/pages/Referral';
 import AdminUsers from '@/pages/admin/Users';
 import EventDetails from '@/pages/EventDetails';
 import AdminMarkets from '@/pages/admin/Markets';
+import LeaderboardPage from '@/pages/Leaderboard';
 import CreateEvent from '@/pages/admin/CreateEvent';
 import VerificationgePage from '@/pages/Verification';
 import AuthModal from '@/components/modals/AuthModal';
 import AdminTransactions from '@/pages/admin/Transactions';
 import AdminVerifications from '@/pages/admin/Verifications';
 import TransactionHistoryPage from '@/pages/TransactionHistory';
-import LeaderboardPage from '@/pages/Leaderboard';
-import ReferralPage from '@/pages/Referral';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { useThemeStore } from '@/store/theme';
@@ -76,6 +77,7 @@ function AppContent() {
 							<Route path="withdraw" element={<WithdrawPage />} />
 						</Route>
 						<Route path="/portfolio" element={<Portfolio />} />
+						<Route path="/wishlist" element={<WishlistPage />} />
 						<Route path="/settings" element={<SettingsPage />} />
 						<Route path="/profile/:username" element={<ProfilePage />} />
 						<Route path="/profile" element={<Navigate to="/settings" replace />} />
