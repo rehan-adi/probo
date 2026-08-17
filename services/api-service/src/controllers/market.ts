@@ -302,7 +302,7 @@ export const addLiquidity = async (c: Context) => {
 
 export const getAllMarket = async (c: Context) => {
 	try {
-		const markets = await prisma.market.findMany({
+		const rawMarkets = await prisma.market.findMany({
 			where: {
 				status: 'OPEN',
 			},
@@ -320,8 +320,16 @@ export const getAllMarket = async (c: Context) => {
 				categoryId: true,
 				status: true,
 				symbol: true,
+				category: {
+					select: { categoryName: true },
+				},
 			},
 		});
+
+		const markets = rawMarkets.map((m) => ({
+			...m,
+			category: m.category?.categoryName || 'Unknown',
+		}));
 
 		return c.json(
 			{
