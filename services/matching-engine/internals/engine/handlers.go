@@ -132,18 +132,39 @@ func (e *Engine) handleOrder(msg types.MarketMessage, market *types.Market) {
 		})
 	}
 
-	payload := map[string]interface{}{
-		"symbol": order.Symbol, "orderbook": aggOrderBook,
-		"yesPrice": yesPrice, "noPrice": noPrice,
-		"trades":          activities,
+	// Broadcast TICKER update (lightweight)
+	tickerPayload := map[string]interface{}{
+		"type":            "TICKER",
+		"symbol":          order.Symbol,
+		"yesPrice":        yesPrice,
+		"noPrice":         noPrice,
 		"volume":          market.Volume,
 		"numberOfTraders": market.NumberOfTraders,
 	}
-	data, err := json.Marshal(payload)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to marshal payload")
-	} else {
-		e.BroadcastMessage("stream:data", string(data))
+	if tickerData, err := json.Marshal(tickerPayload); err == nil {
+		e.BroadcastMessage("stream:data", string(tickerData))
+	}
+
+	// Broadcast ORDERBOOK update
+	orderbookPayload := map[string]interface{}{
+		"type":      "ORDERBOOK",
+		"symbol":    order.Symbol,
+		"orderbook": aggOrderBook,
+	}
+	if obData, err := json.Marshal(orderbookPayload); err == nil {
+		e.BroadcastMessage("stream:data", string(obData))
+	}
+
+	// Broadcast ACTIVITY (Trades) update if any trades occurred
+	if len(activities) > 0 {
+		activityPayload := map[string]interface{}{
+			"type":   "ACTIVITY",
+			"symbol": order.Symbol,
+			"trades": activities,
+		}
+		if actData, err := json.Marshal(activityPayload); err == nil {
+			e.BroadcastMessage("stream:data", string(actData))
+		}
 	}
 
 	log.Info().Str("marketId", market.MarketId).Str("type", string(order.OrderType)).Int("filled", order.Filled).Msg("Order processed")
@@ -315,14 +336,27 @@ func (e *Engine) handleCancelOrder(msg types.MarketMessage, market *types.Market
 		})
 	}
 
-	payload := map[string]interface{}{
-		"symbol": req.Symbol, "orderbook": aggOrderBook,
-		"yesPrice": yesPrice, "noPrice": noPrice,
+	// Broadcast TICKER update (lightweight)
+	tickerPayload := map[string]interface{}{
+		"type":            "TICKER",
+		"symbol":          req.Symbol,
+		"yesPrice":        yesPrice,
+		"noPrice":         noPrice,
 		"volume":          market.Volume,
 		"numberOfTraders": market.NumberOfTraders,
 	}
-	if data, err := json.Marshal(payload); err == nil {
-		e.BroadcastMessage("stream:data", string(data))
+	if tickerData, err := json.Marshal(tickerPayload); err == nil {
+		e.BroadcastMessage("stream:data", string(tickerData))
+	}
+
+	// Broadcast ORDERBOOK update
+	orderbookPayload := map[string]interface{}{
+		"type":      "ORDERBOOK",
+		"symbol":    req.Symbol,
+		"orderbook": aggOrderBook,
+	}
+	if obData, err := json.Marshal(orderbookPayload); err == nil {
+		e.BroadcastMessage("stream:data", string(obData))
 	}
 
 	log.Info().Str("orderId", req.OrderId).Msg("Order cancelled successfully")
