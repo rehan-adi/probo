@@ -29,7 +29,13 @@ export const startStreamSubscriber = async () => {
 			const data = JSON.parse(message);
 
 			if (data.symbol) {
+				// Emit generic MESSAGE for backward compatibility
 				io.to(data.symbol).emit('MESSAGE', data);
+
+				// Emit specific event if type is provided (e.g. TICKER, ORDERBOOK, ACTIVITY, PORTFOLIO_UPDATE)
+				if (data.type) {
+					io.to(data.symbol).emit(data.type, data);
+				}
 			} else {
 				logger.warn('Message missing symbol: ' + message);
 			}
