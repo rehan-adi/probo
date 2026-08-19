@@ -496,13 +496,15 @@ export default function EventDetails() {
 
 													let displayName = realName || 'Trader';
 													let initial = displayName.charAt(0).toUpperCase();
-													let color = getAvatarGradient(displayName || trade.takerId || trade.makerId || `${idx}`);
+													let color = getAvatarGradient(
+														displayName || trade.takerId || trade.makerId || `${idx}`,
+													);
 
 													if (user && (trade.takerId === user.id || trade.makerId === user.id)) {
- 														displayName = 'You';
- 														color = 'from-emerald-500 to-teal-500';
- 														initial = 'Y';
- 													}
+														displayName = 'You';
+														color = 'from-emerald-500 to-teal-500';
+														initial = 'Y';
+													}
 
 													const actionText = trade.takerAction
 														? trade.takerAction.toLowerCase() === 'buy'
@@ -524,8 +526,8 @@ export default function EventDetails() {
 															</div>
 															<div className="flex flex-col">
 																<span className="text-sm text-foreground leading-snug">
-																	<span className="font-semibold">{displayName}</span>{' '}
-																	{actionText} <span className="font-bold">{trade.quantity}</span>{' '}
+																	<span className="font-semibold">{displayName}</span> {actionText}{' '}
+																	<span className="font-bold">{trade.quantity}</span>{' '}
 																	<span
 																		className={`font-semibold ${trade.stockType.toLowerCase() === 'yes' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}
 																	>
