@@ -63,11 +63,13 @@ export default function EventsPage() {
 			socket.connect();
 		}
 
-		events.forEach((event) => {
-			socket.emit('SUBSCRIBE', event.symbol);
-		});
+		const symbols = events.map((event) => event.symbol).filter(Boolean);
+		if (symbols.length > 0) {
+			socket.emit('SUBSCRIBE_TICKERS', symbols);
+		}
 
-		const handleMessage = (data: any) => {
+		const handleTicker = (data: any) => {
+			if (data.type && data.type !== 'TICKER') return;
 			setEvents((prev) =>
 				prev.map((event) => {
 					if (event.symbol === data.symbol || event.symbol === data.Symbol) {
@@ -76,6 +78,7 @@ export default function EventsPage() {
 							yesPrice: data.yesPrice ?? event.yesPrice,
 							noPrice: data.noPrice ?? event.noPrice,
 							volume: data.volume ?? event.volume,
+							numberOfTraders: data.numberOfTraders ?? data.traders ?? event.numberOfTraders,
 						};
 					}
 					return event;
@@ -83,13 +86,15 @@ export default function EventsPage() {
 			);
 		};
 
-		socket.on('MESSAGE', handleMessage);
+		socket.on('TICKER', handleTicker);
+		socket.on('MESSAGE', handleTicker);
 
 		return () => {
-			events.forEach((event) => {
-				socket.emit('UNSUBSCRIBE', event.symbol);
-			});
-			socket.off('MESSAGE', handleMessage);
+			if (symbols.length > 0) {
+				socket.emit('UNSUBSCRIBE_TICKERS', symbols);
+			}
+			socket.off('TICKER', handleTicker);
+			socket.off('MESSAGE', handleTicker);
 		};
 	}, [events.length]);
 
@@ -137,7 +142,7 @@ export default function EventsPage() {
 									<div
 										key={idx}
 										onClick={() => navigate(`/events/${event.symbol}`)}
-										className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-0 h-[230px] transition-colors"
+										className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 cursor-pointer rounded-xl p-4 flex flex-col justify-between gap-0 h-57.5 transition-colors"
 									>
 										<div className="">
 											<div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -193,7 +198,7 @@ export default function EventsPage() {
 						</div>
 					</div>
 					{!user && (
-						<div className="w-[630px] rounded-xl lg:flex hide-1200 hidden items-start">
+						<div className="w-157.5 rounded-xl lg:flex hide-1200 hidden items-start">
 							<div className="w-full bg-[#EDEDED] dark:bg-gray-800 rounded-xl flex p-5">
 								<div className="flex flex-col w-[65%] justify-center pr-4">
 									<div className="inline-flex items-center gap-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-500 text-xs font-bold px-2.5 py-1 rounded-full mb-3 w-max">

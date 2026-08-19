@@ -1,20 +1,21 @@
 import { api } from '@/lib/axios';
 import { socket } from '@/socket';
 import { useAuthStore } from '@/store/auth';
-import { Bookmark, Share2, RefreshCcw } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useModalStore } from '@/store/modal';
+import { useParams } from 'react-router-dom';
 import pfpIcon from '@/assets/images/pfp.avif';
 
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import PlaceOrder from '@/components/PlaceOrder';
+import MarketNews from '@/components/MarketNews';
 import TimelineSection from '@/components/Timeline';
+import UserHoldings from '@/components/UserHoldings';
+import ShareModal from '@/components/modals/ShareModal';
 import downloadIcon from '@/assets/images/download.avif';
 import defaultThumbnail from '@/assets/images/logo.avif';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import MarketNews from '@/components/MarketNews';
-import ShareModal from '@/components/modals/ShareModal';
-import UserHoldings from '@/components/UserHoldings';
 import OrderbookLadder from '@/components/OrderbookLadder';
+import { Bookmark, Share2, RefreshCcw } from 'lucide-react';
 
 interface TradeExecutedEvent {
 	marketId: string;
@@ -49,9 +50,11 @@ interface Market {
 	traders: number;
 	endTime: string;
 	category?: string;
+	sourceOfTruth?: string;
 	overview: {
-		EndDate: string;
-		startDate?: string;
+		SourceOfTruth?: string;
+		StartDate?: string;
+		EndDate?: string;
 		eos?: string;
 		Rules?: string;
 	};
@@ -78,6 +81,7 @@ export default function EventDetails() {
 
 	const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 	const user = useAuthStore((s) => s.user);
+	const { openOnboardModal } = useModalStore();
 
 	const [market, setMarket] = useState<Market | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -94,104 +98,156 @@ export default function EventDetails() {
 		if (!symbol) return;
 
 		if (socket.connected) {
-			socket.emit('SUBSCRIBE', symbol);
+			socket.emit('SUBSCRIBE_MARKET', symbol);
 		} else {
 			socket.connect();
 			socket.once('connect', () => {
-				socket.emit('SUBSCRIBE', symbol);
+				socket.emit('SUBSCRIBE_MARKET', symbol);
 			});
 		}
 
-		socket.on('MESSAGE', (data) => {
+		const handleTicker = (data: any) => {
+			if (!data) return;
 			setMarket((prev: Market | null) => {
-				try {
-					if (!prev) return prev;
-					if (!data) return prev;
+				if (!prev) return prev;
+				return {
+					...prev,
+					yesPrice: typeof data.yesPrice === 'number' ? data.yesPrice : prev.yesPrice,
+					noPrice: typeof data.noPrice === 'number' ? data.noPrice : prev.noPrice,
+					volume: typeof data.volume === 'number' ? data.volume : prev.volume,
+					traders:
+						typeof data.numberOfTraders === 'number'
+							? data.numberOfTraders
+							: (data.traders ?? prev.traders),
+				};
+			});
+		};
 
+		const handleOrderbook = (data: any) => {
+			const incomingOrderbook = data?.orderbook || data?.Orderbook;
+			if (!incomingOrderbook) return;
+
+			setMarket((prev: Market | null) => {
+				if (!prev) return prev;
+				try {
 					const updatedOrderbook = {
 						yes: [...(prev.orderbook?.yes || [])],
 						no: [...(prev.orderbook?.no || [])],
 					};
 
-					const incomingOrderbook = data.orderbook || data.Orderbook;
-					if (incomingOrderbook) {
-						['yes', 'no'].forEach((side) => {
-							const sideKey = side as keyof typeof updatedOrderbook;
-							const capitalized = side.charAt(0).toUpperCase() + side.slice(1);
-							const updates = incomingOrderbook[side] || incomingOrderbook[capitalized];
-							if (!Array.isArray(updates)) return;
+					['yes', 'no'].forEach((side) => {
+						const sideKey = side as keyof typeof updatedOrderbook;
+						const capitalized = side.charAt(0).toUpperCase() + side.slice(1);
+						const updates = incomingOrderbook[side] || incomingOrderbook[capitalized];
+						if (!Array.isArray(updates)) return;
 
-							updates.forEach((update: any) => {
-								const idx = updatedOrderbook[sideKey].findIndex(
-									(o: any) => o.price === update.price,
-								);
+						updates.forEach((update: any) => {
+							const idx = updatedOrderbook[sideKey].findIndex((o: any) => o.price === update.price);
 
-								if (idx > -1) {
-									if (update.quantity > 0) {
-										updatedOrderbook[sideKey][idx] = update;
-									} else {
-										updatedOrderbook[sideKey].splice(idx, 1);
-									}
+							if (idx > -1) {
+								if (update.quantity > 0) {
+									updatedOrderbook[sideKey][idx] = update;
 								} else {
-									if (update.quantity > 0) {
-										updatedOrderbook[sideKey].push(update);
-									}
+									updatedOrderbook[sideKey].splice(idx, 1);
 								}
-							});
-
-							updatedOrderbook[sideKey].sort((a: any, b: any) =>
-								side === 'yes' ? b.price - a.price : a.price - b.price,
-							);
-						});
-					}
-
-					const newYesPrice = typeof data.yesPrice === 'number' ? data.yesPrice : prev.yesPrice;
-					const newNoPrice = typeof data.noPrice === 'number' ? data.noPrice : prev.noPrice;
-
-					let newVolume = prev.volume || 0;
-					let newTraders = prev.traders || 0;
-					let updatedTrades = [...(prev.trades || [])];
-					let newTimeline = [...(prev.timeline || [])];
-
-					if (data.trades && Array.isArray(data.trades)) {
-						data.trades.forEach((newTrade: TradeExecutedEvent) => {
-							const exists = updatedTrades.some(
-								(trade: TradeExecutedEvent) =>
-									trade.makerOrderId === newTrade.makerOrderId &&
-									trade.takerOrderId === newTrade.takerOrderId &&
-									trade.price === newTrade.price &&
-									trade.timestamp === newTrade.timestamp,
-							);
-							if (!exists) {
-								updatedTrades.unshift(newTrade);
-								newVolume += (newTrade.price * newTrade.quantity) / 10;
+							} else {
+								if (update.quantity > 0) {
+									updatedOrderbook[sideKey].push(update);
+								}
 							}
 						});
-						updatedTrades = updatedTrades.slice(0, 50);
-					}
+
+						updatedOrderbook[sideKey].sort((a: any, b: any) =>
+							side === 'yes' ? b.price - a.price : a.price - b.price,
+						);
+					});
 
 					return {
 						...prev,
 						orderbook: updatedOrderbook,
-						yesPrice: newYesPrice,
-						noPrice: newNoPrice,
-						timeline: newTimeline,
-						trades: updatedTrades,
-						volume: newVolume,
-						traders: newTraders,
 					};
 				} catch (err) {
-					console.error('Error processing socket MESSAGE:', err);
+					console.error('Error processing ORDERBOOK socket message:', err);
 					return prev;
 				}
 			});
-		});
+		};
+
+		const handleActivity = (data: any) => {
+			const incomingTrades = data?.trades || (data?.trade ? [data.trade] : null);
+			if (!incomingTrades || !Array.isArray(incomingTrades) || incomingTrades.length === 0) return;
+
+			setMarket((prev: Market | null) => {
+				if (!prev) return prev;
+				try {
+					let updatedTrades = [...(prev.trades || [])];
+					let newVolume = prev.volume || 0;
+
+					incomingTrades.forEach((newTrade: TradeExecutedEvent) => {
+						const exists = updatedTrades.some(
+							(trade: TradeExecutedEvent) =>
+								trade.makerOrderId === newTrade.makerOrderId &&
+								trade.takerOrderId === newTrade.takerOrderId &&
+								trade.price === newTrade.price &&
+								trade.timestamp === newTrade.timestamp,
+						);
+						if (!exists) {
+							updatedTrades.unshift(newTrade);
+							newVolume += (newTrade.price * newTrade.quantity) / 10;
+						}
+					});
+
+					return {
+						...prev,
+						trades: updatedTrades.slice(0, 50),
+						volume: newVolume,
+					};
+				} catch (err) {
+					console.error('Error processing ACTIVITY socket message:', err);
+					return prev;
+				}
+			});
+		};
+
+		const handleGenericMessage = (data: any) => {
+			if (!data) return;
+			if (data.type === 'TICKER') {
+				handleTicker(data);
+			} else if (data.type === 'ORDERBOOK') {
+				handleOrderbook(data);
+			} else if (data.type === 'ACTIVITY') {
+				handleActivity(data);
+			} else {
+				// Legacy / combined payload fallback
+				if (
+					data.yesPrice !== undefined ||
+					data.noPrice !== undefined ||
+					data.volume !== undefined ||
+					data.numberOfTraders !== undefined
+				) {
+					handleTicker(data);
+				}
+				if (data.orderbook || data.Orderbook) {
+					handleOrderbook(data);
+				}
+				if (data.trades) {
+					handleActivity(data);
+				}
+			}
+		};
+
+		socket.on('TICKER', handleTicker);
+		socket.on('ORDERBOOK', handleOrderbook);
+		socket.on('ACTIVITY', handleActivity);
+		socket.on('MESSAGE', handleGenericMessage);
 
 		return () => {
-			socket.emit('UNSUBSCRIBE', symbol);
-			socket.off('MESSAGE');
+			socket.emit('UNSUBSCRIBE_MARKET', symbol);
+			socket.off('TICKER', handleTicker);
+			socket.off('ORDERBOOK', handleOrderbook);
+			socket.off('ACTIVITY', handleActivity);
+			socket.off('MESSAGE', handleGenericMessage);
 			socket.off('connect');
-			socket.disconnect();
 		};
 	}, [symbol]);
 
@@ -222,7 +278,11 @@ export default function EventDetails() {
 	};
 
 	const toggleBookmark = async () => {
-		if (!market || !isAuthenticated) return;
+		if (!isAuthenticated) {
+			openOnboardModal();
+			return;
+		}
+		if (!market) return;
 		try {
 			if (isBookmarked) {
 				await api.delete(`/profile/watchlist/${market.marketId}`);
@@ -278,11 +338,11 @@ export default function EventDetails() {
 				<div className="w-full lg:w-[65%] pb-20">
 					<div className="flex justify-between items-start mb-8 gap-4">
 						<div className="flex items-start gap-4">
-							<div className="w-16 h-16 md:w-[72px] md:h-[72px] shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
+							<div className="w-16 h-16 md:w-18 md:h-18 shrink-0 rounded-xl overflow-hidden border border-border shadow-sm">
 								<img
 									src={
 										!market.thumbnail ||
-										market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
+											market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
 											? defaultThumbnail
 											: market.thumbnail
 									}
@@ -303,13 +363,13 @@ export default function EventDetails() {
 						<div className="flex gap-2 shrink-0">
 							<button
 								onClick={toggleBookmark}
-								className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+								className="p-2 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
 							>
 								<Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
 							</button>
 							<button
 								onClick={() => setIsShareModalOpen(true)}
-								className="p-2 border border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
+								className="p-2 border cursor-pointer border-border rounded-lg bg-card text-foreground hover:bg-muted transition shadow-sm"
 							>
 								<Share2 size={18} />
 							</button>
@@ -322,7 +382,7 @@ export default function EventDetails() {
 							yesPrice={market.yesPrice}
 							noPrice={market.noPrice}
 							volume={market.volume || 0}
-							overview={market.overview}
+							overview={market.overview as any}
 							traders={market.traders || 0}
 						/>
 					</div>
@@ -339,21 +399,20 @@ export default function EventDetails() {
 								<button
 									key={tab}
 									onClick={() => setActiveBoxTab(tab.toLowerCase() as any)}
-									className={`flex-1 py-3.5 text-sm font-bold relative transition ${
-										activeBoxTab === tab.toLowerCase()
-											? 'text-foreground'
-											: 'text-muted-foreground hover:text-foreground'
-									}`}
+									className={`flex-1 py-3.5 text-sm font-bold relative transition cursor-pointer ${activeBoxTab === tab.toLowerCase()
+										? 'text-foreground'
+										: 'text-muted-foreground hover:text-foreground'
+										}`}
 								>
 									{tab}
 									{activeBoxTab === tab.toLowerCase() && (
-										<div className="absolute bottom-0 left-0 w-full h-[2px] bg-foreground"></div>
+										<div className="absolute bottom-0 left-0 w-full h-0.5 bg-foreground"></div>
 									)}
 								</button>
 							))}
 						</div>
 
-						<div className="p-5 md:p-6 h-[650px] flex flex-col">
+						<div className="p-5 md:p-6 h-162.5 flex flex-col">
 							{activeBoxTab === 'orderbook' && (
 								<div className="flex flex-col h-full min-h-0">
 									<div className="flex justify-between items-center mb-4 border-b border-border w-full shrink-0">
@@ -365,15 +424,14 @@ export default function EventDetails() {
 														setInnerTab(tab as any);
 														setTimeout(() => setResetScrollToken((prev) => prev + 1), 60);
 													}}
-													className={`py-2 text-sm font-bold relative transition-colors ${
-														innerTab === tab
-															? 'text-foreground'
-															: 'text-muted-foreground hover:text-foreground'
-													}`}
+													className={`py-2 text-sm cursor-pointer font-bold relative transition-colors ${innerTab === tab
+														? 'text-foreground'
+														: 'text-muted-foreground hover:text-foreground'
+														}`}
 												>
 													Trade {tab.toUpperCase()}
 													{innerTab === tab && (
-														<div className="absolute bottom-0 left-0 w-full h-[2px] bg-foreground"></div>
+														<div className="absolute bottom-0 left-0 w-full h-0.5 bg-foreground"></div>
 													)}
 												</button>
 											))}
@@ -381,14 +439,14 @@ export default function EventDetails() {
 										<div className="flex items-center gap-2">
 											<button
 												onClick={() => setResetScrollToken((prev) => prev + 1)}
-												className="flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50 border border-transparent transition-colors"
+												className="flex items-center cursor-pointer justify-center p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted/50 border border-transparent transition-colors"
 												title="Re-centre Spread"
 											>
 												<RefreshCcw className="w-4 h-4" />
 											</button>
 											<button
 												onClick={() => setIsOrderbookLocked(!isOrderbookLocked)}
-												className={`flex items-center justify-center p-1.5 rounded-md transition-colors border ${isOrderbookLocked ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50'}`}
+												className={`flex items-center cursor-pointer justify-center p-1.5 rounded-md transition-colors border ${isOrderbookLocked ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/50'}`}
 												title={isOrderbookLocked ? 'Unlock Scroll' : 'Lock Scroll (Center Spread)'}
 											>
 												<svg
@@ -425,7 +483,7 @@ export default function EventDetails() {
 
 							{activeBoxTab === 'activity' && (
 								<div className="flex flex-col h-full min-h-0 relative">
-									<div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-card to-transparent z-10 pointer-events-none"></div>
+									<div className="absolute top-0 left-0 right-0 h-4 bg-linear-to-b from-card to-transparent z-10 pointer-events-none"></div>
 
 									<div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40 space-y-1">
 										{market.trades && market.trades.length > 0 ? (
@@ -446,10 +504,10 @@ export default function EventDetails() {
 														userMock = found
 															? found
 															: {
-																	name: realName,
-																	color: MOCK_USERS[0].color,
-																	initial: realName.charAt(0).toUpperCase(),
-																};
+																name: realName,
+																color: MOCK_USERS[0].color,
+																initial: realName.charAt(0).toUpperCase(),
+															};
 													} else {
 														userMock = getUserMock(trade.takerId || trade.makerId);
 													}
@@ -468,7 +526,7 @@ export default function EventDetails() {
 															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors rounded-lg"
 														>
 															<div
-																className={`w-8 h-8 rounded-full bg-gradient-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
+																className={`w-8 h-8 rounded-full bg-linear-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
 															>
 																{userMock.initial}
 															</div>
@@ -488,7 +546,7 @@ export default function EventDetails() {
 																	{(() => {
 																		const diff = Math.floor(
 																			(new Date().getTime() - new Date(trade.timestamp).getTime()) /
-																				1000,
+																			1000,
 																		);
 																		if (diff < 60) return `${diff}s ago`;
 																		if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -512,7 +570,7 @@ export default function EventDetails() {
 											</div>
 										)}
 									</div>
-									<div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-card to-transparent z-10 pointer-events-none"></div>
+									<div className="absolute bottom-0 left-0 right-0 h-4 bg-linear-to-t from-card to-transparent z-10 pointer-events-none"></div>
 								</div>
 							)}
 						</div>
@@ -520,8 +578,8 @@ export default function EventDetails() {
 
 					<div className="mb-8 bg-card p-6 border border-border rounded-xl shadow-sm">
 						<h2 className="text-lg font-bold mb-5 text-foreground">About the Event</h2>
-						<div className="flex flex-col md:flex-row md:items-start justify-between gap-6 md:gap-4 mb-8 text-sm">
-							<div className="flex-1 flex flex-col gap-1.5 min-w-0 pr-4">
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-sm">
+							<div className="flex flex-col gap-1.5 min-w-0">
 								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
 									Source of Truth
 								</span>
@@ -551,31 +609,31 @@ export default function EventDetails() {
 									</svg>
 								</a>
 							</div>
-							<div className="flex-1 flex flex-col gap-1.5 min-w-0">
+							<div className="flex flex-col gap-1.5 min-w-0">
 								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
 									Event started
 								</span>
 								<span className="text-foreground font-medium">
-									{market.overview?.startDate
-										? new Date(market.overview.startDate).toLocaleDateString(undefined, {
-												day: '2-digit',
-												month: 'short',
-												year: 'numeric',
-											})
+									{market.overview?.StartDate
+										? new Date(market.overview.StartDate).toLocaleDateString(undefined, {
+											day: '2-digit',
+											month: 'short',
+											year: 'numeric',
+										})
 										: '--'}
 								</span>
 							</div>
-							<div className="flex-1 flex flex-col gap-1.5 min-w-0">
+							<div className="flex flex-col gap-1.5 min-w-0">
 								<span className="text-muted-foreground font-semibold text-xs uppercase tracking-wider">
 									Event expires
 								</span>
 								<span className="text-foreground font-medium">
 									{market.overview?.EndDate
 										? new Date(market.overview.EndDate).toLocaleDateString(undefined, {
-												day: '2-digit',
-												month: 'short',
-												year: 'numeric',
-											})
+											day: '2-digit',
+											month: 'short',
+											year: 'numeric',
+										})
 										: '--'}
 								</span>
 							</div>
@@ -621,7 +679,7 @@ export default function EventDetails() {
 						<div className="space-y-6">
 							{/* Mock Comment 1 */}
 							<div className="flex gap-4">
-								<div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-orange-400 shrink-0"></div>
+								<div className="w-10 h-10 rounded-full bg-linear-to-tr from-purple-500 to-orange-400 shrink-0"></div>
 								<div>
 									<div className="flex items-center gap-2.5 mb-1.5">
 										<span className="font-bold text-sm text-foreground">fmfwd</span>
@@ -636,7 +694,7 @@ export default function EventDetails() {
 
 							{/* Mock Comment 2 */}
 							<div className="flex gap-4">
-								<div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-600 to-red-400 shrink-0"></div>
+								<div className="w-10 h-10 rounded-full bg-linear-to-tr from-yellow-600 to-red-400 shrink-0"></div>
 								<div>
 									<div className="flex items-center gap-2.5 mb-1.5">
 										<span className="font-bold text-sm text-foreground">socialwolf3115</span>
@@ -649,7 +707,7 @@ export default function EventDetails() {
 					</div>
 				</div>
 
-				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden lg:sticky lg:top-32 self-start max-h-[calc(100vh-130px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-10">
+				<div className="w-[30%] max-[1160px]:w-[35%] max-[970px]:hidden lg:sticky lg:top-32 self-start max-h-[calc(100vh-130px)] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none pb-10">
 					{isAuthenticated ? (
 						<>
 							<PlaceOrder
@@ -670,28 +728,46 @@ export default function EventDetails() {
 					) : (
 						<>
 							<div className="space-y-6">
-								<div className="w-full bg-muted mt-3 rounded-xl flex p-6 border border-border">
-									<div className="flex flex-col flex-1 justify-center">
-										<h3 className="text-lg font-bold mb-3 leading-tight text-foreground">
-											DOWNLOAD APP FOR BETTER EXPERIENCE
+								<div className="w-full bg-[#EDEDED] dark:bg-gray-800 mt-3 rounded-xl flex p-5 border border-border">
+									<div className="flex flex-col w-[65%] justify-center pr-3">
+										<div className="inline-flex items-center gap-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-500 text-xs font-bold px-2.5 py-1 rounded-full mb-3 w-max">
+											<span>🎁</span> LIMITED TIME OFFER
+										</div>
+										<h3 className="text-base md:text-lg font-bold leading-tight mb-2 text-foreground">
+											UNLOCK UP TO ₹25 WELCOME BONUS!
 										</h3>
-										<button className="bg-foreground mt-2 text-background text-sm font-bold px-5 py-2.5 rounded-lg w-max">
-											Download Now
+										<p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">
+											Get <span className="font-semibold text-foreground">₹15</span>{' '}
+											instantly on signin and{' '}
+											<span className="font-semibold text-foreground">₹10</span> extra with
+											a referral code.
+										</p>
+										<button
+											onClick={openOnboardModal}
+											className="bg-black dark:bg-white text-white dark:text-black font-semibold text-xs md:text-sm px-4 py-2 mt-1 rounded-md hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap w-max"
+										>
+											Claim Reward
 										</button>
 									</div>
-									<div className="flex-1 flex justify-end items-center">
+									<div className="w-[35%] flex justify-end items-center">
 										<img
 											src={downloadIcon}
-											alt="Download Icon"
-											className="w-24 h-24 object-contain"
+											alt="Bonus"
+											className="w-20 h-20 md:w-24 md:h-24 object-contain"
 										/>
 									</div>
 								</div>
 								<div className="flex bg-card p-4 w-full gap-3 rounded-xl border border-border shadow-sm">
-									<button className="text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900 cursor-pointer bg-green-50 dark:bg-green-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-green-100 dark:hover:bg-green-900/50">
+									<button
+										onClick={openOnboardModal}
+										className="text-green-600 dark:text-green-400 border border-green-200 dark:border-green-900 cursor-pointer bg-green-50 dark:bg-green-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-green-100 dark:hover:bg-green-900/50"
+									>
 										Yes ₹{market.yesPrice}
 									</button>
-									<button className="text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 cursor-pointer bg-red-50 dark:bg-red-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-red-100 dark:hover:bg-red-900/50">
+									<button
+										onClick={openOnboardModal}
+										className="text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 cursor-pointer bg-red-50 dark:bg-red-950/30 text-sm px-3 py-2.5 rounded-lg w-full font-bold transition hover:bg-red-100 dark:hover:bg-red-900/50"
+									>
 										No ₹{market.noPrice}
 									</button>
 								</div>
@@ -701,23 +777,31 @@ export default function EventDetails() {
 				</div>
 			</div>
 
-			{/* Mobile Bottom Order Bar (Opens PlaceOrder) */}
+			{/* Mobile Bottom Order Bar (Opens PlaceOrder or Signin) */}
 			<div className="hidden max-[970px]:flex justify-between items-center px-6 py-4 bg-card border-t border-border bottom-0 fixed w-full z-50 gap-4">
 				<button
 					onClick={() => {
+						if (!isAuthenticated) {
+							openOnboardModal();
+							return;
+						}
 						setInnerTab('Yes');
 						setIsMobileOrderOpen(true);
 					}}
-					className="text-green-600 border border-green-200 bg-green-50 dark:bg-green-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold"
+					className="text-green-600 border border-green-200 bg-green-50 dark:bg-green-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold cursor-pointer"
 				>
 					Yes ₹{market.yesPrice}
 				</button>
 				<button
 					onClick={() => {
+						if (!isAuthenticated) {
+							openOnboardModal();
+							return;
+						}
 						setInnerTab('No');
 						setIsMobileOrderOpen(true);
 					}}
-					className="text-red-600 border border-red-200 bg-red-50 dark:bg-red-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold"
+					className="text-red-600 border border-red-200 bg-red-50 dark:bg-red-950/30 text-sm px-3 py-3 rounded-lg w-full font-bold cursor-pointer"
 				>
 					No ₹{market.noPrice}
 				</button>
@@ -726,7 +810,7 @@ export default function EventDetails() {
 			{/* Mobile Order Popup/Drawer */}
 			{isMobileOrderOpen && (
 				<div
-					className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60 backdrop-blur-sm"
+					className="fixed inset-0 z-60 flex flex-col justify-end bg-black/60 backdrop-blur-sm"
 					onClick={() => setIsMobileOrderOpen(false)}
 				>
 					<motion.div
@@ -756,6 +840,15 @@ export default function EventDetails() {
 							<div className="text-center py-6">
 								<h3 className="font-bold text-lg mb-2">Login Required</h3>
 								<p className="text-muted-foreground mb-4">Please log in to place an order</p>
+								<button
+									onClick={() => {
+										setIsMobileOrderOpen(false);
+										openOnboardModal();
+									}}
+									className="bg-foreground text-background font-bold text-sm px-5 py-2.5 rounded-lg"
+								>
+									Sign In
+								</button>
 							</div>
 						)}
 					</motion.div>

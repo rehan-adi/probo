@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, AreaSeries } from 'lightweight-charts';
-import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
-import { ArrowRightLeft, Clock, Users, TrendingUp, Settings2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { api } from '@/lib/axios';
+import { useEffect, useRef, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import type { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
+import { createChart, ColorType, AreaSeries } from 'lightweight-charts';
+import { ArrowRightLeft, Clock, Users, TrendingUp, Settings2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface TimelineProps {
 	symbol: string;
@@ -29,7 +29,7 @@ export default function TimelineChart({
 	const [view, setView] = useState<'yes' | 'no'>('yes');
 	const [timeframe, setTimeframe] = useState<Timeframe>('1m');
 
-	const [showGridX, setShowGridX] = useState(false);
+	const [showGridX, setShowGridX] = useState(true);
 	const [showGridY, setShowGridY] = useState(true);
 	const [showCrosshair, setShowCrosshair] = useState(true);
 	const [isLogScale, setIsLogScale] = useState(false);
@@ -52,7 +52,8 @@ export default function TimelineChart({
 
 				const data = rawData
 					.map((d: any) => ({
-						time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
+						time: (Math.floor(new Date(d.time).getTime() / 1000) -
+							new Date().getTimezoneOffset() * 60) as Time,
 						value: view === 'yes' ? Number(d.close) : 10 - Number(d.close),
 					}))
 					.sort((a: any, b: any) => (a.time as number) - (b.time as number));
@@ -67,6 +68,7 @@ export default function TimelineChart({
 
 				if (seriesRef.current) {
 					seriesRef.current.setData(data);
+
 					// Important: Fit content so it scales properly to view
 					chartRef.current?.timeScale().fitContent();
 				}
@@ -98,8 +100,8 @@ export default function TimelineChart({
 				textColor: textColor,
 			},
 			grid: {
-				vertLines: { visible: false },
-				horzLines: { color: gridColor },
+				vertLines: { visible: showGridX, color: gridColor },
+				horzLines: { visible: showGridY, color: gridColor },
 			},
 			rightPriceScale: {
 				borderVisible: false,
@@ -149,6 +151,7 @@ export default function TimelineChart({
 				precision: 1,
 				minMove: 0.1,
 			},
+			lastPriceAnimation: 1,
 		});
 		seriesRef.current = series;
 
@@ -158,9 +161,8 @@ export default function TimelineChart({
 			window.removeEventListener('resize', handleResize);
 			chart.remove();
 		};
-	}, [view, isDarkTheme]);
+	}, [view]);
 
-	// Observe dark mode changes
 	useEffect(() => {
 		const observer = new MutationObserver((mutations) => {
 			for (const mutation of mutations) {
@@ -175,25 +177,31 @@ export default function TimelineChart({
 		return () => observer.disconnect();
 	}, []);
 
-	// Dynamically update grid when toggles change
 	useEffect(() => {
 		if (chartRef.current) {
 			const gridColor = isDarkTheme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 			chartRef.current.applyOptions({
+				layout: { textColor: isDarkTheme ? '#a1a1aa' : '#71717a' },
 				grid: {
 					vertLines: { visible: showGridX, color: gridColor },
 					horzLines: { visible: showGridY, color: gridColor },
 				},
 				crosshair: {
-					vertLine: { visible: showCrosshair },
-					horzLine: { visible: showCrosshair },
+					vertLine: {
+						visible: showCrosshair,
+						color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+					},
+					horzLine: {
+						visible: showCrosshair,
+						color: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+					},
 				},
 				rightPriceScale: {
 					mode: isLogScale ? 1 : 0, // 1 for Logarithmic, 0 for Normal
 				},
 			});
 		}
-	}, [showGridX, showGridY, showCrosshair, isLogScale]);
+	}, [showGridX, showGridY, showCrosshair, isLogScale, isDarkTheme]);
 
 	useEffect(() => {
 		if (seriesRef.current) {
@@ -218,7 +226,7 @@ export default function TimelineChart({
 				topColor: fillArea ? topColor : 'rgba(0, 0, 0, 0)',
 			});
 		}
-	}, [fillArea, view, isDarkChart]);
+	}, [fillArea, view, isDarkChart, isDarkTheme]);
 
 	useEffect(() => {
 		fetchKlines(timeframe);
@@ -228,7 +236,8 @@ export default function TimelineChart({
 		// Real-time update
 		if (seriesRef.current) {
 			const value = view === 'yes' ? yesPrice : noPrice;
-			const currentTime = Math.floor(Date.now() / 1000) as Time;
+			const currentTime = (Math.floor(Date.now() / 1000) -
+				new Date().getTimezoneOffset() * 60) as Time;
 
 			// We try to update, if lightweight charts throws an error because of time being older, we catch it
 			try {
@@ -260,13 +269,13 @@ export default function TimelineChart({
 
 	return (
 		<Card className="bg-background rounded-2xl border shadow-none relative overflow-hidden group">
-			<div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-border to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+			<div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-border to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-			<div className="flex items-center justify-between p-4 pb-2">
+			<div className="flex items-center justify-between py-1 px-4">
 				<div className="flex items-center gap-3">
 					<button
 						onClick={() => setView(view === 'yes' ? 'no' : 'yes')}
-						className={`p-2.5 rounded-xl transition-all duration-300 shadow-sm ${view === 'yes' ? 'bg-green-500/10 hover:bg-green-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
+						className={`p-2.5 rounded-xl cursor-pointer transition-all duration-300 shadow-sm ${view === 'yes' ? 'bg-green-500/10 hover:bg-green-500/20' : 'bg-red-500/10 hover:bg-red-500/20'}`}
 					>
 						<ArrowRightLeft
 							className={`h-4 w-4 ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
@@ -276,7 +285,7 @@ export default function TimelineChart({
 					<div className="flex flex-col items-start font-semibold text-xs text-muted-foreground tracking-wide">
 						{view.toUpperCase()} PROBABILITY
 						<span
-							className={`text-xl font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
+							className={`text-lg font-bold tracking-tight ${view === 'yes' ? 'text-green-500' : 'text-red-500'}`}
 						>
 							{view === 'yes' ? Math.round(yesProb) : Math.round(noProb)}%
 						</span>
@@ -284,7 +293,7 @@ export default function TimelineChart({
 				</div>
 			</div>
 
-			<CardContent className="grid gap-2 pt-2 relative">
+			<CardContent className="grid gap-2 relative">
 				<div className="relative h-72 w-full flex rounded-lg overflow-hidden">
 					{loading && (
 						<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 transition-all duration-300">
@@ -299,7 +308,6 @@ export default function TimelineChart({
 					<div className="flex-1" ref={chartContainerRef} />
 				</div>
 
-				{/* Bottom Header: Stats & Timeframes */}
 				<div className="flex flex-col md:flex-row items-center justify-between mt-2 pt-4 border-t border-border/40 gap-4">
 					<div className="flex items-center gap-5 text-xs font-medium w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
@@ -308,7 +316,7 @@ export default function TimelineChart({
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
 							<Clock className="w-3.5 h-3.5 text-muted-foreground" />
-							<span className="text-muted-foreground">{getRemainingTime(overview?.EndDate)}</span>
+							<span className="text-muted-foreground">Expires in {getRemainingTime(overview?.EndDate)}</span>
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
 							<Users className="w-3.5 h-3.5 text-muted-foreground" />
@@ -322,14 +330,14 @@ export default function TimelineChart({
 								<button
 									key={tf}
 									onClick={() => setTimeframe(tf)}
-									className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all duration-200 ${timeframe === tf ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+									className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-all duration-200 cursor-pointer ${timeframe === tf ? 'bg-background text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
 								>
 									{tf.toUpperCase()}
 								</button>
 							))}
 							<Popover>
 								<PopoverTrigger asChild>
-									<button className="px-2 py-1.5 ml-1 text-muted-foreground hover:text-foreground transition-colors border-l border-border/50 pl-3">
+									<button className="px-2 py-1.5 ml-1 cursor-pointer text-muted-foreground hover:text-foreground transition-colors border-l border-border/50 pl-3">
 										<Settings2 className="w-4 h-4" />
 									</button>
 								</PopoverTrigger>

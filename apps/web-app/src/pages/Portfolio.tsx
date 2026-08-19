@@ -114,25 +114,31 @@ export default function Portfolio() {
 
 		if (isAuthenticated && user?.id) {
 			if (socket.connected) {
-				socket.emit('SUBSCRIBE', user.id);
+				socket.emit('SUBSCRIBE_USER', user.id);
 			} else {
 				socket.connect();
 				socket.once('connect', () => {
-					socket.emit('SUBSCRIBE', user.id);
+					socket.emit('SUBSCRIBE_USER', user.id);
 				});
 			}
 
+			const handlePortfolioUpdate = () => {
+				fetchPortfolio();
+				refetchBalance();
+			};
+
 			const handleMessage = (msgData: any) => {
 				if (msgData?.type === 'PORTFOLIO_UPDATE') {
-					fetchPortfolio();
-					refetchBalance();
+					handlePortfolioUpdate();
 				}
 			};
 
+			socket.on('PORTFOLIO_UPDATE', handlePortfolioUpdate);
 			socket.on('MESSAGE', handleMessage);
 
 			return () => {
-				socket.emit('UNSUBSCRIBE', user.id);
+				socket.emit('UNSUBSCRIBE_USER', user.id);
+				socket.off('PORTFOLIO_UPDATE', handlePortfolioUpdate);
 				socket.off('MESSAGE', handleMessage);
 			};
 		}

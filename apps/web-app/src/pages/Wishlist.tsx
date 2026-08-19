@@ -17,7 +17,7 @@ export default function WishlistPage() {
 	const [events, setEvents] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	const { user, isAuthenticated } = useAuthStore();
+	const { isAuthenticated } = useAuthStore();
 
 	useEffect(() => {
 		if (isAuthenticated) {
@@ -42,11 +42,13 @@ export default function WishlistPage() {
 			socket.connect();
 		}
 
-		events.forEach((event) => {
-			socket.emit('SUBSCRIBE', event.symbol);
-		});
+		const symbols = events.map((event) => event.symbol).filter(Boolean);
+		if (symbols.length > 0) {
+			socket.emit('SUBSCRIBE_TICKERS', symbols);
+		}
 
-		const handleMessage = (data: any) => {
+		const handleTicker = (data: any) => {
+			if (data.type && data.type !== 'TICKER') return;
 			setEvents((prev) =>
 				prev.map((event) => {
 					if (event.symbol === data.symbol || event.symbol === data.Symbol) {
@@ -63,13 +65,15 @@ export default function WishlistPage() {
 			);
 		};
 
-		socket.on('MESSAGE', handleMessage);
+		socket.on('TICKER', handleTicker);
+		socket.on('MESSAGE', handleTicker);
 
 		return () => {
-			events.forEach((event) => {
-				socket.emit('UNSUBSCRIBE', event.symbol);
-			});
-			socket.off('MESSAGE', handleMessage);
+			if (symbols.length > 0) {
+				socket.emit('UNSUBSCRIBE_TICKERS', symbols);
+			}
+			socket.off('TICKER', handleTicker);
+			socket.off('MESSAGE', handleTicker);
 		};
 	}, [events.length]);
 
