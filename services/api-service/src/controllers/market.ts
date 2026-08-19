@@ -623,14 +623,21 @@ export const getMarketDetails = async (c: Context) => {
 			}
 			tradersCount = uniqueTraders.size;
 
-			// Fetch category name
 			let categoryName = 'Unknown';
-			if (response.data?.categoryId) {
+			const categoryId = response.data?.categoryId;
+
+			if (categoryId) {
 				const cat = await prisma.category.findUnique({
-					where: { id: response.data.categoryId },
+					where: { id: categoryId },
 					select: { categoryName: true },
 				});
 				if (cat) categoryName = cat.categoryName;
+			} else if (marketId) {
+				const m = await prisma.market.findUnique({
+					where: { id: marketId },
+					select: { category: { select: { categoryName: true } } },
+				});
+				if (m?.category?.categoryName) categoryName = m.category.categoryName;
 			}
 
 			// If engine data exists, attach it

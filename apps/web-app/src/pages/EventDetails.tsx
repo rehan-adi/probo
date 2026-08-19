@@ -60,20 +60,21 @@ interface Market {
 	};
 }
 
-const MOCK_USERS = [
-	{ name: 'Satoshi N.', color: 'from-orange-400 to-red-400', initial: 'S' },
-	{ name: 'Alex H.', color: 'from-blue-400 to-indigo-400', initial: 'A' },
-	{ name: 'Maria G.', color: 'from-pink-400 to-rose-400', initial: 'M' },
-	{ name: 'John D.', color: 'from-emerald-400 to-teal-400', initial: 'J' },
-	{ name: 'TraderX', color: 'from-purple-400 to-fuchsia-400', initial: 'X' },
-	{ name: 'Probstreet_Whale', color: 'from-indigo-500 to-purple-500', initial: 'P' },
-	{ name: 'CryptoKing', color: 'from-yellow-400 to-orange-500', initial: 'C' },
+const AVATAR_GRADIENTS = [
+	'from-orange-400 to-red-500',
+	'from-blue-400 to-indigo-500',
+	'from-pink-400 to-rose-500',
+	'from-emerald-400 to-teal-500',
+	'from-purple-400 to-fuchsia-500',
+	'from-indigo-500 to-purple-600',
+	'from-yellow-400 to-amber-500',
+	'from-cyan-400 to-blue-500',
 ];
 
-const getUserMock = (id: string) => {
-	if (!id) return MOCK_USERS[0];
-	const num = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-	return MOCK_USERS[num % MOCK_USERS.length];
+const getAvatarGradient = (str: string) => {
+	if (!str) return AVATAR_GRADIENTS[0];
+	const num = str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+	return AVATAR_GRADIENTS[num % AVATAR_GRADIENTS.length];
 };
 
 export default function EventDetails() {
@@ -493,26 +494,15 @@ export default function EventDetails() {
 												{market.trades.map((trade, idx) => {
 													const realName = trade.takerName || trade.makerName;
 
-													let userMock;
+													let displayName = realName || 'Trader';
+													let initial = displayName.charAt(0).toUpperCase();
+													let color = getAvatarGradient(displayName || trade.takerId || trade.makerId || `${idx}`);
 
 													if (user && (trade.takerId === user.id || trade.makerId === user.id)) {
-														userMock = {
-															name: 'You',
-															color: 'from-emerald-500 to-teal-500',
-															initial: 'Y',
-														};
-													} else if (realName) {
-														const found = MOCK_USERS.find((m) => m.name === realName);
-														userMock = found
-															? found
-															: {
-																	name: realName,
-																	color: MOCK_USERS[0].color,
-																	initial: realName.charAt(0).toUpperCase(),
-																};
-													} else {
-														userMock = getUserMock(trade.takerId || trade.makerId);
-													}
+ 														displayName = 'You';
+ 														color = 'from-emerald-500 to-teal-500';
+ 														initial = 'Y';
+ 													}
 
 													const actionText = trade.takerAction
 														? trade.takerAction.toLowerCase() === 'buy'
@@ -528,13 +518,13 @@ export default function EventDetails() {
 															className="flex items-start gap-3 py-3 px-3 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors rounded-lg"
 														>
 															<div
-																className={`w-8 h-8 rounded-full bg-linear-to-tr ${userMock.color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
+																className={`w-8 h-8 rounded-full bg-linear-to-tr ${color} flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0 mt-0.5`}
 															>
-																{userMock.initial}
+																{initial}
 															</div>
 															<div className="flex flex-col">
 																<span className="text-sm text-foreground leading-snug">
-																	<span className="font-semibold">{userMock.name}</span>{' '}
+																	<span className="font-semibold">{displayName}</span>{' '}
 																	{actionText} <span className="font-bold">{trade.quantity}</span>{' '}
 																	<span
 																		className={`font-semibold ${trade.stockType.toLowerCase() === 'yes' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}

@@ -157,6 +157,7 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 			MarketId        string                     `json:"marketId"`
 			Title           string                     `json:"title"`
 			Symbol          string                     `json:"symbol"`
+			CategoryId      string                     `json:"categoryId"`
 			YesPrice        float32                    `json:"yesPrice"`
 			NoPrice         float32                    `json:"noPrice"`
 			Thumbnail       string                     `json:"thumbnail"`
@@ -172,6 +173,7 @@ func GetMarketDetails(payload types.QueuePayload) types.QueueResponse {
 			MarketId:        market.MarketId,
 			Title:           market.Title,
 			Symbol:          market.Symbol,
+			CategoryId:      market.CategoryId,
 			Volume:          market.Volume,
 			YesPrice:        market.YesPrice,
 			Thumbnail:       market.Thumbnail,

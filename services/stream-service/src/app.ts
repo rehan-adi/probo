@@ -55,11 +55,13 @@ io.on('connection', (socket) => {
 	// Subscribe to user private notifications (portfolio/orders)
 	socket.on('SUBSCRIBE_USER', (userId: string) => {
 		socket.join(`user:${userId}`);
+		socket.join(userId);
 		console.log(`Client ${socket.id} subscribed user: ${userId}`);
 	});
 
 	socket.on('UNSUBSCRIBE_USER', (userId: string) => {
 		socket.leave(`user:${userId}`);
+		socket.leave(userId);
 		console.log(`Client ${socket.id} unsubscribed user: ${userId}`);
 	});
 

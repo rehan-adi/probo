@@ -156,6 +156,7 @@ async function setupUser(phone: string, name: string) {
 		});
 		await pushToQueue(EVENTS.CREATE_USER, {
 			id: user.id,
+			name: user.username || name,
 			username: user.username,
 			phone: user.phone,
 			kycVerificationStatus: 'VERIFIED',
