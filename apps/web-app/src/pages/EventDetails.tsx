@@ -342,7 +342,7 @@ export default function EventDetails() {
 								<img
 									src={
 										!market.thumbnail ||
-											market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
+										market.thumbnail.includes('34d989f64bf44f84bf3dfd398f6d2b67.png')
 											? defaultThumbnail
 											: market.thumbnail
 									}
@@ -399,10 +399,11 @@ export default function EventDetails() {
 								<button
 									key={tab}
 									onClick={() => setActiveBoxTab(tab.toLowerCase() as any)}
-									className={`flex-1 py-3.5 text-sm font-bold relative transition cursor-pointer ${activeBoxTab === tab.toLowerCase()
-										? 'text-foreground'
-										: 'text-muted-foreground hover:text-foreground'
-										}`}
+									className={`flex-1 py-3.5 text-sm font-bold relative transition cursor-pointer ${
+										activeBoxTab === tab.toLowerCase()
+											? 'text-foreground'
+											: 'text-muted-foreground hover:text-foreground'
+									}`}
 								>
 									{tab}
 									{activeBoxTab === tab.toLowerCase() && (
@@ -424,10 +425,11 @@ export default function EventDetails() {
 														setInnerTab(tab as any);
 														setTimeout(() => setResetScrollToken((prev) => prev + 1), 60);
 													}}
-													className={`py-2 text-sm cursor-pointer font-bold relative transition-colors ${innerTab === tab
-														? 'text-foreground'
-														: 'text-muted-foreground hover:text-foreground'
-														}`}
+													className={`py-2 text-sm cursor-pointer font-bold relative transition-colors ${
+														innerTab === tab
+															? 'text-foreground'
+															: 'text-muted-foreground hover:text-foreground'
+													}`}
 												>
 													Trade {tab.toUpperCase()}
 													{innerTab === tab && (
@@ -504,10 +506,10 @@ export default function EventDetails() {
 														userMock = found
 															? found
 															: {
-																name: realName,
-																color: MOCK_USERS[0].color,
-																initial: realName.charAt(0).toUpperCase(),
-															};
+																	name: realName,
+																	color: MOCK_USERS[0].color,
+																	initial: realName.charAt(0).toUpperCase(),
+																};
 													} else {
 														userMock = getUserMock(trade.takerId || trade.makerId);
 													}
@@ -546,7 +548,7 @@ export default function EventDetails() {
 																	{(() => {
 																		const diff = Math.floor(
 																			(new Date().getTime() - new Date(trade.timestamp).getTime()) /
-																			1000,
+																				1000,
 																		);
 																		if (diff < 60) return `${diff}s ago`;
 																		if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -616,10 +618,10 @@ export default function EventDetails() {
 								<span className="text-foreground font-medium">
 									{market.overview?.StartDate
 										? new Date(market.overview.StartDate).toLocaleDateString(undefined, {
-											day: '2-digit',
-											month: 'short',
-											year: 'numeric',
-										})
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric',
+											})
 										: '--'}
 								</span>
 							</div>
@@ -630,10 +632,10 @@ export default function EventDetails() {
 								<span className="text-foreground font-medium">
 									{market.overview?.EndDate
 										? new Date(market.overview.EndDate).toLocaleDateString(undefined, {
-											day: '2-digit',
-											month: 'short',
-											year: 'numeric',
-										})
+												day: '2-digit',
+												month: 'short',
+												year: 'numeric',
+											})
 										: '--'}
 								</span>
 							</div>
@@ -737,10 +739,9 @@ export default function EventDetails() {
 											UNLOCK UP TO ₹25 WELCOME BONUS!
 										</h3>
 										<p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">
-											Get <span className="font-semibold text-foreground">₹15</span>{' '}
-											instantly on signin and{' '}
-											<span className="font-semibold text-foreground">₹10</span> extra with
-											a referral code.
+											Get <span className="font-semibold text-foreground">₹15</span> instantly on
+											signin and <span className="font-semibold text-foreground">₹10</span> extra
+											with a referral code.
 										</p>
 										<button
 											onClick={openOnboardModal}

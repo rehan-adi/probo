@@ -316,7 +316,9 @@ export default function TimelineChart({
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
 							<Clock className="w-3.5 h-3.5 text-muted-foreground" />
-							<span className="text-muted-foreground">Expires in {getRemainingTime(overview?.EndDate)}</span>
+							<span className="text-muted-foreground">
+								Expires in {getRemainingTime(overview?.EndDate)}
+							</span>
 						</div>
 						<div className="flex items-center gap-1.5 whitespace-nowrap px-1">
 							<Users className="w-3.5 h-3.5 text-muted-foreground" />
