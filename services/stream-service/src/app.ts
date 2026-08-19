@@ -18,7 +18,7 @@ export const httpServer = createServer(app.fetch as any);
 
 export const io = new Server(httpServer, {
 	cors: {
-		origin: 'localhost:5173',
+		origin: true,
 		credentials: true,
 		methods: ['GET', 'POST'],
 	},
@@ -28,14 +28,54 @@ export const io = new Server(httpServer, {
 io.on('connection', (socket) => {
 	console.log(`Client connected: ${socket.id}`);
 
-	socket.on('SUBSCRIBE', (symbol: string) => {
-		socket.join(symbol);
-		console.log(`Client ${socket.id} joined symbol: ${symbol}`);
+	// Subscribe only to tickers for an array or single symbol
+	socket.on('SUBSCRIBE_TICKERS', (symbols: string | string[]) => {
+		const list = Array.isArray(symbols) ? symbols : [symbols];
+		list.forEach((sym) => socket.join(`ticker:${sym}`));
+		console.log(`Client ${socket.id} subscribed tickers:`, list);
 	});
 
-	socket.on('UNSUBSCRIBE', (symbol: string) => {
-		socket.leave(symbol);
-		console.log(`Client ${socket.id} left symbol: ${symbol}`);
+	socket.on('UNSUBSCRIBE_TICKERS', (symbols: string | string[]) => {
+		const list = Array.isArray(symbols) ? symbols : [symbols];
+		list.forEach((sym) => socket.leave(`ticker:${sym}`));
+		console.log(`Client ${socket.id} unsubscribed tickers:`, list);
+	});
+
+	// Subscribe to full market stream (ticker + orderbook + activity) for a single event
+	socket.on('SUBSCRIBE_MARKET', (symbol: string) => {
+		socket.join(`market:${symbol}`);
+		console.log(`Client ${socket.id} subscribed full market: ${symbol}`);
+	});
+
+	socket.on('UNSUBSCRIBE_MARKET', (symbol: string) => {
+		socket.leave(`market:${symbol}`);
+		console.log(`Client ${socket.id} unsubscribed full market: ${symbol}`);
+	});
+
+	// Subscribe to user private notifications (portfolio/orders)
+	socket.on('SUBSCRIBE_USER', (userId: string) => {
+		socket.join(`user:${userId}`);
+		console.log(`Client ${socket.id} subscribed user: ${userId}`);
+	});
+
+	socket.on('UNSUBSCRIBE_USER', (userId: string) => {
+		socket.leave(`user:${userId}`);
+		console.log(`Client ${socket.id} unsubscribed user: ${userId}`);
+	});
+
+	// Legacy fallback support
+	socket.on('SUBSCRIBE', (room: string) => {
+		socket.join(room);
+		socket.join(`ticker:${room}`);
+		socket.join(`market:${room}`);
+		socket.join(`user:${room}`);
+	});
+
+	socket.on('UNSUBSCRIBE', (room: string) => {
+		socket.leave(room);
+		socket.leave(`ticker:${room}`);
+		socket.leave(`market:${room}`);
+		socket.leave(`user:${room}`);
 	});
 
 	socket.on('disconnect', () => {
