@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { usePlaceOrderMutation } from '@/hooks/mutations/order';
 import { useSplitSharesMutation, useMergeSharesMutation } from '@/hooks/mutations/event';
+import { useBalanceQuery } from '@/hooks/queries/balance';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/axios';
@@ -40,6 +42,10 @@ export default function PlaceOrder({
 	const [noOrderPrice, setNoOrderPrice] = useState<string | number>(nOrderPrice || 5.0);
 	const [amount, setAmount] = useState<number | string>('');
 	const [shares, setShares] = useState<number | string>(0);
+
+	const queryClient = useQueryClient();
+	const { data: balanceData } = useBalanceQuery();
+	const availableBalance = Number(balanceData?.data?.balance || 0);
 
 	const placeOrder = usePlaceOrderMutation();
 	const splitShares = useSplitSharesMutation();
@@ -126,6 +132,8 @@ export default function PlaceOrder({
 					onSuccess: (res) => {
 						if (res.data?.success) {
 							toast.success(res.data.message);
+							queryClient.invalidateQueries({ queryKey: ['balance'] });
+							queryClient.invalidateQueries({ queryKey: ['portfolio'] });
 							onOrderPlaced?.();
 							setShares(0);
 						} else {
@@ -157,6 +165,8 @@ export default function PlaceOrder({
 					onSuccess: (res) => {
 						if (res.data?.success) {
 							toast.success(`Order placed: ${action} ${activeTab} x ${displayShares}`);
+							queryClient.invalidateQueries({ queryKey: ['balance'] });
+							queryClient.invalidateQueries({ queryKey: ['portfolio'] });
 							onOrderPlaced?.();
 							setAmount('');
 						} else {
@@ -191,6 +201,8 @@ export default function PlaceOrder({
 					onSuccess: (res) => {
 						if (res.data?.success) {
 							toast.success(`Order placed: ${action} ${activeTab} x ${numShares}`);
+							queryClient.invalidateQueries({ queryKey: ['balance'] });
+							queryClient.invalidateQueries({ queryKey: ['portfolio'] });
 							onOrderPlaced?.();
 							setShares(0);
 						} else {
@@ -421,15 +433,21 @@ export default function PlaceOrder({
 					</div>
 
 					<div className="flex gap-2 mt-4">
-						{[1, 5, 10, 100].map((v) => (
+						{[50, 100, 500].map((v) => (
 							<button
 								key={v}
-								onClick={() => setAmount((prev) => (Number(prev) || 0) + v)}
+								onClick={() => setAmount(v)}
 								className="flex-1 py-2 text-xs font-medium text-muted-foreground bg-muted rounded-md hover:bg-accent hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
 							>
-								+₹{v}
+								₹{v}
 							</button>
 						))}
+						<button
+							onClick={() => setAmount(availableBalance > 0 ? Math.floor(availableBalance) : 0)}
+							className="flex-1 py-2 text-xs font-semibold text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors whitespace-nowrap cursor-pointer"
+						>
+							Max
+						</button>
 					</div>
 				</div>
 			)}
@@ -473,16 +491,26 @@ export default function PlaceOrder({
 					</div>
 
 					<div className="flex gap-2">
-						{[-100, -10, 10, 100].map((v) => (
+						{[10, 50, 100, 500].map((v) => (
 							<button
 								key={v}
-								onClick={() => setShares((prev) => Math.max(0, (Number(prev) || 0) + v))}
+								onClick={() => setShares(v)}
 								className="flex-1 py-2 text-xs font-medium text-muted-foreground bg-muted rounded-md hover:bg-accent hover:text-foreground transition-colors whitespace-nowrap cursor-pointer"
 							>
-								{v > 0 ? '+' : ''}
 								{v}
 							</button>
 						))}
+						<button
+							onClick={() => {
+								const limitPrice = Number(activePrice) || 0;
+								if (limitPrice > 0 && availableBalance > 0) {
+									setShares(Math.floor(availableBalance / limitPrice));
+								}
+							}}
+							className="flex-1 py-2 text-xs font-semibold text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors whitespace-nowrap cursor-pointer"
+						>
+							Max
+						</button>
 					</div>
 				</div>
 			)}
